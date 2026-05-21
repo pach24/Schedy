@@ -24,10 +24,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.tooling.preview.Preview
+import com.schednd.ui.theme.SchedndTheme
+import java.time.LocalDate
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -46,10 +48,24 @@ fun EditAvailabilityScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(uiState.isSavingAvailability) {
-        // Nothing: saving feedback is rendered in-place via the button spinner.
-    }
+    EditAvailabilityContent(
+        uiState = uiState,
+        onMyNameChanged = viewModel::onMyNameChanged,
+        onMyDateToggled = viewModel::onMyDateToggled,
+        onSave = viewModel::saveMyAvailability,
+        onBack = onBack
+    )
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditAvailabilityContent(
+    uiState: EventDetailUiState,
+    onMyNameChanged: (String) -> Unit,
+    onMyDateToggled: (LocalDate) -> Unit,
+    onSave: () -> Unit,
+    onBack: () -> Unit
+) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -87,7 +103,7 @@ fun EditAvailabilityScreen(
             FadeIn(delayMs = 80) {
                 AppleTextField(
                     value = uiState.myName,
-                    onValueChange = viewModel::onMyNameChanged,
+                    onValueChange = onMyNameChanged,
                     label = "Tu nombre",
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -111,7 +127,7 @@ fun EditAvailabilityScreen(
                 Box(modifier = Modifier.fillMaxWidth()) {
                     CalendarGrid(
                         selectedDates = uiState.myDraftDates,
-                        onDateToggled = viewModel::onMyDateToggled,
+                        onDateToggled = onMyDateToggled,
                         dateAttendeeCount = attendeeCounts,
                         mySavedDates = uiState.mySavedDates
                     )
@@ -124,7 +140,7 @@ fun EditAvailabilityScreen(
                 val saveInteraction = remember { MutableInteractionSource() }
                 Button(
                     onClick = {
-                        viewModel.saveMyAvailability()
+                        onSave()
                         onBack()
                     },
                     modifier = Modifier
@@ -161,5 +177,59 @@ fun EditAvailabilityScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+// ── Previews ─────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(name = "Editar disponibilidad (Light)", showBackground = true, device = "spec:width=411dp,height=891dp")
+@Composable
+private fun EditAvailabilityPreviewLight() {
+    SchedndTheme(darkTheme = false) {
+        val today = LocalDate.now()
+        EditAvailabilityContent(
+            uiState = EventDetailUiState(
+                myName = "Pizpireto",
+                myDraftDates = setOf(today.plusDays(2), today.plusDays(5), today.plusDays(9)),
+                mySavedDates = setOf(today.plusDays(2), today.plusDays(5)),
+                participantAvailability = mapOf(
+                    "u1" to setOf(today.plusDays(2), today.plusDays(5)),
+                    "u2" to setOf(today.plusDays(5), today.plusDays(9)),
+                    "u3" to setOf(today.plusDays(2), today.plusDays(5), today.plusDays(9))
+                ),
+                isLoading = false
+            ),
+            onMyNameChanged = {},
+            onMyDateToggled = {},
+            onSave = {},
+            onBack = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(name = "Editar disponibilidad (Dark)", showBackground = true, device = "spec:width=411dp,height=891dp", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun EditAvailabilityPreviewDark() {
+    SchedndTheme(darkTheme = true) {
+        val today = LocalDate.now()
+        EditAvailabilityContent(
+            uiState = EventDetailUiState(
+                myName = "Gandalf",
+                myDraftDates = setOf(today.plusDays(1), today.plusDays(3), today.plusDays(6), today.plusDays(10)),
+                mySavedDates = setOf(today.plusDays(1), today.plusDays(3)),
+                participantAvailability = mapOf(
+                    "u1" to setOf(today.plusDays(1), today.plusDays(3)),
+                    "u2" to setOf(today.plusDays(3), today.plusDays(6)),
+                    "u3" to setOf(today.plusDays(1), today.plusDays(6), today.plusDays(10))
+                ),
+                isLoading = false
+            ),
+            onMyNameChanged = {},
+            onMyDateToggled = {},
+            onSave = {},
+            onBack = {}
+        )
     }
 }

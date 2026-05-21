@@ -1,12 +1,9 @@
 package com.schednd.ui.join
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
@@ -39,8 +36,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.schednd.model.Event
 import com.schednd.ui.components.AppleTextField
 import com.schednd.ui.components.CalendarGrid
 import com.schednd.ui.components.LoadingDots
@@ -48,7 +47,9 @@ import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.PhaseEnterTransition
 import com.schednd.ui.theme.PhaseExitTransition
+import com.schednd.ui.theme.SchedndTheme
 import com.schednd.ui.theme.pressScale
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,22 +60,47 @@ fun JoinEventScreen(
     viewModel: JoinEventViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(prefilledCode) {
         if (prefilledCode.isNotEmpty()) viewModel.onCodeChanged(prefilledCode)
     }
 
-    LaunchedEffect(uiState.error) {
-        uiState.error?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearError()
-        }
-    }
-
     LaunchedEffect(uiState.isSubmitted) {
         if (uiState.isSubmitted) {
             onJoined(uiState.code)
+        }
+    }
+
+    JoinEventContent(
+        uiState = uiState,
+        onCodeChanged = viewModel::onCodeChanged,
+        onNameChanged = viewModel::onNameChanged,
+        onLookUp = viewModel::onLookUp,
+        onDateToggled = viewModel::onDateToggled,
+        onSubmit = viewModel::onSubmit,
+        onBack = onBack,
+        onClearError = viewModel::clearError
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun JoinEventContent(
+    uiState: JoinEventUiState,
+    onCodeChanged: (String) -> Unit,
+    onNameChanged: (String) -> Unit,
+    onLookUp: () -> Unit,
+    onDateToggled: (LocalDate) -> Unit,
+    onSubmit: () -> Unit,
+    onBack: () -> Unit,
+    onClearError: () -> Unit
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            snackbarHostState.showSnackbar(it)
+            onClearError()
         }
     }
 
@@ -105,11 +131,10 @@ fun JoinEventScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Phase 1: Enter code and name
             FadeIn(delayMs = 0) {
                 AppleTextField(
                     value = uiState.code,
-                    onValueChange = viewModel::onCodeChanged,
+                    onValueChange = onCodeChanged,
                     label = "Codigo de la sesión",
                     placeholder = "ABC123",
                     textStyle = MaterialTheme.typography.headlineSmall.copy(
@@ -124,7 +149,7 @@ fun JoinEventScreen(
             FadeIn(delayMs = 100) {
                 AppleTextField(
                     value = uiState.participantName,
-                    onValueChange = viewModel::onNameChanged,
+                    onValueChange = onNameChanged,
                     label = "Tu nombre",
                     placeholder = "Ej: Pizpireto",
                     modifier = Modifier.fillMaxWidth()
@@ -133,18 +158,16 @@ fun JoinEventScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Animated phase transition
             AnimatedContent(
                 targetState = uiState.event != null,
                 transitionSpec = { PhaseEnterTransition togetherWith PhaseExitTransition },
                 label = "JoinPhaseTransition"
             ) { hasEvent ->
                 if (!hasEvent) {
-                    // Look up button
                     FadeIn(delayMs = 200) {
                         val lookupInteraction = remember { MutableInteractionSource() }
                         Button(
-                            onClick = viewModel::onLookUp,
+                            onClick = onLookUp,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .pressScale(lookupInteraction),
@@ -168,7 +191,6 @@ fun JoinEventScreen(
                         }
                     }
                 } else {
-                    // Phase 2: Event found, select availability
                     Column {
                         FadeIn(delayMs = 0) {
                             Column {
@@ -196,7 +218,7 @@ fun JoinEventScreen(
                         FadeIn(delayMs = 150) {
                             CalendarGrid(
                                 selectedDates = uiState.selectedDates,
-                                onDateToggled = viewModel::onDateToggled,
+                                onDateToggled = onDateToggled,
                                 dateAttendeeCount = uiState.dateAttendeeCount
                             )
                         }
@@ -206,7 +228,7 @@ fun JoinEventScreen(
                         FadeIn(delayMs = 300) {
                             val confirmInteraction = remember { MutableInteractionSource() }
                             Button(
-                                onClick = viewModel::onSubmit,
+                                onClick = onSubmit,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .pressScale(confirmInteraction),
@@ -233,5 +255,57 @@ fun JoinEventScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
+
+// ── Previews ─────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(name = "Unirse – Buscar sesión (Light)", showBackground = true, device = "spec:width=411dp,height=891dp")
+@Composable
+private fun JoinPhase1Preview() {
+    SchedndTheme(darkTheme = false) {
+        JoinEventContent(
+            uiState = JoinEventUiState(
+                code = "ABC123",
+                participantName = "Pizpireto"
+            ),
+            onCodeChanged = {},
+            onNameChanged = {},
+            onLookUp = {},
+            onDateToggled = {},
+            onSubmit = {},
+            onBack = {},
+            onClearError = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(name = "Unirse – Seleccionar fechas (Dark)", showBackground = true, device = "spec:width=411dp,height=891dp", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun JoinPhase2Preview() {
+    SchedndTheme(darkTheme = true) {
+        val today = LocalDate.now()
+        JoinEventContent(
+            uiState = JoinEventUiState(
+                code = "XYZ789",
+                participantName = "Gandalf",
+                event = Event(code = "XYZ789", name = "Sesión semanal del viernes"),
+                selectedDates = setOf(today.plusDays(1), today.plusDays(4), today.plusDays(7)),
+                dateAttendeeCount = mapOf(
+                    today.plusDays(1) to 3,
+                    today.plusDays(4) to 5,
+                    today.plusDays(7) to 2
+                )
+            ),
+            onCodeChanged = {},
+            onNameChanged = {},
+            onLookUp = {},
+            onDateToggled = {},
+            onSubmit = {},
+            onBack = {},
+            onClearError = {}
+        )
     }
 }

@@ -1,5 +1,6 @@
 package com.schednd.ui.components
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -34,9 +35,10 @@ fun AvatarPickerButton(
     Box(
         modifier = modifier
             .pressScale(interactionSource)
+            .clip(CircleShape)
             .clickable(
                 interactionSource = interactionSource,
-                indication = null,
+                indication = LocalIndication.current,
                 onClick = onClick
             ),
         contentAlignment = Alignment.BottomEnd

@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.border
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.WindowInsets
@@ -75,6 +77,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
@@ -89,7 +92,6 @@ import java.time.LocalDate
 import com.schednd.ui.components.AppleCard
 import com.schednd.ui.components.AvailabilityGrid
 import com.schednd.ui.components.getHeatmapColor
-import com.schednd.ui.theme.CardShape
 import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.PhaseEnterTransition
@@ -97,6 +99,7 @@ import com.schednd.ui.theme.PhaseExitTransition
 import com.schednd.ui.theme.SquircleMiniShape
 import com.schednd.ui.theme.pressScale
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.geometry.Offset
@@ -106,6 +109,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import kotlinx.coroutines.delay
+import com.schednd.model.Event
+import com.schednd.model.Participant
+import com.schednd.ui.theme.SchedndTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -120,6 +126,22 @@ fun EventDetailScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showMoreDialog by remember { mutableStateOf(false) }
     var showConfirmDateDialog by remember { mutableStateOf(false) }
+    var copiedCode by remember { mutableStateOf(false) }
+    var copyBounceScale by remember { mutableStateOf(1f) }
+    val copyIconScale by animateFloatAsState(
+        targetValue = copyBounceScale,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+        label = "copyIconScale"
+    )
+    LaunchedEffect(copiedCode) {
+        if (copiedCode) {
+            copyBounceScale = 1.4f
+            delay(80)
+            copyBounceScale = 1f
+            delay(1500)
+            copiedCode = false
+        }
+    }
     val hazeState = remember { HazeState() }
     val scrollState = rememberScrollState()
     var confirmedCardY by remember { mutableIntStateOf(0) }
@@ -146,7 +168,7 @@ fun EventDetailScreen(
             topBar = {}
         ) { innerPadding ->
 
-        Box(modifier = Modifier.padding(innerPadding))
+        Box(modifier = Modifier.padding(innerPadding)) {
             // Animated content states — Trade Republic style scale+fade
             AnimatedContent(
                 targetState = when {
@@ -216,6 +238,18 @@ fun EventDetailScreen(
                                 }
                             }
                         } else {
+                            val confirmedDateLocal = uiState.confirmedDate
+                            if (confirmedDateLocal != null) {
+                                FadeIn(delayMs = 100) {
+                                    SessionCountdown(
+                                        confirmedDate = confirmedDateLocal,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 8.dp, bottom = 20.dp)
+                                    )
+                                }
+                            }
+
                             FadeIn(delayMs = 200) {
                                 AvailabilityGrid(
                                     dates = uiState.datesAsLocal,
@@ -414,12 +448,24 @@ fun EventDetailScreen(
                                         clipboardManager.setText(
                                             AnnotatedString(uiState.event?.code ?: "")
                                         )
+                                        copiedCode = true
                                     }) {
-                                        Icon(
-                                            Icons.Filled.ContentCopy,
-                                            "Copiar codigo",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
+                                        Box(modifier = Modifier.scale(copyIconScale)) {
+                                            AnimatedContent(
+                                                targetState = copiedCode,
+                                                transitionSpec = {
+                                                    (scaleIn(spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessHigh)) + fadeIn()) togetherWith
+                                                    (scaleOut(tween(150)) + fadeOut(tween(150)))
+                                                },
+                                                label = "copyIconContent"
+                                            ) { isCopied ->
+                                                Icon(
+                                                    if (isCopied) Icons.Filled.Check else Icons.Filled.ContentCopy,
+                                                    if (isCopied) "Copiado" else "Copiar codigo",
+                                                    tint = if (isCopied) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
                                     }
                                     IconButton(onClick = {
                                         val code = uiState.event?.code ?: return@IconButton
@@ -494,6 +540,7 @@ fun EventDetailScreen(
                     }
                 }
             }
+        }
         }
     }
 
@@ -646,7 +693,7 @@ private fun AppleActionButton(
             .clip(FullRoundShape)
             .background(fillColor)
             .border(1.dp, borderBrush, FullRoundShape)
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
+            .clickable(interactionSource = interactionSource, indication = LocalIndication.current, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -696,7 +743,7 @@ private fun AppleTopBar(
                 }
                 .border(1.dp, btnBorder, CircleShape)
                 .clickable(
-                    indication = null,
+                    indication = LocalIndication.current,
                     interactionSource = remember { MutableInteractionSource() },
                     onClick = onBack
                 ),
@@ -749,7 +796,7 @@ private fun AppleTopBar(
                 }
                 .border(1.dp, btnBorder, CircleShape)
                 .clickable(
-                    indication = null,
+                    indication = LocalIndication.current,
                     interactionSource = remember { MutableInteractionSource() },
                     onClick = onMore
                 ),
@@ -864,7 +911,7 @@ private fun MoreOptionsDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(
-                        indication = null,
+                        indication = LocalIndication.current,
                         interactionSource = remember { MutableInteractionSource() },
                         onClick = onFixDate
                     )
@@ -893,7 +940,7 @@ private fun MoreOptionsDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(
-                        indication = null,
+                        indication = LocalIndication.current,
                         interactionSource = remember { MutableInteractionSource() },
                         onClick = onDelete
                     )
@@ -1020,7 +1067,7 @@ private fun ConfirmDateSheetContent(
                             .pressScale(interaction)
                             .clickable(
                                 interactionSource = interaction,
-                                indication = null
+                                indication = LocalIndication.current
                             ) { onDateSelected(summary.date) }
                             .padding(horizontal = 16.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -1099,18 +1146,83 @@ private fun ConfirmDateSheetContent(
 }
 
 
+@Composable
+private fun SessionCountdown(
+    confirmedDate: LocalDate,
+    modifier: Modifier = Modifier
+) {
+    val today = LocalDate.now()
+    val daysLeft = ChronoUnit.DAYS.between(today, confirmedDate)
+    val dateLabel = confirmedDate.format(
+        DateTimeFormatter.ofPattern("EEE d", Locale("es"))
+    ).replaceFirstChar { it.uppercaseChar() }
+
+    Column(modifier = modifier) {
+        Text(
+            text = "PRÓXIMA SESIÓN",
+            style = MaterialTheme.typography.labelSmall.copy(
+                letterSpacing = 2.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Row(verticalAlignment = Alignment.Bottom) {
+            if (daysLeft <= 0) {
+                Text(
+                    text = "HOY",
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontWeight = FontWeight.Black,
+                        fontSize = 72.sp,
+                        letterSpacing = (-2).sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            } else {
+                Text(
+                    text = String.format("%02d", daysLeft),
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontWeight = FontWeight.Black,
+                        fontSize = 88.sp,
+                        letterSpacing = (-4).sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Column(modifier = Modifier.padding(bottom = 10.dp)) {
+                Text(
+                    text = if (daysLeft <= 0) "" else "días",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = dateLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
 @Preview(
-    name = "Dark Mode",
+    name = "TopBar (Dark)",
     showBackground = true,
     uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES,
     backgroundColor = 0xFF0D0D0D
 )
 @Composable
-fun PreviewAppleTopBarDark() {
-    MaterialTheme {
-        Box(Modifier.fillMaxWidth().padding(16.dp)) {
+private fun PreviewAppleTopBarDark() {
+    SchedndTheme(darkTheme = true) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(16.dp)
+        ) {
             AppleTopBar(
-                title = "Cena Navidad 🎄",
+                title = "Partida de D&D: El Resurgir",
                 isCreator = true,
                 hazeState = remember { HazeState() },
                 onBack = {},
@@ -1119,17 +1231,134 @@ fun PreviewAppleTopBarDark() {
         }
     }
 }
+
 @Preview(
-    name = "Light Mode",
+    name = "TopBar (Light)",
     showBackground = true,
     backgroundColor = 0xFFF4F4F6
 )
 @Composable
-fun PreviewAppleTopBarLight() {
-    MaterialTheme {
-        Box(Modifier.fillMaxWidth().padding(16.dp)) {
+private fun PreviewAppleTopBarLight() {
+    SchedndTheme(darkTheme = false) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(16.dp)
+        ) {
             AppleTopBar(
-                title = "Cena Navidad 🎄",
+                title = "Partida de D&D: El Resurgir",
+                isCreator = false,
+                hazeState = remember { HazeState() },
+                onBack = {},
+                onMore = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "Countdown – próxima sesión (Light)", showBackground = true)
+@Composable
+private fun SessionCountdownPreviewLight() {
+    SchedndTheme(darkTheme = false) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 16.dp, vertical = 24.dp)
+        ) {
+            SessionCountdown(
+                confirmedDate = LocalDate.now().plusDays(12),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Preview(name = "Countdown – hoy (Dark)", showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun SessionCountdownTodayPreviewDark() {
+    SchedndTheme(darkTheme = true) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 16.dp, vertical = 24.dp)
+        ) {
+            SessionCountdown(
+                confirmedDate = LocalDate.now(),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Preview(name = "Detalle – Con participantes (Light)", showBackground = true, device = "spec:width=411dp,height=891dp")
+@Composable
+private fun EventDetailBodyPreviewLight() {
+    SchedndTheme(darkTheme = false) {
+        val today = LocalDate.now()
+        val dates = listOf(today.plusDays(3), today.plusDays(7), today.plusDays(14), today.plusDays(21))
+        val participants = listOf(
+            Participant(userId = "u1", name = "Pizpireto", availableDates = emptyList()),
+            Participant(userId = "u2", name = "Gandalf", availableDates = emptyList()),
+            Participant(userId = "u3", name = "Legolas", availableDates = emptyList()),
+        )
+        val participantAvailability = mapOf(
+            "u1" to setOf(dates[0], dates[1]),
+            "u2" to setOf(dates[1], dates[2], dates[3]),
+            "u3" to setOf(dates[0], dates[1], dates[2]),
+        )
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 80.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                SessionCountdown(
+                    confirmedDate = today.plusDays(7),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 20.dp)
+                )
+                com.schednd.ui.components.AvailabilityGrid(
+                    dates = dates,
+                    participants = participants,
+                    participantAvailability = participantAvailability,
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                AppleCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Codigo de la sesión",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "ABC123",
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    letterSpacing = 4.sp
+                                ),
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Icon(
+                            Icons.Filled.ContentCopy,
+                            "Copiar",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+            AppleTopBar(
+                title = "Partida de D&D: El Resurgir",
                 isCreator = true,
                 hazeState = remember { HazeState() },
                 onBack = {},
@@ -1138,118 +1367,65 @@ fun PreviewAppleTopBarLight() {
         }
     }
 }
-@Preview(
-    name = "AppleCard - Modo Oscuro",
-    showBackground = true,
-    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES
-)
+
+@Preview(name = "Detalle – Sin participantes (Dark)", showBackground = true, device = "spec:width=411dp,height=891dp", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
-fun PreviewAppleCardDark() {
-    val hazeState = remember { HazeState() }
-
-    MaterialTheme {
-        // Contenedor principal con HazeSource
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(250.dp)
-                .background(Color(0xFF0D0D0D))
-                .hazeSource(state = hazeState),
-            contentAlignment = Alignment.Center
-        ) {
-            // Fondo colorido para demostrar el efecto cristal
-            Box(
+private fun EventDetailEmptyPreviewDark() {
+    SchedndTheme(darkTheme = true) {
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            Column(
                 modifier = Modifier
-                    .size(100.dp)
-                    .align(Alignment.TopStart)
-                    .background(Color(0xFF5E5CE6), CircleShape)
-            )
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .align(Alignment.BottomEnd)
-                    .background(Color(0xFFBF5AF2), CircleShape)
-            )
-
-            // La tarjeta de cristal
-            AppleCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 80.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                AppleCard(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "Codigo de la sesión",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "DND-2026",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontFamily = FontFamily.Monospace,
-                            letterSpacing = 4.sp
-                        ),
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Preview(
-    name = "AppleCard - Modo Claro",
-    showBackground = true
-)
-@Composable
-fun PreviewAppleCardLight() {
-    val hazeState = remember { HazeState() }
-
-    MaterialTheme {
-        // Contenedor principal con HazeSource
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(250.dp)
-                .background(Color(0xFFF4F4F6))
-                .hazeSource(state = hazeState),
-            contentAlignment = Alignment.Center
-        ) {
-            // Fondo colorido para demostrar el efecto cristal
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .align(Alignment.TopStart)
-                    .background(Color(0xFFFF9500), CircleShape)
-            )
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .align(Alignment.BottomEnd)
-                    .background(Color(0xFFFF2D55), CircleShape)
-            )
-
-            // La tarjeta de cristal
-            AppleCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Fechas recomendadas",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "· 24 de Diciembre  –  Asistencia completa",
+                        text = "Aun no hay participantes. Comparte el codigo para que se unan.",
+                        modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                Spacer(modifier = Modifier.height(24.dp))
+                AppleCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Codigo de la sesión",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "ABC123",
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    letterSpacing = 4.sp
+                                ),
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Icon(
+                            Icons.Filled.ContentCopy,
+                            "Copiar",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
             }
+            AppleTopBar(
+                title = "One-Shot Halloween",
+                isCreator = true,
+                hazeState = remember { HazeState() },
+                onBack = {},
+                onMore = {}
+            )
         }
     }
 }

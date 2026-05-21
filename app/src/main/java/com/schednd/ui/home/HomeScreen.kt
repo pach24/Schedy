@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -43,20 +44,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.schednd.R
+import com.schednd.model.Event
 import com.schednd.ui.components.AppleCard
+import com.schednd.ui.theme.CardShape
 import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.PhaseEnterTransition
 import com.schednd.ui.theme.PhaseExitTransition
+import com.schednd.ui.theme.SchedndTheme
 import com.schednd.ui.theme.pressScale
 import kotlinx.coroutines.launch
 
@@ -80,6 +87,21 @@ fun HomeScreen(
         viewModel.refresh()
     }
 
+    HomeContent(
+        uiState = uiState,
+        onCreateEvent = onCreateEvent,
+        onJoinEvent = onJoinEvent,
+        onOpenEvent = onOpenEvent
+    )
+}
+
+@Composable
+fun HomeContent(
+    uiState: HomeUiState,
+    onCreateEvent: () -> Unit,
+    onJoinEvent: () -> Unit,
+    onOpenEvent: (String) -> Unit
+) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -118,7 +140,6 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Animated loading/content transition — Trade Republic scale+fade
             AnimatedContent(
                 targetState = uiState.isAuthReady || uiState.error != null,
                 transitionSpec = { PhaseEnterTransition togetherWith PhaseExitTransition },
@@ -196,10 +217,10 @@ fun HomeScreen(
 
                             Spacer(modifier = Modifier.height(12.dp))
 
+                            val isPreview = LocalInspectionMode.current
                             uiState.recentEvents.forEachIndexed { index, event ->
-                                // Staggered card animation
-                                val cardAlpha = remember { Animatable(0f) }
-                                val cardOffsetY = remember { Animatable(40f) }
+                                val cardAlpha = remember { Animatable(if (isPreview) 1f else 0f) }
+                                val cardOffsetY = remember { Animatable(if (isPreview) 0f else 40f) }
                                 LaunchedEffect(Unit) {
                                     kotlinx.coroutines.delay((350 + index * 70).toLong())
                                     launch { cardAlpha.animateTo(1f, tween(400)) }
@@ -222,9 +243,10 @@ fun HomeScreen(
                                             translationY = cardOffsetY.value
                                         }
                                         .pressScale(cardInteraction)
+                                        .clip(CardShape)
                                         .clickable(
                                             interactionSource = cardInteraction,
-                                            indication = null
+                                            indication = LocalIndication.current
                                         ) { onOpenEvent(event.code) }
                                 ) {
                                     Row(
@@ -265,5 +287,40 @@ fun HomeScreen(
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+// ── Previews ─────────────────────────────────────────────────────────────────
+
+@Preview(name = "Home – Sin sesiones (Light)", showBackground = true, device = "spec:width=411dp,height=891dp")
+@Composable
+private fun HomePreviewEmpty() {
+    SchedndTheme(darkTheme = false) {
+        HomeContent(
+            uiState = HomeUiState(isAuthReady = true),
+            onCreateEvent = {},
+            onJoinEvent = {},
+            onOpenEvent = {}
+        )
+    }
+}
+
+@Preview(name = "Home – Con sesiones (Dark)", showBackground = true, device = "spec:width=411dp,height=891dp", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun HomePreviewWithEvents() {
+    SchedndTheme(darkTheme = true) {
+        HomeContent(
+            uiState = HomeUiState(
+                isAuthReady = true,
+                recentEvents = listOf(
+                    Event(code = "ABC123", name = "Partida de D&D: El Resurgir"),
+                    Event(code = "XYZ789", name = "Sesión semanal"),
+                    Event(code = "HAL666", name = "One-Shot Halloween")
+                )
+            ),
+            onCreateEvent = {},
+            onJoinEvent = {},
+            onOpenEvent = {}
+        )
     }
 }

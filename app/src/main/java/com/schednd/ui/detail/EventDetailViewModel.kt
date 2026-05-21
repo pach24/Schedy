@@ -15,6 +15,7 @@ import com.schednd.model.Participant
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -59,9 +60,13 @@ class EventDetailViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             try {
+                authRepository.ensureSignedIn()
                 eventRepository.observeEvent(code)
                     .combine(eventRepository.observeParticipants(code)) { event, participants ->
                         Pair(event, participants)
+                    }
+                    .catch { e ->
+                        _uiState.update { it.copy(isLoading = false, error = e.message) }
                     }
                     .collect { (event, participants) ->
                         if (event != null) {

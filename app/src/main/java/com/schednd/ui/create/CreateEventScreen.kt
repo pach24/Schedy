@@ -2,11 +2,17 @@ package com.schednd.ui.create
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +25,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
@@ -40,14 +47,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -59,7 +70,10 @@ import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.PhaseEnterTransition
 import com.schednd.ui.theme.PhaseExitTransition
+import com.schednd.ui.theme.SchedndTheme
 import com.schednd.ui.theme.pressScale
+import java.time.LocalDate
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,20 +83,63 @@ fun CreateEventScreen(
     viewModel: CreateEventViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val clipboardManager = LocalClipboardManager.current
-    val context = LocalContext.current
-
-    LaunchedEffect(uiState.error) {
-        uiState.error?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearError()
-        }
-    }
 
     LaunchedEffect(uiState.isDone) {
         if (uiState.isDone) {
             onEventCreated(uiState.createdCode!!)
+        }
+    }
+
+    CreateEventContent(
+        uiState = uiState,
+        onNameChanged = viewModel::onNameChanged,
+        onCreatorNameChanged = viewModel::onCreatorNameChanged,
+        onDateToggled = viewModel::onDateToggled,
+        onCreate = viewModel::onCreate,
+        onSaveAvailability = viewModel::onSaveAvailability,
+        onSkip = { onEventCreated(uiState.createdCode!!) },
+        onBack = onBack,
+        onClearError = viewModel::clearError
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreateEventContent(
+    uiState: CreateEventUiState,
+    onNameChanged: (String) -> Unit,
+    onCreatorNameChanged: (String) -> Unit,
+    onDateToggled: (LocalDate) -> Unit,
+    onCreate: () -> Unit,
+    onSaveAvailability: () -> Unit,
+    onSkip: () -> Unit,
+    onBack: () -> Unit,
+    onClearError: () -> Unit
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+    var copiedCode by remember { mutableStateOf(false) }
+    var copyBounceScale by remember { mutableStateOf(1f) }
+    val copyIconScale by animateFloatAsState(
+        targetValue = copyBounceScale,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+        label = "copyIconScale"
+    )
+    LaunchedEffect(copiedCode) {
+        if (copiedCode) {
+            copyBounceScale = 1.4f
+            delay(80)
+            copyBounceScale = 1f
+            delay(1500)
+            copiedCode = false
+        }
+    }
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            snackbarHostState.showSnackbar(it)
+            onClearError()
         }
     }
 
@@ -125,7 +182,7 @@ fun CreateEventScreen(
                     FadeIn(delayMs = 0) {
                         AppleTextField(
                             value = uiState.eventName,
-                            onValueChange = viewModel::onNameChanged,
+                            onValueChange = onNameChanged,
                             label = "Nombre de la sesion",
                             placeholder = "Ej: Sesion D&D semanal",
                             modifier = Modifier.fillMaxWidth()
@@ -137,7 +194,7 @@ fun CreateEventScreen(
                     FadeIn(delayMs = 100) {
                         AppleTextField(
                             value = uiState.creatorName,
-                            onValueChange = viewModel::onCreatorNameChanged,
+                            onValueChange = onCreatorNameChanged,
                             label = "Tu nombre",
                             placeholder = "Ej: Pizpireto",
                             modifier = Modifier.fillMaxWidth()
@@ -149,7 +206,7 @@ fun CreateEventScreen(
                     FadeIn(delayMs = 200) {
                         val createInteraction = remember { MutableInteractionSource() }
                         Button(
-                            onClick = viewModel::onCreate,
+                            onClick = onCreate,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .pressScale(createInteraction),
@@ -209,12 +266,24 @@ fun CreateEventScreen(
                                 }
                                 IconButton(onClick = {
                                     clipboardManager.setText(AnnotatedString(code))
+                                    copiedCode = true
                                 }) {
-                                    Icon(
-                                        Icons.Filled.ContentCopy,
-                                        "Copiar",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
+                                    Box(modifier = Modifier.scale(copyIconScale)) {
+                                        AnimatedContent(
+                                            targetState = copiedCode,
+                                            transitionSpec = {
+                                                (scaleIn(spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessHigh)) + fadeIn()) togetherWith
+                                                (scaleOut(tween(150)) + fadeOut(tween(150)))
+                                            },
+                                            label = "copyIconContent"
+                                        ) { isCopied ->
+                                            Icon(
+                                                if (isCopied) Icons.Filled.Check else Icons.Filled.ContentCopy,
+                                                if (isCopied) "Copiado" else "Copiar",
+                                                tint = if (isCopied) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
                                 }
                                 IconButton(onClick = {
                                     val sendIntent = Intent().apply {
@@ -258,7 +327,7 @@ fun CreateEventScreen(
                     FadeIn(delayMs = 250) {
                         CalendarGrid(
                             selectedDates = uiState.selectedDates,
-                            onDateToggled = viewModel::onDateToggled,
+                            onDateToggled = onDateToggled,
                             dateAttendeeCount = uiState.dateAttendeeCount
                         )
                     }
@@ -269,7 +338,7 @@ fun CreateEventScreen(
                         Column {
                             val saveInteraction = remember { MutableInteractionSource() }
                             Button(
-                                onClick = viewModel::onSaveAvailability,
+                                onClick = onSaveAvailability,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .pressScale(saveInteraction),
@@ -294,7 +363,7 @@ fun CreateEventScreen(
 
                             val skipInteraction = remember { MutableInteractionSource() }
                             OutlinedButton(
-                                onClick = { onEventCreated(code) },
+                                onClick = onSkip,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .pressScale(skipInteraction),
@@ -310,5 +379,58 @@ fun CreateEventScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    }
+}
+
+// ── Previews ─────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(name = "Crear – Fase 1 formulario (Light)", showBackground = true, device = "spec:width=411dp,height=891dp")
+@Composable
+private fun CreatePhase1Preview() {
+    SchedndTheme(darkTheme = false) {
+        CreateEventContent(
+            uiState = CreateEventUiState(
+                eventName = "Partida de D&D: El Resurgir",
+                creatorName = "Pizpireto"
+            ),
+            onNameChanged = {},
+            onCreatorNameChanged = {},
+            onDateToggled = {},
+            onCreate = {},
+            onSaveAvailability = {},
+            onSkip = {},
+            onBack = {},
+            onClearError = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(name = "Crear – Fase 2 código + calendario (Dark)", showBackground = true, device = "spec:width=411dp,height=891dp", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun CreatePhase2Preview() {
+    SchedndTheme(darkTheme = true) {
+        val today = LocalDate.now()
+        CreateEventContent(
+            uiState = CreateEventUiState(
+                eventName = "Partida de D&D: El Resurgir",
+                creatorName = "Pizpireto",
+                createdCode = "ABC123",
+                selectedDates = setOf(today.plusDays(2), today.plusDays(5), today.plusDays(9)),
+                dateAttendeeCount = mapOf(
+                    today.plusDays(2) to 1,
+                    today.plusDays(5) to 1
+                )
+            ),
+            onNameChanged = {},
+            onCreatorNameChanged = {},
+            onDateToggled = {},
+            onCreate = {},
+            onSaveAvailability = {},
+            onSkip = {},
+            onBack = {},
+            onClearError = {}
+        )
     }
 }
