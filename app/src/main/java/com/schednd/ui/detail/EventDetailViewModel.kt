@@ -38,7 +38,11 @@ data class EventDetailUiState(
     val myName: String = "",
     val myDraftDates: Set<LocalDate> = emptySet(),
     val mySavedDates: Set<LocalDate> = emptySet(),
+    val myDraftNote: String = "",
+    val myNotes: List<String> = emptyList(),
+    val myEditingNoteIndex: Int? = null,
     val isSavingAvailability: Boolean = false,
+    val myUserId: String? = null,
     val error: String? = null
 )
 
@@ -71,8 +75,12 @@ class EventDetailViewModel @Inject constructor(
                     .collect { (event, participants) ->
                         if (event != null) {
                             recentEventsRepository.saveEvent(code)
+                            val today = LocalDate.now()
                             val availability = participants.associate { p ->
-                                p.userId to p.availableDates.map { it.toLocalDate() }.toSet()
+                                p.userId to p.availableDates
+                                    .map { it.toLocalDate() }
+                                    .filter { !it.isBefore(today) }
+                                    .toSet()
                             }
                             val datesLocal = availability.values
                                 .flatMap { it }
@@ -84,7 +92,9 @@ class EventDetailViewModel @Inject constructor(
                             val isCreator = event.creatorId == authRepository.getCurrentUserId()
                             val myParticipant = participants.find { it.userId == myUserId }
                             val mySavedDates = myParticipant?.availableDates
-                                ?.map { it.toLocalDate() }?.toSet() ?: emptySet()
+                                ?.map { it.toLocalDate() }
+                                ?.filter { !it.isBefore(today) }
+                                ?.toSet() ?: emptySet()
 
                             _uiState.update { current ->
                                 current.copy(
@@ -97,9 +107,11 @@ class EventDetailViewModel @Inject constructor(
                                     isCreator = isCreator,
                                     isLoading = false,
                                     mySavedDates = mySavedDates,
-                                    // Only sync draft name/dates from Firestore if not currently editing
+                                    myUserId = authRepository.getCurrentUserId(),
+                                    // Only sync draft name/dates/notes from Firestore if not currently editing
                                     myName = if (!current.isSavingAvailability) myParticipant?.name ?: current.myName else current.myName,
-                                    myDraftDates = if (!current.isSavingAvailability) mySavedDates else current.myDraftDates
+                                    myDraftDates = if (!current.isSavingAvailability) mySavedDates else current.myDraftDates,
+                                    myNotes = if (!current.isSavingAvailability) myParticipant?.notes ?: current.myNotes else current.myNotes
                                 )
                             }
                         } else {
@@ -118,6 +130,77 @@ class EventDetailViewModel @Inject constructor(
         _uiState.update { it.copy(myName = name) }
     }
 
+    fun onMyNoteChanged(note: String) {
+        _uiState.update { it.copy(myDraftNote = note) }
+    }
+
+    fun startAddNote() {
+        _uiState.update { it.copy(myDraftNote = "", myEditingNoteIndex = null) }
+    }
+
+    fun startEditNote(index: Int) {
+        val notes = _uiState.value.myNotes
+        if (index < notes.size) {
+            _uiState.update { it.copy(myDraftNote = notes[index], myEditingNoteIndex = index) }
+        }
+    }
+
+    fun dismissNoteDialog() {
+        _uiState.update { it.copy(myDraftNote = "", myEditingNoteIndex = null) }
+    }
+
+    fun saveMyNote() {
+        val state = _uiState.value
+        if (state.myName.isBlank() || state.myDraftNote.isBlank()) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSavingAvailability = true, error = null) }
+            try {
+                val userId = authRepository.ensureSignedIn()
+                val today = LocalDate.now()
+                val updatedNotes = state.myNotes.toMutableList().apply {
+                    val idx = state.myEditingNoteIndex
+                    if (idx != null && idx < size) set(idx, state.myDraftNote.trim())
+                    else add(state.myDraftNote.trim())
+                }
+                eventRepository.addOrUpdateAvailability(
+                    code = code,
+                    userId = userId,
+                    name = state.myName.trim(),
+                    dates = state.mySavedDates.filter { !it.isBefore(today) }.sorted(),
+                    notes = updatedNotes
+                )
+                _uiState.update { it.copy(isSavingAvailability = false, myDraftNote = "", myEditingNoteIndex = null) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSavingAvailability = false, error = e.message) }
+            }
+        }
+    }
+
+    fun deleteMyNote(index: Int) {
+        val state = _uiState.value
+        if (state.myName.isBlank()) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSavingAvailability = true, error = null) }
+            try {
+                val userId = authRepository.ensureSignedIn()
+                val today = LocalDate.now()
+                val updatedNotes = state.myNotes.toMutableList().apply {
+                    if (index < size) removeAt(index)
+                }
+                eventRepository.addOrUpdateAvailability(
+                    code = code,
+                    userId = userId,
+                    name = state.myName.trim(),
+                    dates = state.mySavedDates.filter { !it.isBefore(today) }.sorted(),
+                    notes = updatedNotes
+                )
+                _uiState.update { it.copy(isSavingAvailability = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSavingAvailability = false, error = e.message) }
+            }
+        }
+    }
+
     fun onMyDateToggled(date: LocalDate) {
         _uiState.update { state ->
             val dates = state.myDraftDates.toMutableSet()
@@ -134,11 +217,13 @@ class EventDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isSavingAvailability = true, error = null) }
             try {
                 val userId = authRepository.ensureSignedIn()
+                val today = LocalDate.now()
                 eventRepository.addOrUpdateAvailability(
                     code = code,
                     userId = userId,
                     name = state.myName.trim(),
-                    dates = state.myDraftDates.sorted()
+                    dates = state.myDraftDates.filter { !it.isBefore(today) }.sorted(),
+                    notes = state.myNotes
                 )
                 _uiState.update { it.copy(isSavingAvailability = false) }
             } catch (e: Exception) {

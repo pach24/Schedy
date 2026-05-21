@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.foundation.lazy.LazyColumn
@@ -65,7 +66,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.schednd.ui.components.AppleTextField
+import com.schednd.ui.components.LoadingDots
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -76,6 +80,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -126,6 +131,7 @@ fun EventDetailScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showMoreDialog by remember { mutableStateOf(false) }
     var showConfirmDateDialog by remember { mutableStateOf(false) }
+    var showNoteDialog by remember { mutableStateOf(false) }
     var copiedCode by remember { mutableStateOf(false) }
     var copyBounceScale by remember { mutableStateOf(1f) }
     val copyIconScale by animateFloatAsState(
@@ -159,10 +165,14 @@ fun EventDetailScreen(
         }
     }
 
+    val anyDialogOpen = showDeleteDialog || showMoreDialog || showNoteDialog
+
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
 
     Scaffold(
-            modifier = Modifier.hazeSource(state = hazeState),
+            modifier = Modifier
+                .hazeSource(state = hazeState)
+                .then(if (anyDialogOpen) Modifier.blur(4.dp) else Modifier),
             containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
             topBar = {}
@@ -239,6 +249,8 @@ fun EventDetailScreen(
                             }
                         } else {
                             val confirmedDateLocal = uiState.confirmedDate
+                            val sessionIsPast = confirmedDateLocal != null && confirmedDateLocal.isBefore(LocalDate.now())
+
                             if (confirmedDateLocal != null) {
                                 FadeIn(delayMs = 100) {
                                     SessionCountdown(
@@ -249,6 +261,9 @@ fun EventDetailScreen(
                                     )
                                 }
                             }
+
+                            if (!sessionIsPast) {
+                            // ── Grid de disponibilidad + leyenda + recomendadas ──
 
                             FadeIn(delayMs = 200) {
                                 AvailabilityGrid(
@@ -342,6 +357,7 @@ fun EventDetailScreen(
                                     }
                                 }
                             }
+                            } // end else (not sessionIsPast)
                         }
 
                         Spacer(
@@ -491,6 +507,122 @@ fun EventDetailScreen(
                             }
                         }
 
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // ── Notas del grupo ──────────────────────────────────
+                        FadeIn(delayMs = 350) {
+                            AppleCard(modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text(
+                                        text = "Notas del grupo",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    val participantsWithNotes = uiState.participants.filter { it.notes.isNotEmpty() }
+                                    if (participantsWithNotes.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        participantsWithNotes.forEachIndexed { pIndex, participant ->
+                                            if (pIndex > 0) {
+                                                HorizontalDivider(
+                                                    modifier = Modifier.padding(vertical = 8.dp),
+                                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                                                )
+                                            }
+                                            val isMySection = participant.userId == uiState.myUserId
+                                            Text(
+                                                text = participant.name,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            participant.notes.forEachIndexed { noteIndex, noteText ->
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = noteText,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                        modifier = Modifier.weight(1f)
+                                                    )
+                                                    if (isMySection) {
+                                                        IconButton(
+                                                            onClick = {
+                                                                viewModel.startEditNote(noteIndex)
+                                                                showNoteDialog = true
+                                                            },
+                                                            modifier = Modifier.size(32.dp),
+                                                            enabled = !uiState.isSavingAvailability
+                                                        ) {
+                                                            Icon(
+                                                                Icons.Filled.Edit,
+                                                                contentDescription = "Editar nota",
+                                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                modifier = Modifier.size(16.dp)
+                                                            )
+                                                        }
+                                                        IconButton(
+                                                            onClick = { viewModel.deleteMyNote(noteIndex) },
+                                                            modifier = Modifier.size(32.dp),
+                                                            enabled = !uiState.isSavingAvailability
+                                                        ) {
+                                                            Icon(
+                                                                Icons.Filled.Delete,
+                                                                contentDescription = "Borrar nota",
+                                                                tint = Color(0xFFFD3744),
+                                                                modifier = Modifier.size(16.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if (uiState.myName.isNotBlank()) {
+                                        if (participantsWithNotes.isNotEmpty()) {
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(vertical = 12.dp),
+                                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                                            )
+                                        } else {
+                                            Spacer(modifier = Modifier.height(12.dp))
+                                        }
+                                        val addNoteInteraction = remember { MutableInteractionSource() }
+                                        Button(
+                                            onClick = {
+                                                viewModel.startAddNote()
+                                                showNoteDialog = true
+                                            },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .pressScale(addNoteInteraction),
+                                            interactionSource = addNoteInteraction,
+                                            shape = FullRoundShape,
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                                                contentColor = MaterialTheme.colorScheme.onSurface
+                                            ),
+                                            elevation = ButtonDefaults.buttonElevation(
+                                                defaultElevation = 0.dp,
+                                                pressedElevation = 0.dp
+                                            )
+                                        ) {
+                                            Text("Añadir nota")
+                                        }
+                                    } else if (participantsWithNotes.isEmpty()) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = "Edita tu disponibilidad primero para añadir una nota.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
                         Spacer(modifier = Modifier.height(20.dp))
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                         Spacer(modifier = Modifier.height(20.dp))
@@ -561,7 +693,7 @@ fun EventDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.25f))
+                .background(Color.Black.copy(alpha = 0.4f))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
@@ -605,7 +737,7 @@ fun EventDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.25f))
+                .background(Color.Black.copy(alpha = 0.4f))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
@@ -666,6 +798,61 @@ fun EventDetailScreen(
                     viewModel.clearConfirmedDate()
                 }
             )
+        }
+    }
+
+    AnimatedVisibility(
+        visible = showNoteDialog,
+        enter = fadeIn(tween(220)),
+        exit  = fadeOut(tween(200))
+    ) {
+        val animScope = this
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f))
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) {
+                    viewModel.dismissNoteDialog()
+                    showNoteDialog = false
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            with(animScope) {
+                Box(
+                    modifier = Modifier.animateEnterExit(
+                        enter = scaleIn(
+                            initialScale = 0.86f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness    = Spring.StiffnessMediumLow
+                            )
+                        ) + fadeIn(tween(180)),
+                        exit = scaleOut(
+                            targetScale   = 0.92f,
+                            animationSpec = tween(160)
+                        ) + fadeOut(tween(160))
+                    )
+                ) {
+                    NoteEditDialog(
+                        hazeState = hazeState,
+                        title = if (uiState.myEditingNoteIndex != null) "Editar nota" else "Añadir nota",
+                        note = uiState.myDraftNote,
+                        onNoteChanged = viewModel::onMyNoteChanged,
+                        isSaving = uiState.isSavingAvailability,
+                        onSave = {
+                            viewModel.saveMyNote()
+                            showNoteDialog = false
+                        },
+                        onDismiss = {
+                            viewModel.dismissNoteDialog()
+                            showNoteDialog = false
+                        }
+                    )
+                }
+            }
         }
     }
 
@@ -874,6 +1061,85 @@ private fun DeleteSessionDialog(
                 )
             ) {
                 Text("Borrar sesion", fontWeight = FontWeight.SemiBold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun NoteEditDialog(
+    hazeState: HazeState,
+    title: String,
+    note: String,
+    onNoteChanged: (String) -> Unit,
+    isSaving: Boolean,
+    onSave: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val isDark = isSystemInDarkTheme()
+    val dialogShape = RoundedCornerShape(28.dp)
+    val tintColor = if (isDark) Color(0xFF1C1C1E).copy(alpha = 0.82f) else Color.White.copy(alpha = 0.82f)
+    val borderBrush = if (isDark)
+        Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.25f), Color.Transparent))
+    else
+        Brush.verticalGradient(listOf(Color.White, Color.Transparent))
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth(0.85f)
+            .wrapContentHeight()
+            .clip(dialogShape)
+            .hazeEffect(state = hazeState) {
+                blurRadius = 20.dp
+                backgroundColor = if (isDark) Color(0xFF1C1C1E) else Color.White
+                tints = listOf(HazeTint(tintColor))
+            }
+            .border(1.dp, borderBrush, dialogShape)
+            .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {}
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            AppleTextField(
+                value = note,
+                onValueChange = onNoteChanged,
+                label = "Tu nota",
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = false
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            val saveInteraction = remember { MutableInteractionSource() }
+            Button(
+                onClick = onSave,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pressScale(saveInteraction),
+                interactionSource = saveInteraction,
+                shape = FullRoundShape,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp
+                ),
+                enabled = note.isNotBlank() && !isSaving
+            ) {
+                if (isSaving) {
+                    LoadingDots(
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(end = 10.dp)
+                    )
+                }
+                Text("Guardar")
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Cancelar")
             }
         }
     }
@@ -1153,54 +1419,79 @@ private fun SessionCountdown(
 ) {
     val today = LocalDate.now()
     val daysLeft = ChronoUnit.DAYS.between(today, confirmedDate)
-    val dateLabel = confirmedDate.format(
-        DateTimeFormatter.ofPattern("EEE d", Locale("es"))
-    ).replaceFirstChar { it.uppercaseChar() }
+    val isPast = daysLeft < 0
+    val daysAgo = -daysLeft
 
     Column(modifier = modifier) {
         Text(
-            text = "PRÓXIMA SESIÓN",
+            text = if (isPast) "SESIÓN PASADA" else "PRÓXIMA SESIÓN",
             style = MaterialTheme.typography.labelSmall.copy(
                 letterSpacing = 2.sp,
                 fontWeight = FontWeight.Bold
             ),
-            color = MaterialTheme.colorScheme.primary
+            color = if (isPast) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(2.dp))
-        Row(verticalAlignment = Alignment.Bottom) {
-            if (daysLeft <= 0) {
+        if (isPast) {
+            val pastLabel = confirmedDate.format(
+                DateTimeFormatter.ofPattern("EEE d 'de' MMMM", Locale("es"))
+            ).replaceFirstChar { it.uppercaseChar() }
+            Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    text = "HOY",
-                    style = MaterialTheme.typography.displayLarge.copy(
+                    text = pastLabel,
+                    style = MaterialTheme.typography.displaySmall.copy(
                         fontWeight = FontWeight.Black,
-                        fontSize = 72.sp,
-                        letterSpacing = (-2).sp
+                        letterSpacing = (-1).sp
                     ),
                     color = MaterialTheme.colorScheme.onSurface
                 )
-            } else {
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = String.format("%02d", daysLeft),
-                    style = MaterialTheme.typography.displayLarge.copy(
-                        fontWeight = FontWeight.Black,
-                        fontSize = 88.sp,
-                        letterSpacing = (-4).sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = "hace $daysAgo día${if (daysAgo == 1L) "" else "s"}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 6.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(10.dp))
-            Column(modifier = Modifier.padding(bottom = 10.dp)) {
-                Text(
-                    text = if (daysLeft <= 0) "" else "días",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = dateLabel,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        } else {
+            val dateLabel = confirmedDate.format(
+                DateTimeFormatter.ofPattern("EEE d", Locale("es"))
+            ).replaceFirstChar { it.uppercaseChar() }
+            Row(verticalAlignment = Alignment.Bottom) {
+                if (daysLeft == 0L) {
+                    Text(
+                        text = "HOY",
+                        style = MaterialTheme.typography.displayLarge.copy(
+                            fontWeight = FontWeight.Black,
+                            fontSize = 72.sp,
+                            letterSpacing = (-2).sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                } else {
+                    Text(
+                        text = String.format(Locale("es"), "%02d", daysLeft),
+                        style = MaterialTheme.typography.displayLarge.copy(
+                            fontWeight = FontWeight.Black,
+                            fontSize = 88.sp,
+                            letterSpacing = (-4).sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.padding(bottom = 10.dp)) {
+                    Text(
+                        text = if (daysLeft == 0L) "" else "días",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = dateLabel,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }

@@ -15,8 +15,9 @@ class ComputeDateSummariesUseCase @Inject constructor() {
     ): List<DateSummary> {
         if (participants.isEmpty()) return emptyList()
         val total = participants.size
+        val today = LocalDate.now()
 
-        return dates.map { date ->
+        return dates.filter { !it.isBefore(today) }.map { date ->
             val count = participants.count { p -> date in (availability[p.userId] ?: emptySet()) }
             val absentNames = participants
                 .filter { p -> date !in (availability[p.userId] ?: emptySet()) }

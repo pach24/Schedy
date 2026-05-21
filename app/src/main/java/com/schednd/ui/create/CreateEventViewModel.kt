@@ -100,11 +100,14 @@ class CreateEventViewModel @Inject constructor(
     private fun observeParticipants(code: String) {
         viewModelScope.launch {
             eventRepository.observeParticipants(code).collect { participants ->
+                val today = LocalDate.now()
                 val counts = mutableMapOf<LocalDate, Int>()
                 participants.forEach { p ->
                     p.availableDates.forEach { ts ->
                         val date = ts.toLocalDate()
-                        counts[date] = (counts[date] ?: 0) + 1
+                        if (!date.isBefore(today)) {
+                            counts[date] = (counts[date] ?: 0) + 1
+                        }
                     }
                 }
                 _uiState.update { it.copy(dateAttendeeCount = counts) }

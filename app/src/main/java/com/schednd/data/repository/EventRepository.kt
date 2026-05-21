@@ -71,7 +71,9 @@ class EventRepository @Inject constructor(
                         name = doc.getString("name") ?: "",
                         availableDates = (doc.get("availableDates") as? List<*>)
                             ?.filterIsInstance<Timestamp>()
-                            ?: emptyList()
+                            ?: emptyList(),
+                        notes = (doc.get("notes") as? List<*>)?.filterIsInstance<String>()
+                            ?: listOfNotNull(doc.getString("note")?.takeIf { it.isNotBlank() })
                     )
                 } ?: emptyList()
                 trySend(participants)
@@ -83,11 +85,14 @@ class EventRepository @Inject constructor(
         code: String,
         userId: String,
         name: String,
-        dates: List<LocalDate>
+        dates: List<LocalDate>,
+        notes: List<String> = emptyList()
     ) {
+        val today = LocalDate.now()
         val data = hashMapOf(
             "name" to name,
-            "availableDates" to dates.map { it.toTimestamp() }
+            "availableDates" to dates.filter { !it.isBefore(today) }.map { it.toTimestamp() },
+            "notes" to notes
         )
         eventsCollection.document(code)
             .collection("participants")
