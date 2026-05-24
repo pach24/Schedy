@@ -8,6 +8,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.storage.FirebaseStorage
+import com.schednd.data.repository.PlayerRepository
 import com.schednd.data.repository.RecentEventsRepository
 import dagger.Module
 import dagger.Provides
@@ -40,4 +41,9 @@ object AppModule {
     @Singleton
     fun provideRecentEventsRepository(@ApplicationContext context: Context): RecentEventsRepository =
         RecentEventsRepository(context)
+
+    @Provides
+    @Singleton
+    fun providePlayerRepository(@ApplicationContext context: Context): PlayerRepository =
+        PlayerRepository(context)
 }

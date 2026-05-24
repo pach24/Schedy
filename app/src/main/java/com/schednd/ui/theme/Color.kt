@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.Color
 // Primary actions are white/black depending on theme
 
 // Light mode
-val LightBackground = Color(0xFFF4F4F6)
+val LightBackground = Color(0xFFF2F2F7)
 val LightSurface = Color(0xFFFFFFFF)
 val LightSurfaceVariant = Color(0xFFEEEEEE)
 val LightOnSurface = Color(0xFF111111)
@@ -30,6 +30,13 @@ val TierFull = Color(0xFF2DC653)
 val TierViable = Color(0xFFE8A317)
 val TierLimited = Color(0xFFD4712A)
 val TierInsufficient = Color(0xFFD43030)
+
+// Tag colors — para las etiquetas de notas
+val TagTrama = Color(0xFF7C5CE5)
+val TagLoot = Color(0xFFE8A317)
+val TagNpc = Color(0xFF1A95FF)
+val TagPersonaje = Color(0xFF2DC653)
+val TagOtros = Color(0xFF8A8A8E)
 
 // Avatar palette — muted, desaturated tones
 val AvatarColors = listOf(

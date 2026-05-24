@@ -13,18 +13,30 @@ class RecentEventsRepository @Inject constructor(
     }
 
     fun saveEvent(code: String) {
-        val current = getSavedCodes().toMutableSet()
-        current.add(code)
-        prefs.edit().putStringSet("codes", current).apply()
+        val current = getSavedCodes().toMutableList()
+        current.remove(code)
+        current.add(0, code) // más reciente primero
+        prefs.edit().putString("codes_ordered", current.joinToString(",")).apply()
     }
 
     fun removeEvent(code: String) {
-        val current = getSavedCodes().toMutableSet()
+        val current = getSavedCodes().toMutableList()
         current.remove(code)
-        prefs.edit().putStringSet("codes", current).apply()
+        prefs.edit().putString("codes_ordered", current.joinToString(",")).apply()
     }
 
-    fun getSavedCodes(): Set<String> {
-        return prefs.getStringSet("codes", emptySet()) ?: emptySet()
+    fun getSavedCodes(): List<String> {
+        val ordered = prefs.getString("codes_ordered", null)
+        if (ordered != null) {
+            return if (ordered.isBlank()) emptyList() else ordered.split(",")
+        }
+        // Migración desde formato antiguo (StringSet)
+        val legacy = prefs.getStringSet("codes", emptySet()) ?: emptySet()
+        if (legacy.isNotEmpty()) {
+            val list = legacy.toList()
+            prefs.edit().putString("codes_ordered", list.joinToString(",")).apply()
+            return list
+        }
+        return emptyList()
     }
 }
