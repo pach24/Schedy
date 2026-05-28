@@ -95,6 +95,7 @@ import com.schednd.domain.model.AttendanceTier
 import com.schednd.domain.model.DateSummary
 import java.time.LocalDate
 import com.schednd.ui.components.AppleCard
+import com.schednd.ui.components.AppleTopBar
 import com.schednd.ui.components.AvailabilityGrid
 import com.schednd.ui.components.getHeatmapColor
 import com.schednd.ui.theme.FadeIn
@@ -123,7 +124,8 @@ import com.schednd.ui.theme.SchedndTheme
 fun EventDetailScreen(
     viewModel: EventDetailViewModel,
     onBack: () -> Unit,
-    onEditAvailability: () -> Unit
+    onEditAvailability: () -> Unit,
+    bottomPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(0.dp)
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val clipboardManager = LocalClipboardManager.current
@@ -131,7 +133,6 @@ fun EventDetailScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showMoreDialog by remember { mutableStateOf(false) }
     var showConfirmDateDialog by remember { mutableStateOf(false) }
-    var showNoteDialog by remember { mutableStateOf(false) }
     var copiedCode by remember { mutableStateOf(false) }
     var copyBounceScale by remember { mutableStateOf(1f) }
     val copyIconScale by animateFloatAsState(
@@ -165,7 +166,7 @@ fun EventDetailScreen(
         }
     }
 
-    val anyDialogOpen = showDeleteDialog || showMoreDialog || showNoteDialog
+    val anyDialogOpen = showDeleteDialog || showMoreDialog
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
 
@@ -220,9 +221,6 @@ fun EventDetailScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            // 1. ELIMINAR statusBarsPadding() de aquí
-                            // 2. ELIMINAR padding(top = 64.dp) de aquí
-                            .navigationBarsPadding()
                             .padding(horizontal = 16.dp)
                             .verticalScroll(scrollState)
                     ) {
@@ -507,122 +505,6 @@ fun EventDetailScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // ── Notas del grupo ──────────────────────────────────
-                        FadeIn(delayMs = 350) {
-                            AppleCard(modifier = Modifier.fillMaxWidth()) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = "Notas del grupo",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    val participantsWithNotes = uiState.participants.filter { it.notes.isNotEmpty() }
-                                    if (participantsWithNotes.isNotEmpty()) {
-                                        Spacer(modifier = Modifier.height(10.dp))
-                                        participantsWithNotes.forEachIndexed { pIndex, participant ->
-                                            if (pIndex > 0) {
-                                                HorizontalDivider(
-                                                    modifier = Modifier.padding(vertical = 8.dp),
-                                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                                                )
-                                            }
-                                            val isMySection = participant.userId == uiState.myUserId
-                                            Text(
-                                                text = participant.name,
-                                                style = MaterialTheme.typography.labelMedium,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            participant.notes.forEachIndexed { noteIndex, noteText ->
-                                                Row(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Text(
-                                                        text = noteText,
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        color = MaterialTheme.colorScheme.onSurface,
-                                                        modifier = Modifier.weight(1f)
-                                                    )
-                                                    if (isMySection) {
-                                                        IconButton(
-                                                            onClick = {
-                                                                viewModel.startEditNote(noteIndex)
-                                                                showNoteDialog = true
-                                                            },
-                                                            modifier = Modifier.size(32.dp),
-                                                            enabled = !uiState.isSavingAvailability
-                                                        ) {
-                                                            Icon(
-                                                                Icons.Filled.Edit,
-                                                                contentDescription = "Editar nota",
-                                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                                modifier = Modifier.size(16.dp)
-                                                            )
-                                                        }
-                                                        IconButton(
-                                                            onClick = { viewModel.deleteMyNote(noteIndex) },
-                                                            modifier = Modifier.size(32.dp),
-                                                            enabled = !uiState.isSavingAvailability
-                                                        ) {
-                                                            Icon(
-                                                                Icons.Filled.Delete,
-                                                                contentDescription = "Borrar nota",
-                                                                tint = Color(0xFFFD3744),
-                                                                modifier = Modifier.size(16.dp)
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if (uiState.myName.isNotBlank()) {
-                                        if (participantsWithNotes.isNotEmpty()) {
-                                            HorizontalDivider(
-                                                modifier = Modifier.padding(vertical = 12.dp),
-                                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                                            )
-                                        } else {
-                                            Spacer(modifier = Modifier.height(12.dp))
-                                        }
-                                        val addNoteInteraction = remember { MutableInteractionSource() }
-                                        Button(
-                                            onClick = {
-                                                viewModel.startAddNote()
-                                                showNoteDialog = true
-                                            },
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .pressScale(addNoteInteraction),
-                                            interactionSource = addNoteInteraction,
-                                            shape = FullRoundShape,
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                                                contentColor = MaterialTheme.colorScheme.onSurface
-                                            ),
-                                            elevation = ButtonDefaults.buttonElevation(
-                                                defaultElevation = 0.dp,
-                                                pressedElevation = 0.dp
-                                            )
-                                        ) {
-                                            Text("Añadir nota")
-                                        }
-                                    } else if (participantsWithNotes.isEmpty()) {
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
-                                            text = "Edita tu disponibilidad primero para añadir una nota.",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
                         Spacer(modifier = Modifier.height(20.dp))
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                         Spacer(modifier = Modifier.height(20.dp))
@@ -668,7 +550,7 @@ fun EventDetailScreen(
                                 color = MaterialTheme.colorScheme.onSurface)
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(24.dp + bottomPadding.calculateBottomPadding()))
                     }
                 }
             }
@@ -677,11 +559,10 @@ fun EventDetailScreen(
     }
 
     AppleTopBar(
-        title     = uiState.event?.name ?: "Sesion",
-        isCreator = uiState.isCreator,
+        title = uiState.event?.name ?: "Sesion",
         hazeState = hazeState,
-        onBack    = onBack,
-        onMore    = { showMoreDialog = true }
+        onBack = onBack,
+        onTrailingClick = { showMoreDialog = true }
     )
 
     AnimatedVisibility(
@@ -801,61 +682,6 @@ fun EventDetailScreen(
         }
     }
 
-    AnimatedVisibility(
-        visible = showNoteDialog,
-        enter = fadeIn(tween(220)),
-        exit  = fadeOut(tween(200))
-    ) {
-        val animScope = this
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.4f))
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) {
-                    viewModel.dismissNoteDialog()
-                    showNoteDialog = false
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            with(animScope) {
-                Box(
-                    modifier = Modifier.animateEnterExit(
-                        enter = scaleIn(
-                            initialScale = 0.86f,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness    = Spring.StiffnessMediumLow
-                            )
-                        ) + fadeIn(tween(180)),
-                        exit = scaleOut(
-                            targetScale   = 0.92f,
-                            animationSpec = tween(160)
-                        ) + fadeOut(tween(160))
-                    )
-                ) {
-                    NoteEditDialog(
-                        hazeState = hazeState,
-                        title = if (uiState.myEditingNoteIndex != null) "Editar nota" else "Añadir nota",
-                        note = uiState.myDraftNote,
-                        onNoteChanged = viewModel::onMyNoteChanged,
-                        isSaving = uiState.isSavingAvailability,
-                        onSave = {
-                            viewModel.saveMyNote()
-                            showNoteDialog = false
-                        },
-                        onDismiss = {
-                            viewModel.dismissNoteDialog()
-                            showNoteDialog = false
-                        }
-                    )
-                }
-            }
-        }
-    }
-
     } // Box
 }
 
@@ -889,113 +715,6 @@ private fun AppleActionButton(
             horizontalArrangement = Arrangement.Center,
             content = { content() }
         )
-    }
-}
-
-@Composable
-private fun AppleTopBar(
-    title: String,
-    isCreator: Boolean,
-    hazeState: HazeState,
-    onBack: () -> Unit,
-    onMore: () -> Unit
-) {
-    val isDark = isSystemInDarkTheme()
-    val bgColor = if (isDark) Color(0xFF1C1C1E) else Color.White
-    val tintColor = if (isDark) Color(0xFF1C1C1E).copy(alpha = 0.75f) else Color.White.copy(alpha = 0.75f)
-    val btnBorder = Brush.verticalGradient(
-        listOf(
-            Color.White.copy(alpha = if (isDark) 0.22f else 1f),
-            Color.White.copy(alpha = if (isDark) 0.05f else 0.35f)
-        )
-    )
-    val iconTint = MaterialTheme.colorScheme.onSurface
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // ← Back button (circle)
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .hazeEffect(state = hazeState) {
-                    blurRadius = 20.dp
-                    backgroundColor = bgColor
-                    tints = listOf(HazeTint(tintColor))
-                }
-                .border(1.dp, btnBorder, CircleShape)
-                .clickable(
-                    indication = LocalIndication.current,
-                    interactionSource = remember { MutableInteractionSource() },
-                    onClick = onBack
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBackIos,
-                contentDescription = "Volver",
-                tint = iconTint,
-                modifier = Modifier
-                    .size(16.dp)
-                    .padding(start = 3.dp)
-            )
-        }
-
-        // Title pill (center, flexible width)
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 10.dp)
-                .height(44.dp)
-                .clip(RoundedCornerShape(22.dp))
-                .hazeEffect(state = hazeState) {
-                    blurRadius = 20.dp
-                    backgroundColor = bgColor
-                    tints = listOf(HazeTint(tintColor))
-                }
-                .border(1.dp, btnBorder, RoundedCornerShape(22.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = iconTint,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 12.dp)
-            )
-        }
-
-        // ··· More button (circle) — visible para todos
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .hazeEffect(state = hazeState) {
-                    blurRadius = 20.dp
-                    backgroundColor = bgColor
-                    tints = listOf(HazeTint(tintColor))
-                }
-                .border(1.dp, btnBorder, CircleShape)
-                .clickable(
-                    indication = LocalIndication.current,
-                    interactionSource = remember { MutableInteractionSource() },
-                    onClick = onMore
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Filled.MoreHoriz,
-                contentDescription = "Mas opciones",
-                tint = iconTint,
-                modifier = Modifier.size(20.dp)
-            )
-        }
     }
 }
 
@@ -1066,84 +785,6 @@ private fun DeleteSessionDialog(
     }
 }
 
-@Composable
-private fun NoteEditDialog(
-    hazeState: HazeState,
-    title: String,
-    note: String,
-    onNoteChanged: (String) -> Unit,
-    isSaving: Boolean,
-    onSave: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    val isDark = isSystemInDarkTheme()
-    val dialogShape = RoundedCornerShape(28.dp)
-    val tintColor = if (isDark) Color(0xFF1C1C1E).copy(alpha = 0.82f) else Color.White.copy(alpha = 0.82f)
-    val borderBrush = if (isDark)
-        Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.25f), Color.Transparent))
-    else
-        Brush.verticalGradient(listOf(Color.White, Color.Transparent))
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth(0.85f)
-            .wrapContentHeight()
-            .clip(dialogShape)
-            .hazeEffect(state = hazeState) {
-                blurRadius = 20.dp
-                backgroundColor = if (isDark) Color(0xFF1C1C1E) else Color.White
-                tints = listOf(HazeTint(tintColor))
-            }
-            .border(1.dp, borderBrush, dialogShape)
-            .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {}
-    ) {
-        Column(modifier = Modifier.padding(24.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            AppleTextField(
-                value = note,
-                onValueChange = onNoteChanged,
-                label = "Tu nota",
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = false
-            )
-            Spacer(modifier = Modifier.height(20.dp))
-            val saveInteraction = remember { MutableInteractionSource() }
-            Button(
-                onClick = onSave,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .pressScale(saveInteraction),
-                interactionSource = saveInteraction,
-                shape = FullRoundShape,
-                elevation = ButtonDefaults.buttonElevation(
-                    defaultElevation = 0.dp,
-                    pressedElevation = 0.dp
-                ),
-                enabled = note.isNotBlank() && !isSaving
-            ) {
-                if (isSaving) {
-                    LoadingDots(
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.padding(end = 10.dp)
-                    )
-                }
-                Text("Guardar")
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Cancelar")
-            }
-        }
-    }
-}
 
 @Composable
 private fun MoreOptionsDialog(
@@ -1514,10 +1155,9 @@ private fun PreviewAppleTopBarDark() {
         ) {
             AppleTopBar(
                 title = "Partida de D&D: El Resurgir",
-                isCreator = true,
                 hazeState = remember { HazeState() },
                 onBack = {},
-                onMore = {}
+                onTrailingClick = {}
             )
         }
     }
@@ -1539,10 +1179,9 @@ private fun PreviewAppleTopBarLight() {
         ) {
             AppleTopBar(
                 title = "Partida de D&D: El Resurgir",
-                isCreator = false,
                 hazeState = remember { HazeState() },
                 onBack = {},
-                onMore = {}
+                onTrailingClick = {}
             )
         }
     }
@@ -1650,10 +1289,9 @@ private fun EventDetailBodyPreviewLight() {
             }
             AppleTopBar(
                 title = "Partida de D&D: El Resurgir",
-                isCreator = true,
                 hazeState = remember { HazeState() },
                 onBack = {},
-                onMore = {}
+                onTrailingClick = {}
             )
         }
     }
@@ -1712,11 +1350,332 @@ private fun EventDetailEmptyPreviewDark() {
             }
             AppleTopBar(
                 title = "One-Shot Halloween",
-                isCreator = true,
                 hazeState = remember { HazeState() },
                 onBack = {},
-                onMore = {}
+                onTrailingClick = {}
             )
         }
+    }
+}
+
+// ── MOCK SESIÓN 23 ────────────────────────────────────────────────────────────
+
+@Preview(
+    name = "Mock – Sesión 23 (Dark)",
+    showBackground = true,
+    device = "spec:width=411dp,height=891dp",
+    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES,
+    backgroundColor = 0xFF0D0D0F
+)
+@Composable
+private fun MockSession23Dark() {
+    SchedndTheme(darkTheme = true) {
+        Session23MockContent(darkTheme = true)
+    }
+}
+
+@Preview(
+    name = "Mock – Sesión 23 (Light)",
+    showBackground = true,
+    device = "spec:width=411dp,height=891dp",
+    backgroundColor = 0xFFF4F4F6
+)
+@Composable
+private fun MockSession23Light() {
+    SchedndTheme(darkTheme = false) {
+        Session23MockContent(darkTheme = false)
+    }
+}
+
+@Composable
+private fun Session23MockContent(darkTheme: Boolean) {
+    val today = LocalDate.now()
+    val confirmedDate = today.plusDays(5)
+
+    val d1 = today.plusDays(5)
+    val d2 = today.plusDays(12)
+    val d3 = today.plusDays(19)
+    val d4 = today.plusDays(26)
+    val dates = listOf(d1, d2, d3, d4)
+
+    val participants = listOf(
+        Participant(userId = "u1", name = "Kira",    notes = listOf("Llego tarde el sábado", "Prefiero empezar a las 18h")),
+        Participant(userId = "u2", name = "Aldric",  notes = listOf("Traigo snacks")),
+        Participant(userId = "u3", name = "Veyra",   notes = emptyList()),
+        Participant(userId = "u4", name = "Tormund", notes = listOf("Puedo DM si hace falta")),
+        Participant(userId = "u5", name = "Sylwen",  notes = emptyList()),
+    )
+
+    val participantAvailability = mapOf(
+        "u1" to setOf(d1, d2, d4),
+        "u2" to setOf(d1, d2, d3),
+        "u3" to setOf(d1, d3, d4),
+        "u4" to setOf(d1, d2, d3, d4),
+        "u5" to setOf(d2, d3),
+    )
+
+    val dateSummaries = listOf(
+        DateSummary(date = d1, count = 4, total = 5, absentNames = listOf("Sylwen"), tier = AttendanceTier.VIABLE),
+        DateSummary(date = d2, count = 4, total = 5, absentNames = listOf("Veyra"),  tier = AttendanceTier.VIABLE),
+        DateSummary(date = d3, count = 4, total = 5, absentNames = listOf("Kira"),   tier = AttendanceTier.VIABLE),
+        DateSummary(date = d4, count = 3, total = 5, absentNames = listOf("Aldric", "Sylwen"), tier = AttendanceTier.LIMITED),
+    )
+
+    val dateFormat = DateTimeFormatter.ofPattern("d 'de' MMMM", Locale("es"))
+    val confirmedFormat = DateTimeFormatter.ofPattern("d 'de' MMMM", Locale("es"))
+
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Spacer(modifier = Modifier.statusBarsPadding().height(72.dp))
+
+            // ── Countdown próxima sesión ──────────────────────────────────────
+            SessionCountdown(
+                confirmedDate = confirmedDate,
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 20.dp)
+            )
+
+            // ── Grid de disponibilidad ────────────────────────────────────────
+            AvailabilityGrid(
+                dates = dates,
+                participants = participants,
+                participantAvailability = participantAvailability,
+            )
+
+            // ── Leyenda ───────────────────────────────────────────────────────
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Disponibilidad:",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Baja",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    repeat(7) { level ->
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clip(SquircleMiniShape)
+                                .background(getHeatmapColor(level, 6))
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Alta",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // ── Fechas recomendadas ───────────────────────────────────────────
+            Spacer(modifier = Modifier.height(16.dp))
+            AppleCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Fechas recomendadas",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    dateSummaries.filter {
+                        it.tier == AttendanceTier.FULL || it.tier == AttendanceTier.VIABLE
+                    }.forEach { s ->
+                        val label = if (s.absentNames.isEmpty())
+                            "Asistencia completa · ${s.count}/${s.total}"
+                        else
+                            "Asisten ${s.count}/${s.total} · Falta: ${s.absentNames.joinToString(", ")}"
+                        Text(
+                            text = "· ${dateFormat.format(s.date)}  –  $label",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // ── Fecha elegida ─────────────────────────────────────────────────
+            AppleCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF1A95FF)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.Check,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column {
+                        Text(
+                            text = "Fecha elegida",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = confirmedFormat.format(confirmedDate),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ── Código de la sesión ───────────────────────────────────────────
+            AppleCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Codigo de la sesión",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "SES023",
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 4.sp
+                            ),
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Icon(Icons.Filled.ContentCopy, "Copiar", tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(Icons.Filled.Share, "Compartir", tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ── Notas del grupo ───────────────────────────────────────────────
+            AppleCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Notas del grupo",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    participants.filter { it.notes.isNotEmpty() }.forEachIndexed { pIndex, participant ->
+                        if (pIndex > 0) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                            )
+                        }
+                        Text(
+                            text = participant.name,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        participant.notes.forEach { noteText ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = noteText,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                // Kira es el usuario actual — muestra botones de edición
+                                if (participant.userId == "u1") {
+                                    Icon(
+                                        Icons.Filled.Edit,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Icon(
+                                        Icons.Filled.Delete,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFD3744),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    )
+                    Button(
+                        onClick = {},
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = FullRoundShape,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp, pressedElevation = 0.dp)
+                    ) {
+                        Text("Añadir nota")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // ── Botones de acción ─────────────────────────────────────────────
+            AppleActionButton(onClick = {}, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Filled.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Editar mi disponibilidad", color = MaterialTheme.colorScheme.onSurface)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            AppleActionButton(onClick = {}, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Filled.Share, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Compartir con el grupo", color = MaterialTheme.colorScheme.onSurface)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        AppleTopBar(
+            title = "Sesión 23",
+            hazeState = remember { HazeState() },
+            onBack = {},
+            onTrailingClick = {}
+        )
     }
 }
