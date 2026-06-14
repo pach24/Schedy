@@ -13,7 +13,7 @@ class SchedndMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
 
-        val title = message.notification?.title ?: "Schednd"
+        val title = message.notification?.title ?: "S&R"
         val body = message.notification?.body ?: "Alguien actualizo su disponibilidad"
 
         val notification = NotificationCompat.Builder(this, SchedndApp.NOTIFICATION_CHANNEL_ID)

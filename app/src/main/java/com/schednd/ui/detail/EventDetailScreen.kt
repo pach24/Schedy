@@ -1,6 +1,7 @@
 package com.schednd.ui.detail
 
 import android.content.Intent
+import android.provider.CalendarContract
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
@@ -91,6 +92,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.schednd.R
 import com.schednd.domain.model.AttendanceTier
 import com.schednd.domain.model.DateSummary
 import java.time.LocalDate
@@ -104,6 +106,7 @@ import com.schednd.ui.theme.PhaseEnterTransition
 import com.schednd.ui.theme.PhaseExitTransition
 import com.schednd.ui.theme.SquircleMiniShape
 import com.schednd.ui.theme.pressScale
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
@@ -428,6 +431,39 @@ fun EventDetailScreen(
                                         }
                                     }
                                 }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                AppleActionButton(
+                                    onClick = {
+                                        uiState.confirmedDate?.let { date ->
+                                            val startMillis = date
+                                                .atStartOfDay(ZoneId.systemDefault())
+                                                .toInstant().toEpochMilli()
+                                            val intent = Intent(Intent.ACTION_INSERT).apply {
+                                                data = CalendarContract.Events.CONTENT_URI
+                                                putExtra(
+                                                    CalendarContract.Events.TITLE,
+                                                    uiState.event?.name ?: "Sesión de rol"
+                                                )
+                                                putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, true)
+                                                putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, startMillis)
+                                                putExtra(CalendarContract.EXTRA_EVENT_END_TIME, startMillis)
+                                            }
+                                            runCatching { context.startActivity(intent) }
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        Icons.Filled.CalendarMonth,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "Añadir a calendario",
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                                 Spacer(modifier = Modifier.height(12.dp))
                             }
                         }
@@ -487,7 +523,7 @@ fun EventDetailScreen(
                                             action = Intent.ACTION_SEND
                                             putExtra(
                                                 Intent.EXTRA_TEXT,
-                                                "¡Únete a mi sesión de D&D en Schednd!\n\nEntra directamente aquí y solo pon tu nombre:\nschednd://join?code=$code\n\nO usa el código: $code"
+                                                context.getString(R.string.share_event, code)
                                             )
                                             type = "text/plain"
                                         }
@@ -532,7 +568,7 @@ fun EventDetailScreen(
                                     action = Intent.ACTION_SEND
                                     putExtra(
                                         Intent.EXTRA_TEXT,
-                                        "¡Únete a mi sesión de D&D en Schednd!\n\nEntra directamente aquí y solo pon tu nombre:\nschednd://join?code=$code\n\nO usa el código: $code"
+                                        context.getString(R.string.share_event, code)
                                     )
                                     type = "text/plain"
                                 }

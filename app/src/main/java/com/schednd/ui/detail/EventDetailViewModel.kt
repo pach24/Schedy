@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
 import com.schednd.data.repository.AuthRepository
 import com.schednd.data.repository.EventRepository
+import com.schednd.data.repository.PlayerRepository
 import com.schednd.data.repository.RecentEventsRepository
 import com.schednd.domain.model.AttendanceTier
 import com.schednd.domain.model.DateSummary
@@ -49,6 +50,7 @@ class EventDetailViewModel @Inject constructor(
     private val eventRepository: EventRepository,
     private val authRepository: AuthRepository,
     private val recentEventsRepository: RecentEventsRepository,
+    private val playerRepository: PlayerRepository,
     private val computeDateSummaries: ComputeDateSummariesUseCase
 ) : ViewModel() {
 
@@ -59,6 +61,10 @@ class EventDetailViewModel @Inject constructor(
     val uiState: StateFlow<EventDetailUiState> = _uiState
 
     init {
+        // Prefill con el nombre guardado; si ya soy participante, el collect lo sobrescribe con mi nombre real
+        playerRepository.getPlayerName()?.let { saved ->
+            _uiState.update { it.copy(myName = saved) }
+        }
         viewModelScope.launch {
             try {
                 authRepository.ensureSignedIn()
@@ -137,6 +143,9 @@ class EventDetailViewModel @Inject constructor(
     fun saveMyAvailability() {
         val state = _uiState.value
         if (state.myName.isBlank() || state.myDraftDates.isEmpty()) return
+
+        // Recordar el nombre para futuras sesiones
+        playerRepository.savePlayerName(state.myName.trim())
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSavingAvailability = true, error = null) }

@@ -179,7 +179,7 @@ fun OnboardingScreen(
                     )
                 ) {
                     Text(
-                        text = "Bienvenido a Schednd.\nEmpecemos por conocerte.",
+                        text = "Bienvenido a S&R.\nEmpecemos por conocerte.",
                         style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -329,7 +329,7 @@ private fun OnboardingPreview() {
                     )
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        text = "Bienvenido a Schednd.\nEmpecemos por conocerte.",
+                        text = "Bienvenido a S&R.\nEmpecemos por conocerte.",
                         style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -422,7 +422,7 @@ private fun OnboardingPreviewDark() {
                     )
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        text = "Bienvenido a Schednd.\nEmpecemos por conocerte.",
+                        text = "Bienvenido a S&R.\nEmpecemos por conocerte.",
                         style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

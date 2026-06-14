@@ -1,7 +1,7 @@
 # 🎲 S&R — Schedule and Role
 
 <p align="center">
-  <img src= "https://github.com/user-attachments/assets/3b2e68e8-c741-4dfd-9485-27186a50398c" alt="S&D Hero Banner" width="80%" />
+  <img src= "https://github.com/user-attachments/assets/3b2e68e8-c741-4dfd-9485-27186a50398c" alt="S&R Hero Banner" width="80%" />
 </p>
 
 <p align="center">
@@ -13,7 +13,7 @@
 
 ## ✨ Overview
 
-**S&R — Schedule and Role**is a modern Android application designed to solve the "scheduling boss fight" for tabletop RPG groups. It allows players to sync their availability in real-time, providing group leaders with data-driven insights to pick the perfect session date.
+**S&R — Schedule and Role** is a modern Android application designed to solve the "scheduling boss fight" for tabletop RPG groups. It allows players to sync their availability in real-time, providing group leaders with data-driven insights to pick the perfect session date.
 
 Instead of endless group chats and polls, participants submit their availability, and S&R automatically highlights the best dates based on group attendance.
 

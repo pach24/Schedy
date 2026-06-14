@@ -62,6 +62,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.schednd.R
 import com.schednd.ui.components.AppleTextField
 import com.schednd.ui.components.CalendarGrid
 import com.schednd.ui.components.LoadingDots
@@ -290,7 +291,7 @@ fun CreateEventContent(
                                         action = Intent.ACTION_SEND
                                         putExtra(
                                             Intent.EXTRA_TEXT,
-                                            "Unete a mi sesion de D&D en Schednd con el codigo: $code"
+                                            context.getString(R.string.share_event, code)
                                         )
                                         type = "text/plain"
                                     }

@@ -6,6 +6,7 @@ import com.google.firebase.Timestamp
 import com.schednd.data.repository.AuthRepository
 import com.schednd.data.repository.EventRepository
 import com.schednd.data.repository.MessagingRepository
+import com.schednd.data.repository.PlayerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,11 +32,19 @@ data class CreateEventUiState(
 class CreateEventViewModel @Inject constructor(
     private val eventRepository: EventRepository,
     private val authRepository: AuthRepository,
-    private val messagingRepository: MessagingRepository
+    private val messagingRepository: MessagingRepository,
+    private val playerRepository: PlayerRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateEventUiState())
     val uiState: StateFlow<CreateEventUiState> = _uiState
+
+    init {
+        // Prefill con el nombre guardado en el onboarding para no re-teclearlo
+        playerRepository.getPlayerName()?.let { saved ->
+            _uiState.update { it.copy(creatorName = saved) }
+        }
+    }
 
     fun onNameChanged(name: String) {
         _uiState.update { it.copy(eventName = name) }
@@ -56,6 +65,9 @@ class CreateEventViewModel @Inject constructor(
     fun onCreate() {
         val state = _uiState.value
         if (state.eventName.isBlank() || state.creatorName.isBlank()) return
+
+        // Recordar el nombre para futuras sesiones
+        playerRepository.savePlayerName(state.creatorName.trim())
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
