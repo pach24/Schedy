@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
 import com.schednd.data.repository.AuthRepository
 import com.schednd.data.repository.EventRepository
+import com.schednd.data.repository.NotificationRepository
 import com.schednd.data.repository.PlayerRepository
 import com.schednd.data.repository.RecentEventsRepository
+import com.schednd.data.work.SessionReminderScheduler
 import com.schednd.domain.model.AttendanceTier
 import com.schednd.domain.model.DateSummary
 import com.schednd.domain.usecase.ComputeDateSummariesUseCase
@@ -22,7 +24,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 
@@ -33,6 +37,7 @@ data class EventDetailUiState(
     val participantAvailability: Map<String, Set<LocalDate>> = emptyMap(),
     val dateSummaries: List<DateSummary> = emptyList(),
     val confirmedDate: LocalDate? = null,
+    val startTime: LocalTime? = null,
     val isCreator: Boolean = false,
     val isDeleted: Boolean = false,
     val isLoading: Boolean = true,
@@ -51,6 +56,8 @@ class EventDetailViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val recentEventsRepository: RecentEventsRepository,
     private val playerRepository: PlayerRepository,
+    private val notificationRepository: NotificationRepository,
+    private val reminderScheduler: SessionReminderScheduler,
     private val computeDateSummaries: ComputeDateSummariesUseCase
 ) : ViewModel() {
 
@@ -93,6 +100,20 @@ class EventDetailViewModel @Inject constructor(
 
                             val confirmedDate = event.confirmedDate?.toLocalDate()
                             val isCreator = event.creatorId == authRepository.getCurrentUserId()
+
+                            // Mantener el recordatorio local alineado con lo que diga Firestore,
+                            // aunque la fecha la haya cambiado otro dispositivo.
+                            if (confirmedDate != null) {
+                                reminderScheduler.schedule(
+                                    code = code,
+                                    sessionName = event.name,
+                                    date = confirmedDate,
+                                    startTime = event.startLocalTime
+                                )
+                            } else {
+                                reminderScheduler.cancel(code)
+                            }
+
                             val myParticipant = participants.find { it.userId == myUserId }
                             val mySavedDates = myParticipant?.availableDates
                                 ?.map { it.toLocalDate() }
@@ -107,6 +128,7 @@ class EventDetailViewModel @Inject constructor(
                                     participantAvailability = availability,
                                     dateSummaries = dateSummaries,
                                     confirmedDate = confirmedDate,
+                                    startTime = event.startLocalTime,
                                     isCreator = isCreator,
                                     isLoading = false,
                                     mySavedDates = mySavedDates,
@@ -158,6 +180,13 @@ class EventDetailViewModel @Inject constructor(
                     name = state.myName.trim(),
                     dates = state.myDraftDates.filter { !it.isBefore(today) }.sorted()
                 )
+                runCatching {
+                    notificationRepository.notifyAvailabilityUpdated(
+                        code = code,
+                        senderId = userId,
+                        senderName = state.myName.trim()
+                    )
+                }
                 _uiState.update { it.copy(isSavingAvailability = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSavingAvailability = false, error = e.message) }
@@ -165,17 +194,45 @@ class EventDetailViewModel @Inject constructor(
         }
     }
 
-    fun confirmDate(date: LocalDate) {
+    /** Fijar día y hora es potestad del DM; la UI y las reglas de Firestore lo restringen igual. */
+    fun confirmDate(date: LocalDate, startTime: LocalTime? = null) {
+        if (!_uiState.value.isCreator) return
         viewModelScope.launch {
-            try { eventRepository.confirmDate(code, date) }
+            try {
+                eventRepository.confirmDate(code, date, startTime)
+                val userId = authRepository.getCurrentUserId().orEmpty()
+                val whenText = buildString {
+                    append(date.format(DATE_FORMAT))
+                    startTime?.let { append(" a las ").append(it.format(TIME_FORMAT)) }
+                }
+                runCatching {
+                    notificationRepository.notifyDateConfirmed(code, userId, whenText)
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
+        }
+    }
+
+    fun setStartTime(startTime: LocalTime?) {
+        if (!_uiState.value.isCreator) return
+        viewModelScope.launch {
+            try { eventRepository.setStartTime(code, startTime) }
             catch (e: Exception) { _uiState.update { it.copy(error = e.message) } }
         }
     }
 
     fun clearConfirmedDate() {
+        if (!_uiState.value.isCreator) return
         viewModelScope.launch {
-            try { eventRepository.clearConfirmedDate(code) }
-            catch (e: Exception) { _uiState.update { it.copy(error = e.message) } }
+            try {
+                eventRepository.clearConfirmedDate(code)
+                reminderScheduler.cancel(code)
+                val userId = authRepository.getCurrentUserId().orEmpty()
+                runCatching { notificationRepository.notifyDateCleared(code, userId) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
         }
     }
 
@@ -193,5 +250,10 @@ class EventDetailViewModel @Inject constructor(
 
     private fun Timestamp.toLocalDate(): LocalDate {
         return Instant.ofEpochSecond(seconds).atZone(ZoneOffset.UTC).toLocalDate()
+    }
+
+    private companion object {
+        val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+        val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("d 'de' MMMM")
     }
 }

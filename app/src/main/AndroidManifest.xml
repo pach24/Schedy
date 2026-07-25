@@ -29,6 +29,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="schednd" android:host="join" />
+                <data android:scheme="schednd" android:host="event" />
             </intent-filter>
         </activity>
 

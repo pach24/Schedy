@@ -10,7 +10,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -123,15 +125,25 @@ class EventRepository @Inject constructor(
         return Timestamp(Date.from(instant))
     }
 
-    suspend fun confirmDate(code: String, date: LocalDate) {
+    /**
+     * Fija el día de la sesión y, opcionalmente, la hora de inicio.
+     * Pasar `startTime = null` deja la hora sin tocar (p. ej. al cambiar solo el día).
+     */
+    suspend fun confirmDate(code: String, date: LocalDate, startTime: LocalTime? = null) {
+        val updates = mutableMapOf<String, Any?>("confirmedDate" to date.toTimestamp())
+        if (startTime != null) updates["startTime"] = startTime.format(TIME_FORMAT)
+        eventsCollection.document(code).update(updates).await()
+    }
+
+    suspend fun setStartTime(code: String, startTime: LocalTime?) {
         eventsCollection.document(code)
-            .update("confirmedDate", date.toTimestamp())
+            .update("startTime", startTime?.format(TIME_FORMAT))
             .await()
     }
 
     suspend fun clearConfirmedDate(code: String) {
         eventsCollection.document(code)
-            .update("confirmedDate", null)
+            .update(mapOf("confirmedDate" to null, "startTime" to null))
             .await()
     }
 
@@ -141,7 +153,12 @@ class EventRepository @Inject constructor(
             name = getString("name") ?: "",
             creatorId = getString("creatorId") ?: "",
             createdAt = getTimestamp("createdAt") ?: Timestamp.now(),
-            confirmedDate = getTimestamp("confirmedDate")
+            confirmedDate = getTimestamp("confirmedDate"),
+            startTime = getString("startTime")
         )
+    }
+
+    private companion object {
+        val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
     }
 }
