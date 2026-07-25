@@ -90,7 +90,11 @@ fun SchedndNavGraph(
             route = "event/{code}",
             arguments = listOf(navArgument("code") { type = NavType.StringType })
         ) {
-            composable("event/{code}/home") { backStackEntry ->
+            composable(
+                route = "event/{code}/home",
+                // Entrada desde el push del grupo y desde el recordatorio local.
+                deepLinks = listOf(navDeepLink { uriPattern = "schednd://event/{code}" })
+            ) { backStackEntry ->
                 val code = backStackEntry.arguments?.getString("code").orEmpty()
                 val parentEntry = remember(backStackEntry) {
                     navController.getBackStackEntry("event/{code}")

@@ -1,0 +1,63 @@
+rules_version = '2';
+
+// Modelo: sesiones de rol identificadas por un código corto.
+// Auth anónima obligatoria; cualquiera autenticado puede leer un evento
+// (hace falta para poder unirse por código), pero escribir está acotado.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isCreator(code) {
+      return signedIn() &&
+        get(/databases/$(database)/documents/events/$(code)).data.creatorId == request.auth.uid;
+    }
+
+    match /events/{code} {
+      allow read: if signedIn();
+
+      // Solo puedes crear un evento a tu nombre.
+      allow create: if signedIn()
+        && request.resource.data.creatorId == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0;
+
+      // Fijar/quitar fecha y hora, o borrar la mesa: solo el DM creador.
+      // creatorId es inmutable.
+      allow update: if isCreator(code)
+        && request.resource.data.creatorId == resource.data.creatorId;
+      allow delete: if isCreator(code);
+
+      match /participants/{uid} {
+        allow read: if signedIn();
+        // Cada usuario solo escribe su propio documento de participante.
+        allow write: if signedIn() && uid == request.auth.uid;
+        // El creador puede limpiar participantes al borrar la mesa.
+        allow delete: if signedIn() && (uid == request.auth.uid || isCreator(code));
+      }
+
+      match /notes/{noteId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.authorId == request.auth.uid;
+        allow update, delete: if signedIn()
+          && resource.data.authorId == request.auth.uid;
+      }
+
+      match /pendingNotifications/{id} {
+        // La cola es de escritura: el cliente encola, la Cloud Function
+        // (Admin SDK, se salta las reglas) lee, publica y borra.
+        allow create: if signedIn()
+          && request.resource.data.senderId == request.auth.uid;
+        allow read, update, delete: if false;
+      }
+    }
+
+    // Todo lo demás queda cerrado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

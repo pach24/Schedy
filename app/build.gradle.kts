@@ -80,6 +80,9 @@ dependencies {
     // Haze (frosted glass)
     implementation(libs.haze)
 
+    // WorkManager (recordatorio local de sesión)
+    implementation(libs.androidx.work.runtime)
+
     // Core
     implementation(libs.coil.compose)
     implementation(libs.androidx.core.ktx)

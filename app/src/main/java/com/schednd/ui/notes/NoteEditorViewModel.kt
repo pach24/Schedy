@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.schednd.data.repository.AuthRepository
 import com.schednd.data.repository.EventRepository
 import com.schednd.data.repository.NoteRepository
+import com.schednd.data.repository.NotificationRepository
 import com.schednd.model.Note
 import com.schednd.model.NoteTag
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -41,7 +42,8 @@ class NoteEditorViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val noteRepository: NoteRepository,
     private val eventRepository: EventRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val notificationRepository: NotificationRepository
 ) : ViewModel() {
 
     private val code: String = savedStateHandle.get<String>("code")!!
@@ -138,8 +140,9 @@ class NoteEditorViewModel @Inject constructor(
                 }
                 if (state.notifyGroup) {
                     runCatching {
-                        noteRepository.enqueueNotification(
+                        notificationRepository.notifyNewNote(
                             code = code,
+                            senderId = userId,
                             noteId = resultId,
                             title = title,
                             authorName = state.authorName.ifBlank { "Anónimo" }

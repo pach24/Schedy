@@ -10,6 +10,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.storage.FirebaseStorage
 import com.schednd.data.repository.PlayerRepository
 import com.schednd.data.repository.RecentEventsRepository
+import com.schednd.data.work.SessionReminderScheduler
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -46,4 +47,9 @@ object AppModule {
     @Singleton
     fun providePlayerRepository(@ApplicationContext context: Context): PlayerRepository =
         PlayerRepository(context)
+
+    @Provides
+    @Singleton
+    fun provideSessionReminderScheduler(@ApplicationContext context: Context): SessionReminderScheduler =
+        SessionReminderScheduler(context)
 }

@@ -102,23 +102,4 @@ class NoteRepository @Inject constructor(
             )
         ).await()
     }
-
-    suspend fun enqueueNotification(
-        code: String,
-        noteId: String,
-        title: String,
-        authorName: String
-    ) {
-        val data = hashMapOf(
-            "type" to "NEW_NOTE",
-            "noteId" to noteId,
-            "title" to title,
-            "authorName" to authorName,
-            "createdAt" to FieldValue.serverTimestamp()
-        )
-        eventsCollection.document(code)
-            .collection("pendingNotifications")
-            .add(data)
-            .await()
-    }
 }

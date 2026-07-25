@@ -56,8 +56,11 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -96,6 +99,7 @@ import com.schednd.R
 import com.schednd.domain.model.AttendanceTier
 import com.schednd.domain.model.DateSummary
 import java.time.LocalDate
+import java.time.LocalTime
 import com.schednd.ui.components.AppleCard
 import com.schednd.ui.components.AppleTopBar
 import com.schednd.ui.components.AvailabilityGrid
@@ -136,6 +140,7 @@ fun EventDetailScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showMoreDialog by remember { mutableStateOf(false) }
     var showConfirmDateDialog by remember { mutableStateOf(false) }
+    var pendingConfirmDate by remember { mutableStateOf<LocalDate?>(null) }
     var copiedCode by remember { mutableStateOf(false) }
     var copyBounceScale by remember { mutableStateOf(1f) }
     val copyIconScale by animateFloatAsState(
@@ -381,6 +386,7 @@ fun EventDetailScreen(
                             exit = scaleOut(tween(160), targetScale = 0.88f) + fadeOut(tween(160))
                         ) {
                             val confirmedFormat = DateTimeFormatter.ofPattern("d 'de' MMMM", Locale("es"))
+                            val startTimeFormat = DateTimeFormatter.ofPattern("HH:mm")
                             Column {
                                 AppleCard(modifier = Modifier.fillMaxWidth()) {
                                     Row(
@@ -421,8 +427,11 @@ fun EventDetailScreen(
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                             Text(
-                                                text = uiState.confirmedDate?.let {
-                                                    confirmedFormat.format(it)
+                                                text = uiState.confirmedDate?.let { date ->
+                                                    val day = confirmedFormat.format(date)
+                                                    uiState.startTime
+                                                        ?.let { "$day · ${startTimeFormat.format(it)}" }
+                                                        ?: day
                                                 } ?: "",
                                                 style = MaterialTheme.typography.titleMedium,
                                                 fontWeight = FontWeight.SemiBold,
@@ -435,18 +444,30 @@ fun EventDetailScreen(
                                 AppleActionButton(
                                     onClick = {
                                         uiState.confirmedDate?.let { date ->
-                                            val startMillis = date
-                                                .atStartOfDay(ZoneId.systemDefault())
-                                                .toInstant().toEpochMilli()
+                                            val time = uiState.startTime
+                                            // Con hora fijada creamos un evento real de 3 h;
+                                            // sin ella, uno de día completo como hasta ahora.
+                                            val zone = ZoneId.systemDefault()
+                                            val start = (time?.let { date.atTime(it) }
+                                                ?: date.atStartOfDay())
+                                                .atZone(zone).toInstant().toEpochMilli()
+                                            val end = if (time != null) {
+                                                start + SESSION_DEFAULT_DURATION_MS
+                                            } else {
+                                                start
+                                            }
                                             val intent = Intent(Intent.ACTION_INSERT).apply {
                                                 data = CalendarContract.Events.CONTENT_URI
                                                 putExtra(
                                                     CalendarContract.Events.TITLE,
                                                     uiState.event?.name ?: "Sesión de rol"
                                                 )
-                                                putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, true)
-                                                putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, startMillis)
-                                                putExtra(CalendarContract.EXTRA_EVENT_END_TIME, startMillis)
+                                                putExtra(
+                                                    CalendarContract.EXTRA_EVENT_ALL_DAY,
+                                                    time == null
+                                                )
+                                                putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, start)
+                                                putExtra(CalendarContract.EXTRA_EVENT_END_TIME, end)
                                             }
                                             runCatching { context.startActivity(intent) }
                                         }
@@ -707,8 +728,9 @@ fun EventDetailScreen(
                 hazeState = hazeState,
                 onDateSelected = { date ->
                     showConfirmDateDialog = false
-                    viewModel.confirmDate(date)
-                    scrollToConfirmed = true
+                    // Elegido el día, preguntamos la hora: cuadrar solo el día
+                    // deja la coordinación a medias.
+                    pendingConfirmDate = date
                 },
                 onClearDate = {
                     showConfirmDateDialog = false
@@ -718,7 +740,55 @@ fun EventDetailScreen(
         }
     }
 
+    pendingConfirmDate?.let { date ->
+        StartTimePickerDialog(
+            initialTime = uiState.startTime ?: LocalTime.of(18, 0),
+            onDismiss = {
+                // Sin hora la sesión sigue siendo útil: fijamos solo el día.
+                pendingConfirmDate = null
+                viewModel.confirmDate(date, null)
+                scrollToConfirmed = true
+            },
+            onConfirm = { time ->
+                pendingConfirmDate = null
+                viewModel.confirmDate(date, time)
+                scrollToConfirmed = true
+            }
+        )
+    }
+
     } // Box
+}
+
+/** Duración por defecto del evento de calendario cuando la sesión tiene hora. */
+private const val SESSION_DEFAULT_DURATION_MS = 3L * 60 * 60 * 1000
+
+/** Selector de hora de inicio. Descartarlo confirma el día sin hora. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StartTimePickerDialog(
+    initialTime: LocalTime,
+    onDismiss: () -> Unit,
+    onConfirm: (LocalTime) -> Unit
+) {
+    val state = rememberTimePickerState(
+        initialHour = initialTime.hour,
+        initialMinute = initialTime.minute,
+        is24Hour = true
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("¿A qué hora empezáis?") },
+        text = { TimePicker(state = state) },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(LocalTime.of(state.hour, state.minute)) }) {
+                Text("Fijar hora")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Solo el día") }
+        }
+    )
 }
 
 @Composable
@@ -850,6 +920,30 @@ private fun MoreOptionsDialog(
             .border(1.dp, borderBrush, dialogShape)
     ) {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            // Fijar fecha y borrar son acciones del DM. Las reglas de Firestore
+            // rechazan ambas para el resto, así que la UI no las ofrece.
+            if (!isCreator) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.CalendarMonth,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Text(
+                        text = "Solo el DM puede fijar la fecha",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            if (isCreator) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -869,12 +963,11 @@ private fun MoreOptionsDialog(
                 )
                 Spacer(modifier = Modifier.width(14.dp))
                 Text(
-                    text = "Fijar fecha",
+                    text = "Fijar fecha y hora",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
-            if (isCreator) {
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = 20.dp),
                 color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
