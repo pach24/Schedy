@@ -65,6 +65,7 @@ import com.schednd.ui.components.ComingSoonDayDialog
 import com.schednd.ui.components.HomeScheduleCalendar
 import com.schednd.ui.session.SessionBottomBar
 import com.schednd.ui.session.SessionTab
+import com.schednd.ui.session.tabs.ProfileTabScreen
 import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.SchedndTheme
@@ -112,18 +113,14 @@ fun HomeContent(
     onJoinEvent: () -> Unit,
     onOpenEvent: (String) -> Unit
 ) {
-    var selectedTab by rememberSaveable { mutableStateOf(SessionTab.SESSION) }
+    var selectedTab by rememberSaveable { mutableStateOf(SessionTab.HOME) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             SessionBottomBar(
                 selectedTab = selectedTab,
-                onTabSelected = { tab ->
-                    if (tab == SessionTab.SESSION || tab == SessionTab.CALENDAR) {
-                        selectedTab = tab
-                    }
-                }
+                onTabSelected = { tab -> selectedTab = tab }
             )
         }
     ) { innerPadding ->
@@ -134,38 +131,40 @@ fun HomeContent(
         ) { tab ->
             when (tab) {
                 SessionTab.CALENDAR -> HomeCalendarTab(uiState = uiState, innerPadding = innerPadding)
-                else -> HomeSessionTab(
+                SessionTab.PROFILE -> ProfileTabScreen(
+                    bottomPadding = innerPadding,
+                    onBack = { selectedTab = SessionTab.HOME }
+                )
+                SessionTab.SESSIONS -> HomeSessionsTab(
                     uiState = uiState,
                     innerPadding = innerPadding,
                     onCreateEvent = onCreateEvent,
                     onJoinEvent = onJoinEvent,
                     onOpenEvent = onOpenEvent
                 )
+                SessionTab.HOME -> HomeMainTab(
+                    uiState = uiState,
+                    innerPadding = innerPadding,
+                    onCreateEvent = onCreateEvent,
+                    onJoinEvent = onJoinEvent,
+                    onSeeAllSessions = { selectedTab = SessionTab.SESSIONS }
+                )
             }
         }
     }
 }
 
+/** Pestaña Inicio: cuenta atrás de la próxima sesión y accesos rápidos. */
 @Composable
-private fun HomeSessionTab(
+private fun HomeMainTab(
     uiState: HomeUiState,
     innerPadding: PaddingValues,
     onCreateEvent: () -> Unit,
     onJoinEvent: () -> Unit,
-    onOpenEvent: (String) -> Unit
+    onSeeAllSessions: () -> Unit
 ) {
     if (!uiState.isAuthReady && uiState.error == null) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(
-                color = MaterialTheme.colorScheme.primary,
-                strokeWidth = 2.dp
-            )
-        }
+        LoadingTab(innerPadding = innerPadding)
         return
     }
 
@@ -176,7 +175,7 @@ private fun HomeSessionTab(
             bottom = innerPadding.calculateBottomPadding() + 24.dp
         )
     ) {
-        item { Header() }
+        item { Header(title = "Tus sesiones", greeting = "Hola") }
 
         if (uiState.error != null) {
             item {
@@ -210,6 +209,54 @@ private fun HomeSessionTab(
                 }
             }
         }
+
+        if (uiState.allSessions.isEmpty()) {
+            item {
+                EmptySessionsHint(modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp))
+            }
+        } else {
+            item {
+                SeeAllSessionsRow(
+                    total = uiState.allSessions.size,
+                    onClick = onSeeAllSessions,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+                )
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(12.dp)) }
+        item {
+            ActionButtons(
+                onCreateEvent = onCreateEvent,
+                onJoinEvent = onJoinEvent,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+        }
+    }
+}
+
+/** Pestaña Sesiones: el listado completo, próximas y pasadas. */
+@Composable
+private fun HomeSessionsTab(
+    uiState: HomeUiState,
+    innerPadding: PaddingValues,
+    onCreateEvent: () -> Unit,
+    onJoinEvent: () -> Unit,
+    onOpenEvent: (String) -> Unit
+) {
+    if (!uiState.isAuthReady && uiState.error == null) {
+        LoadingTab(innerPadding = innerPadding)
+        return
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            top = 0.dp,
+            bottom = innerPadding.calculateBottomPadding() + 24.dp
+        )
+    ) {
+        item { Header(title = "Sesiones") }
 
         if (uiState.allSessions.isEmpty()) {
             item {
@@ -271,6 +318,65 @@ private fun HomeSessionTab(
                 onCreateEvent = onCreateEvent,
                 onJoinEvent = onJoinEvent,
                 modifier = Modifier.padding(horizontal = 20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingTab(innerPadding: PaddingValues) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            color = MaterialTheme.colorScheme.primary,
+            strokeWidth = 2.dp
+        )
+    }
+}
+
+@Composable
+private fun SeeAllSessionsRow(
+    total: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interaction = remember { MutableInteractionSource() }
+    AppleCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .pressScale(interaction)
+            .clickable(
+                indication = LocalIndication.current,
+                interactionSource = interaction,
+                onClick = onClick
+            )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Todas las sesiones",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = if (total == 1) "1 sesión" else "$total sesiones",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -453,7 +559,7 @@ private fun EmptyCalendarHint(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun Header() {
+private fun Header(title: String, greeting: String? = null) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -478,13 +584,15 @@ private fun Header() {
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
+        if (greeting != null) {
+            Text(
+                text = greeting,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         Text(
-            text = "Hola",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = "Tus sesiones",
+            text = title,
             style = MaterialTheme.typography.displaySmall.copy(
                 fontWeight = FontWeight.Black,
                 letterSpacing = (-1).sp

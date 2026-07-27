@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import com.schednd.ui.detail.EventDetailScreen
 import com.schednd.ui.detail.EventDetailViewModel
 import com.schednd.ui.session.tabs.CalendarTabScreen
+import com.schednd.ui.session.tabs.ProfileTabScreen
 
 @Composable
 fun SessionShellScreen(
@@ -28,7 +29,7 @@ fun SessionShellScreen(
     onLeaveSession: () -> Unit,
     onEditAvailability: () -> Unit
 ) {
-    var selectedTab by rememberSaveable { mutableStateOf(SessionTab.SESSION) }
+    var selectedTab by rememberSaveable { mutableStateOf(SessionTab.HOME) }
     val eventState by eventDetailViewModel.uiState.collectAsState()
 
     Scaffold(
@@ -39,8 +40,11 @@ fun SessionShellScreen(
         bottomBar = {
             SessionBottomBar(
                 selectedTab = selectedTab,
+                // Dentro de una sesión el listado general no tiene sentido.
+                items = SessionTab.entries.filterNot { it == SessionTab.SESSIONS },
                 onTabSelected = { tab ->
-                    if (tab == SessionTab.SESSION && selectedTab == SessionTab.SESSION) {
+                    // Tocar "Inicio" estando ya en él devuelve al listado de sesiones.
+                    if (tab == SessionTab.HOME && selectedTab == SessionTab.HOME) {
                         onLeaveSession()
                     } else {
                         selectedTab = tab
@@ -56,7 +60,7 @@ fun SessionShellScreen(
         ) { tab ->
             Box(modifier = Modifier.fillMaxSize()) {
                 when (tab) {
-                    SessionTab.SESSION -> EventDetailScreen(
+                    SessionTab.HOME, SessionTab.SESSIONS -> EventDetailScreen(
                         viewModel = eventDetailViewModel,
                         bottomPadding = innerPadding,
                         onBack = onLeaveSession,
@@ -68,6 +72,10 @@ fun SessionShellScreen(
                         dateSummaries = eventState.dateSummaries,
                         totalParticipants = eventState.participants.size,
                         confirmedDate = eventState.confirmedDate,
+                        onBack = onLeaveSession
+                    )
+                    SessionTab.PROFILE -> ProfileTabScreen(
+                        bottomPadding = innerPadding,
                         onBack = onLeaveSession
                     )
                 }
