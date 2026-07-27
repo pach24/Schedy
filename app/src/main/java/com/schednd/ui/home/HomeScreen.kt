@@ -188,35 +188,50 @@ private fun HomeSessionTab(
             }
         }
 
-        uiState.nextSession?.let { session ->
-            item {
-                FadeIn(delayMs = 50) {
-                    Column(
-                        modifier = Modifier
-                            .padding(horizontal = 20.dp, vertical = 8.dp)
-                            .fillMaxWidth()
-                            .clip(SquircleShape(24.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
+        item {
+            FadeIn(delayMs = 50) {
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                        .fillMaxWidth()
+                        .clip(SquircleShape(24.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    val session = uiState.nextSession
+                    if (session != null) {
                         HeroDate(session = session)
                         HeroSessionLabel(session = session)
                         HeroCountdown(session = session)
+                    } else {
+                        NoUpcomingSessionHero()
                     }
                 }
             }
         }
 
-        if (uiState.allSessions.isNotEmpty()) {
+        if (uiState.allSessions.isEmpty()) {
+            item {
+                EmptySessionsHint(modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp))
+            }
+        } else {
             item {
                 SectionHeader(
-                    title = "TODAS LAS SESIONES",
-                    trailing = "${uiState.allSessions.size}",
+                    title = "PRÓXIMAS SESIONES",
+                    trailing = "${uiState.upcomingSessions.size}",
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
                 )
             }
-            items(uiState.allSessions, key = { it.code }) { session ->
+            if (uiState.upcomingSessions.isEmpty()) {
+                item {
+                    SectionEmptyHint(
+                        text = "No hay sesiones próximas.",
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
+                    )
+                }
+            }
+            items(uiState.upcomingSessions, key = { "upcoming-${it.code}" }) { session ->
                 SessionRow(
                     session = session,
                     isNext = session.code == uiState.nextSession?.code,
@@ -224,9 +239,29 @@ private fun HomeSessionTab(
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
                 )
             }
-        } else {
+
             item {
-                EmptySessionsHint(modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp))
+                SectionHeader(
+                    title = "SESIONES PASADAS",
+                    trailing = "${uiState.pastSessions.size}",
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                )
+            }
+            if (uiState.pastSessions.isEmpty()) {
+                item {
+                    SectionEmptyHint(
+                        text = "Todavía no hay sesiones pasadas.",
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
+                    )
+                }
+            }
+            items(uiState.pastSessions, key = { "past-${it.code}" }) { session ->
+                SessionRow(
+                    session = session,
+                    isNext = false,
+                    onClick = { onOpenEvent(session.code) },
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                )
             }
         }
 
@@ -538,13 +573,52 @@ private fun HeroDate(session: HomeSessionCard, modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun NoUpcomingSessionHero(modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            text = "PRÓXIMA SESIÓN",
+            style = MaterialTheme.typography.labelSmall.copy(
+                letterSpacing = 1.5.sp,
+                fontWeight = FontWeight.Medium
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = "Sin sesiones\npróximas",
+            style = MaterialTheme.typography.displaySmall.copy(
+                fontWeight = FontWeight.Black,
+                letterSpacing = (-1).sp,
+                lineHeight = 40.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Confirma una fecha o crea una sesión para ver la cuenta atrás.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun SectionEmptyHint(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier.fillMaxWidth()
+    )
+}
+
+@Composable
 private fun HeroSessionLabel(session: HomeSessionCard, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Text(text = "⚔️", style = MaterialTheme.typography.bodyMedium)
         Text(
             text = session.name.ifBlank { "Sesión" },
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -568,8 +642,8 @@ private fun HeroCountdown(session: HomeSessionCard, modifier: Modifier = Modifie
         }
     }
 
-    val totalMinutes: Long = session.confirmedDate?.let { date ->
-        val diff = Duration.between(now, date.atStartOfDay())
+    val totalMinutes: Long = session.startDateTime?.let { start ->
+        val diff = Duration.between(now, start)
         if (diff.isNegative) 0L else diff.toMinutes()
     } ?: 0L
 
@@ -893,6 +967,7 @@ private fun HomePreviewLight() {
             uiState = HomeUiState(
                 isAuthReady = true,
                 allSessions = sample,
+                upcomingSessions = sample,
                 nextSession = sample.first()
             ),
             onCreateEvent = {},
@@ -921,6 +996,7 @@ private fun HomePreviewDark() {
             uiState = HomeUiState(
                 isAuthReady = true,
                 allSessions = sample,
+                upcomingSessions = sample,
                 nextSession = sample.first()
             ),
             onCreateEvent = {},

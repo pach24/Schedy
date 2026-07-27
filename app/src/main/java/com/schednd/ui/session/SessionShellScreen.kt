@@ -18,22 +18,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.schednd.model.NoteTemplate
 import com.schednd.ui.detail.EventDetailScreen
 import com.schednd.ui.detail.EventDetailViewModel
-import com.schednd.ui.notes.NotesListScreen
-import com.schednd.ui.notes.NotesViewModel
 import com.schednd.ui.session.tabs.CalendarTabScreen
-import com.schednd.ui.session.tabs.ProfileTabScreen
 
 @Composable
 fun SessionShellScreen(
     eventDetailViewModel: EventDetailViewModel,
-    notesViewModel: NotesViewModel,
     onLeaveSession: () -> Unit,
-    onEditAvailability: () -> Unit,
-    onNewNote: (NoteTemplate?) -> Unit,
-    onEditNote: (String) -> Unit
+    onEditAvailability: () -> Unit
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(SessionTab.SESSION) }
     val eventState by eventDetailViewModel.uiState.collectAsState()
@@ -75,19 +68,6 @@ fun SessionShellScreen(
                         dateSummaries = eventState.dateSummaries,
                         totalParticipants = eventState.participants.size,
                         confirmedDate = eventState.confirmedDate,
-                        onBack = onLeaveSession
-                    )
-                    SessionTab.NOTES -> NotesListScreen(
-                        viewModel = notesViewModel,
-                        sessionName = eventState.event?.name.orEmpty(),
-                        participantsCount = eventState.participants.size,
-                        bottomPadding = innerPadding,
-                        onBack = onLeaveSession,
-                        onNew = onNewNote,
-                        onEdit = onEditNote
-                    )
-                    SessionTab.PROFILE -> ProfileTabScreen(
-                        bottomPadding = innerPadding,
                         onBack = onLeaveSession
                     )
                 }

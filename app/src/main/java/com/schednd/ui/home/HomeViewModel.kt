@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneOffset
 import javax.inject.Inject
 
@@ -34,13 +36,26 @@ data class HomeSessionCard(
     val participantsCount: Int,
     val totalParticipants: Int,
     val participantInitials: List<String>,
+    val startTime: LocalTime? = null,
     val latestNote: LatestNotePreview? = null
-)
+) {
+    /** Momento de inicio; si no hay hora fijada se cuenta desde el inicio del día. */
+    val startDateTime: LocalDateTime?
+        get() = confirmedDate?.atTime(startTime ?: LocalTime.MIDNIGHT)
+
+    /** Una sesión sin hora sigue siendo "próxima" durante todo su día. */
+    fun isPast(now: LocalDateTime): Boolean {
+        val date = confirmedDate ?: return false
+        return date.atTime(startTime ?: LocalTime.MAX).isBefore(now)
+    }
+}
 
 data class HomeUiState(
     val isAuthReady: Boolean = false,
     val nextSession: HomeSessionCard? = null,
     val allSessions: List<HomeSessionCard> = emptyList(),
+    val upcomingSessions: List<HomeSessionCard> = emptyList(),
+    val pastSessions: List<HomeSessionCard> = emptyList(),
     val error: String? = null
 )
 
@@ -74,7 +89,12 @@ class HomeViewModel @Inject constructor(
     private suspend fun loadRecentEvents() {
         val codes = recentEventsRepository.getSavedCodes()
         if (codes.isEmpty()) {
-            _uiState.value = _uiState.value.copy(allSessions = emptyList(), nextSession = null)
+            _uiState.value = _uiState.value.copy(
+                allSessions = emptyList(),
+                upcomingSessions = emptyList(),
+                pastSessions = emptyList(),
+                nextSession = null
+            )
             return
         }
         val events = eventRepository.getEvents(codes)
@@ -104,28 +124,35 @@ class HomeViewModel @Inject constructor(
                         participantInitials = participants.take(5).map {
                             it.name.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
                         },
+                        startTime = event.startLocalTime,
                         latestNote = latest
                     )
                 }
             }.awaitAll()
         }
 
-        val today = LocalDate.now()
+        val now = LocalDateTime.now()
+        // Solo cuenta como próxima una sesión con fecha confirmada que aún no ha pasado:
+        // sin ella no hay cuenta atrás que mostrar.
         val nextSession = cards
-            .filter { it.confirmedDate != null && !it.confirmedDate.isBefore(today) }
-            .minByOrNull { it.confirmedDate!! }
-            ?: cards.firstOrNull()
+            .filter { it.confirmedDate != null && !it.isPast(now) }
+            .minByOrNull { it.startDateTime!! }
 
-        // Próxima sesión siempre primera, el resto en orden de acceso reciente
-        val recentOrdered = codes.mapNotNull { code -> cards.find { it.code == code } }
-        val ordered = if (nextSession != null) {
-            listOf(nextSession) + recentOrdered.filter { it.code != nextSession.code }
-        } else {
-            recentOrdered
-        }
+        val (past, upcoming) = cards.partition { it.isPast(now) }
+
+        // Próxima sesión primero; las pendientes de fecha al final del bloque de próximas.
+        val upcomingOrdered = upcoming.sortedWith(
+            compareBy(
+                { it.confirmedDate == null },
+                { it.startDateTime ?: LocalDateTime.MAX }
+            )
+        )
+        val pastOrdered = past.sortedByDescending { it.startDateTime }
 
         _uiState.value = _uiState.value.copy(
-            allSessions = ordered,
+            allSessions = upcomingOrdered + pastOrdered,
+            upcomingSessions = upcomingOrdered,
+            pastSessions = pastOrdered,
             nextSession = nextSession
         )
     }

@@ -15,17 +15,12 @@ import com.schednd.ui.detail.EditAvailabilityScreen
 import com.schednd.ui.detail.EventDetailViewModel
 import com.schednd.ui.home.HomeScreen
 import com.schednd.ui.join.JoinEventScreen
-import com.schednd.ui.notes.NoteEditorScreen
-import com.schednd.ui.notes.NoteEditorViewModel
-import com.schednd.ui.notes.NotesViewModel
 import com.schednd.ui.onboarding.OnboardingScreen
 import com.schednd.ui.session.SessionShellScreen
 import com.schednd.ui.theme.NavEnterTransition
 import com.schednd.ui.theme.NavExitTransition
 import com.schednd.ui.theme.NavPopEnterTransition
 import com.schednd.ui.theme.NavPopExitTransition
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @Composable
 fun SchedndNavGraph(
@@ -100,25 +95,10 @@ fun SchedndNavGraph(
                     navController.getBackStackEntry("event/{code}")
                 }
                 val eventDetailViewModel: EventDetailViewModel = hiltViewModel(parentEntry)
-                val notesViewModel: NotesViewModel = hiltViewModel(parentEntry)
                 SessionShellScreen(
                     eventDetailViewModel = eventDetailViewModel,
-                    notesViewModel = notesViewModel,
                     onLeaveSession = { navController.popBackStack("home", inclusive = false) },
-                    onEditAvailability = { navController.navigate("event/$code/edit") },
-                    onNewNote = { template ->
-                        if (template != null) {
-                            val tSeed = encode(template.titleSeed)
-                            val bSeed = encode(template.bodySeed)
-                            val tagSeed = template.tag.name
-                            navController.navigate("event/$code/notes/new?titleSeed=$tSeed&bodySeed=$bSeed&tagSeed=$tagSeed")
-                        } else {
-                            navController.navigate("event/$code/notes/new")
-                        }
-                    },
-                    onEditNote = { noteId ->
-                        navController.navigate("event/$code/notes/edit/$noteId")
-                    }
+                    onEditAvailability = { navController.navigate("event/$code/edit") }
                 )
             }
             composable("event/{code}/edit") { backStackEntry ->
@@ -131,33 +111,6 @@ fun SchedndNavGraph(
                     onBack = { navController.popBackStack() }
                 )
             }
-            composable(
-                route = "event/{code}/notes/new?titleSeed={titleSeed}&bodySeed={bodySeed}&tagSeed={tagSeed}",
-                arguments = listOf(
-                    navArgument("titleSeed") { type = NavType.StringType; defaultValue = "" },
-                    navArgument("bodySeed") { type = NavType.StringType; defaultValue = "" },
-                    navArgument("tagSeed") { type = NavType.StringType; defaultValue = "" }
-                )
-            ) {
-                val vm: NoteEditorViewModel = hiltViewModel()
-                NoteEditorScreen(
-                    viewModel = vm,
-                    onClose = { navController.popBackStack() }
-                )
-            }
-            composable(
-                route = "event/{code}/notes/edit/{noteId}",
-                arguments = listOf(navArgument("noteId") { type = NavType.StringType })
-            ) {
-                val vm: NoteEditorViewModel = hiltViewModel()
-                NoteEditorScreen(
-                    viewModel = vm,
-                    onClose = { navController.popBackStack() }
-                )
-            }
         }
     }
 }
-
-private fun encode(s: String): String =
-    URLEncoder.encode(s, StandardCharsets.UTF_8.name())

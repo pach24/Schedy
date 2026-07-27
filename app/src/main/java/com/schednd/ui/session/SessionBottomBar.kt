@@ -21,10 +21,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.InsertDriveFile
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.MaterialTheme
@@ -44,9 +42,7 @@ import com.schednd.ui.theme.pressScale
 
 enum class SessionTab(val label: String, val icon: ImageVector) {
     SESSION("Sesiones", Icons.Outlined.Home),
-    CALENDAR("Calendario", Icons.Outlined.CalendarMonth),
-    NOTES("Notas", Icons.AutoMirrored.Outlined.InsertDriveFile),
-    PROFILE("Perfil", Icons.Outlined.Person)
+    CALENDAR("Calendario", Icons.Outlined.CalendarMonth)
 }
 
 @Composable
