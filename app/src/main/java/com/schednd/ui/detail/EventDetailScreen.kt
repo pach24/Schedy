@@ -103,7 +103,11 @@ import java.time.LocalTime
 import com.schednd.ui.components.AppleCard
 import com.schednd.ui.components.AppleTopBar
 import com.schednd.ui.components.AvailabilityGrid
+import com.schednd.ui.components.LiquidGlassState
+import com.schednd.ui.components.frostedSurface
 import com.schednd.ui.components.getHeatmapColor
+import com.schednd.ui.components.liquidGlassBackdrop
+import com.schednd.ui.components.rememberLiquidGlassState
 import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.PhaseEnterTransition
@@ -158,6 +162,10 @@ fun EventDetailScreen(
         }
     }
     val hazeState = remember { HazeState() }
+    // Cristal propio de esta pantalla: refracta el contenido del Scaffold, que es justo
+    // lo que tienen detrás la top bar y los diálogos. Es un estado distinto al de la
+    // barra inferior, porque cada uno refracta una capa distinta.
+    val overlayGlass = rememberLiquidGlassState()
     val scrollState = rememberScrollState()
     var confirmedCardY by remember { mutableIntStateOf(0) }
 
@@ -181,6 +189,7 @@ fun EventDetailScreen(
     Scaffold(
             modifier = Modifier
                 .hazeSource(state = hazeState)
+                .liquidGlassBackdrop(overlayGlass, blurRadius = 12.dp)
                 .then(if (anyDialogOpen) Modifier.blur(4.dp) else Modifier),
             containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
@@ -619,7 +628,8 @@ fun EventDetailScreen(
         title = uiState.event?.name ?: "Sesion",
         hazeState = hazeState,
         onBack = onBack,
-        onTrailingClick = { showMoreDialog = true }
+        onTrailingClick = { showMoreDialog = true },
+        glass = overlayGlass
     )
 
     AnimatedVisibility(
@@ -656,6 +666,7 @@ fun EventDetailScreen(
                 ) {
                     DeleteSessionDialog(
                         hazeState = hazeState,
+                        glass = overlayGlass,
                         onConfirm = {
                             showDeleteDialog = false
                             viewModel.deleteEvent()
@@ -697,6 +708,7 @@ fun EventDetailScreen(
                 ) {
                     MoreOptionsDialog(
                         hazeState = hazeState,
+                        glass = overlayGlass,
                         isCreator = uiState.isCreator,
                         onFixDate = {
                             showMoreDialog = false
@@ -827,6 +839,7 @@ private fun AppleActionButton(
 @Composable
 private fun DeleteSessionDialog(
     hazeState: HazeState,
+    glass: LiquidGlassState?,
     onConfirm: () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
@@ -836,6 +849,11 @@ private fun DeleteSessionDialog(
         Color(0xFF1C1C1E).copy(alpha = 0.82f)
     else
         Color.White.copy(alpha = 0.82f)
+    // Más velo que en la top bar: aquí hay texto que leer sobre el cristal.
+    val glassTint = if (isDark)
+        Color(0xFF1C1C1E).copy(alpha = 0.62f)
+    else
+        Color.White.copy(alpha = 0.68f)
 
     val borderBrush = if (isDark) {
         Brush.verticalGradient(
@@ -852,11 +870,14 @@ private fun DeleteSessionDialog(
             .fillMaxWidth(0.85f)
             .wrapContentHeight()
             .clip(dialogShape)
-            .hazeEffect(state = hazeState) {
-                blurRadius = 20.dp
-                backgroundColor = if (isDark) Color(0xFF1C1C1E) else Color.White
-                tints = listOf(HazeTint(tintColor))
-            }
+            .frostedSurface(
+                glass = glass,
+                hazeState = hazeState,
+                cornerRadius = 28.dp,
+                hazeBackground = if (isDark) Color(0xFF1C1C1E) else Color.White,
+                hazeTint = tintColor,
+                glassTint = glassTint,
+            )
             .border(1.dp, borderBrush, dialogShape)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
@@ -895,6 +916,7 @@ private fun DeleteSessionDialog(
 @Composable
 private fun MoreOptionsDialog(
     hazeState: HazeState,
+    glass: LiquidGlassState?,
     isCreator: Boolean,
     onFixDate: () -> Unit,
     onDelete: () -> Unit
@@ -902,6 +924,11 @@ private fun MoreOptionsDialog(
     val isDark = isSystemInDarkTheme()
     val dialogShape = RoundedCornerShape(28.dp)
     val tintColor = if (isDark) Color(0xFF1C1C1E).copy(alpha = 0.82f) else Color.White.copy(alpha = 0.82f)
+    // Más velo que en la top bar: aquí hay texto que leer sobre el cristal.
+    val glassTint = if (isDark)
+        Color(0xFF1C1C1E).copy(alpha = 0.62f)
+    else
+        Color.White.copy(alpha = 0.68f)
     val borderBrush = if (isDark)
         Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.25f), Color.Transparent))
     else
@@ -912,11 +939,14 @@ private fun MoreOptionsDialog(
             .fillMaxWidth(0.85f)
             .wrapContentHeight()
             .clip(dialogShape)
-            .hazeEffect(state = hazeState) {
-                blurRadius = 20.dp
-                backgroundColor = if (isDark) Color(0xFF1C1C1E) else Color.White
-                tints = listOf(HazeTint(tintColor))
-            }
+            .frostedSurface(
+                glass = glass,
+                hazeState = hazeState,
+                cornerRadius = 28.dp,
+                hazeBackground = if (isDark) Color(0xFF1C1C1E) else Color.White,
+                hazeTint = tintColor,
+                glassTint = glassTint,
+            )
             .border(1.dp, borderBrush, dialogShape)
     ) {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {

@@ -32,9 +32,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
 
+/**
+ * @param glass si se pasa un estado con soporte, las tres piezas usan el cristal propio
+ *   (warp + rim + haze del shader) en vez del blur de Haze. Requiere que el contenido de
+ *   detrás lleve `liquidGlassBackdrop` con ese mismo estado.
+ */
 @Composable
 fun AppleTopBar(
     title: String,
@@ -43,11 +46,15 @@ fun AppleTopBar(
     modifier: Modifier = Modifier,
     trailingIcon: ImageVector? = Icons.Filled.MoreHoriz,
     trailingContentDescription: String? = "Más opciones",
-    onTrailingClick: (() -> Unit)? = null
+    onTrailingClick: (() -> Unit)? = null,
+    glass: LiquidGlassState? = null
 ) {
     val isDark = isSystemInDarkTheme()
     val bgColor = if (isDark) Color(0xFF1C1C1E) else Color.White
     val tintColor = if (isDark) Color(0xFF1C1C1E).copy(alpha = 0.75f) else Color.White.copy(alpha = 0.75f)
+    // El cristal ya difumina y refracta por debajo: la pieza solo aporta un velo. Con el
+    // tinte de Haze (0.75) taparía justo lo que tiene que dejar ver.
+    val glassTint = if (isDark) Color(0xFF1C1C1E).copy(alpha = 0.3f) else Color.White.copy(alpha = 0.45f)
     val btnBorder = Brush.verticalGradient(
         listOf(
             Color.White.copy(alpha = if (isDark) 0.22f else 1f),
@@ -67,11 +74,7 @@ fun AppleTopBar(
             modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
-                .hazeEffect(state = hazeState) {
-                    blurRadius = 20.dp
-                    backgroundColor = bgColor
-                    tints = listOf(HazeTint(tintColor))
-                }
+                .frostedSurface(glass, hazeState, 22.dp, bgColor, tintColor, glassTint)
                 .border(1.dp, btnBorder, CircleShape)
                 .clickable(
                     indication = LocalIndication.current,
@@ -96,11 +99,7 @@ fun AppleTopBar(
                 .padding(horizontal = 10.dp)
                 .height(44.dp)
                 .clip(RoundedCornerShape(22.dp))
-                .hazeEffect(state = hazeState) {
-                    blurRadius = 20.dp
-                    backgroundColor = bgColor
-                    tints = listOf(HazeTint(tintColor))
-                }
+                .frostedSurface(glass, hazeState, 22.dp, bgColor, tintColor, glassTint)
                 .border(1.dp, btnBorder, RoundedCornerShape(22.dp)),
             contentAlignment = Alignment.Center
         ) {
@@ -119,11 +118,7 @@ fun AppleTopBar(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .hazeEffect(state = hazeState) {
-                        blurRadius = 20.dp
-                        backgroundColor = bgColor
-                        tints = listOf(HazeTint(tintColor))
-                    }
+                    .frostedSurface(glass, hazeState, 22.dp, bgColor, tintColor, glassTint)
                     .border(1.dp, btnBorder, CircleShape)
                     .clickable(
                         indication = LocalIndication.current,
