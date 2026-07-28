@@ -47,6 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.schednd.ui.components.LiquidGlassState
 import com.schednd.ui.components.TravelingHoleShape
+import com.schednd.ui.components.liquidGlassShape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import com.schednd.R
@@ -84,10 +85,16 @@ fun SessionBottomBar(
     items: List<SessionTab> = SessionTab.entries,
     glass: LiquidGlassState? = null
 ) {
-    // El cristal es solo la bolita: la barra se queda opaca como siempre.
     val glassActive = glass?.isSupported == true
     val darkTheme = isSystemInDarkTheme()
-    val containerColor = if (darkTheme) MaterialTheme.colorScheme.surface else LightRaisedSurface
+    val barColor = if (darkTheme) MaterialTheme.colorScheme.surface else LightRaisedSurface
+    // Con cristal la barra deja de ser un panel opaco: mantiene su color pero lo baja a
+    // un velo, porque lo que se ve por debajo es el fondo ya difuminado por el shader.
+    val containerColor = when {
+        !glassActive -> barColor
+        darkTheme -> barColor.copy(alpha = GlassBarAlphaDark)
+        else -> barColor.copy(alpha = GlassBarAlphaLight)
+    }
     val ballColor = when {
         // Sin cristal, la bolita es sólida como toda la vida.
         !glassActive -> MaterialTheme.colorScheme.onSurface
@@ -156,7 +163,15 @@ fun SessionBottomBar(
         derivedStateOf { 1f - smoothStep(arc) }
     }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    // Toda la barra es una pieza de cristal, insets del sistema incluidos: si la franja
+    // de abajo se quedara fuera, el velo se vería sin refracción justo ahí. El hueco de la
+    // bolita se le resta en el shader, para que la refracción y el filo se hundan con él
+    // en vez de cruzar rectos por encima.
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .liquidGlassShape(glass, cornerRadius = 0.dp, carveHole = true)
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -180,6 +195,14 @@ fun SessionBottomBar(
 
                         // El shader del fondo necesita la geometría de este frame.
                         if (glass != null && !barTopPx.isNaN()) {
+                            // Los mismos parámetros con los que TravelingHoleShape
+                            // dibuja la muesca: el shader reproduce esa curva.
+                            glass.updateHole(
+                                centerX = ballOffset.x - 1f / items.size * barWidthPx / 2,
+                                topY = barTopPx,
+                                holeSize = ballSizePx,
+                                depthProgress = holeDepth,
+                            )
                             val halfWidth = ballSizePx / 2 * scaleX
                             val halfHeight = ballSizePx / 2 * scaleY
                             glass.updateShape(
@@ -283,6 +306,8 @@ private const val SelectedIconScale = 1.12f
 // La bolita es cristal, no relleno: si tapa el fondo no se ve su propia refracción.
 private const val GlassBallAlphaDark = .22f
 private const val GlassBallAlphaLight = .5f
+private const val GlassBarAlphaDark = .58f
+private const val GlassBarAlphaLight = .62f
 private val BallSize = 52.dp
 private val BottomBarHeight = 72.dp
 private val BottomTonalElevation = 3.dp
