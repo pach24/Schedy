@@ -45,6 +45,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
@@ -52,6 +53,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.clipRect
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import androidx.compose.material3.AlertDialog
@@ -82,6 +84,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -188,7 +192,23 @@ fun EventDetailScreen(
             topBar = {}
         ) { innerPadding ->
 
-        Box(modifier = Modifier.padding(innerPadding)) {
+        // El contenido pasa por detrás de la top bar de cristal, pero no debe invadir la
+        // barra de estado. Se recorta el dibujado justo por debajo de ella: es un recorte
+        // de pintado, no de layout, así que nada se mueve de sitio y el cristal sigue
+        // viendo lo que tiene detrás.
+        val statusBarHeightPx = with(LocalDensity.current) {
+            WindowInsets.statusBars.getTop(this).toFloat()
+        }
+
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .drawWithContent {
+                    clipRect(top = statusBarHeightPx) {
+                        this@drawWithContent.drawContent()
+                    }
+                }
+        ) {
             // Animated content states — Trade Republic style scale+fade
             AnimatedContent(
                 targetState = when {
