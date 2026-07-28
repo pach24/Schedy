@@ -63,6 +63,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.schednd.ui.components.AppleCard
 import com.schednd.ui.components.ComingSoonDayDialog
 import com.schednd.ui.components.HomeScheduleCalendar
+import com.schednd.ui.components.MiniWeekCalendar
 import com.schednd.ui.session.SessionBottomBar
 import com.schednd.ui.session.SessionTab
 import com.schednd.ui.session.tabs.ProfileTabScreen
@@ -147,7 +148,8 @@ fun HomeContent(
                     innerPadding = innerPadding,
                     onCreateEvent = onCreateEvent,
                     onJoinEvent = onJoinEvent,
-                    onSeeAllSessions = { selectedTab = SessionTab.SESSIONS }
+                    onSeeAllSessions = { selectedTab = SessionTab.SESSIONS },
+                    onOpenCalendar = { selectedTab = SessionTab.CALENDAR }
                 )
             }
         }
@@ -161,7 +163,8 @@ private fun HomeMainTab(
     innerPadding: PaddingValues,
     onCreateEvent: () -> Unit,
     onJoinEvent: () -> Unit,
-    onSeeAllSessions: () -> Unit
+    onSeeAllSessions: () -> Unit,
+    onOpenCalendar: () -> Unit
 ) {
     if (!uiState.isAuthReady && uiState.error == null) {
         LoadingTab(innerPadding = innerPadding)
@@ -207,6 +210,19 @@ private fun HomeMainTab(
                         NoUpcomingSessionHero()
                     }
                 }
+            }
+        }
+
+        item {
+            val sessionDays = remember(uiState.allSessions) {
+                uiState.allSessions.mapNotNull { it.confirmedDate }.toSet()
+            }
+            FadeIn(delayMs = 90) {
+                MiniWeekCalendar(
+                    sessionDates = sessionDays,
+                    onClick = onOpenCalendar,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                )
             }
         }
 
