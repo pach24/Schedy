@@ -53,8 +53,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -67,11 +65,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import com.schednd.ui.components.AppleTextField
 import com.schednd.ui.components.LoadingDots
 import androidx.compose.foundation.layout.heightIn
@@ -119,10 +115,6 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import kotlinx.coroutines.delay
@@ -182,7 +174,7 @@ fun EventDetailScreen(
         }
     }
 
-    val anyDialogOpen = showDeleteDialog || showMoreDialog
+    val anyDialogOpen = showDeleteDialog || showMoreDialog || showConfirmDateDialog
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
 
@@ -724,31 +716,53 @@ fun EventDetailScreen(
         }
     }
 
-    if (showConfirmDateDialog) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = { showConfirmDateDialog = false },
-            sheetState = sheetState,
-            containerColor = Color.Transparent,
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-            tonalElevation = 0.dp,
-            dragHandle = null
+    AnimatedVisibility(
+        visible = showConfirmDateDialog,
+        enter = fadeIn(tween(220)),
+        exit  = fadeOut(tween(200))
+    ) {
+        val animScope = this
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f))
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) { showConfirmDateDialog = false },
+            contentAlignment = Alignment.Center
         ) {
-            ConfirmDateSheetContent(
-                dateSummaries = uiState.dateSummaries,
-                currentConfirmedDate = uiState.confirmedDate,
-                hazeState = hazeState,
-                onDateSelected = { date ->
-                    showConfirmDateDialog = false
-                    // Elegido el día, preguntamos la hora: cuadrar solo el día
-                    // deja la coordinación a medias.
-                    pendingConfirmDate = date
-                },
-                onClearDate = {
-                    showConfirmDateDialog = false
-                    viewModel.clearConfirmedDate()
+            with(animScope) {
+                Box(
+                    modifier = Modifier.animateEnterExit(
+                        enter = scaleIn(
+                            initialScale = 0.86f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness    = Spring.StiffnessMediumLow
+                            )
+                        ) + fadeIn(tween(180)),
+                        exit = scaleOut(targetScale = 0.92f, animationSpec = tween(160)) + fadeOut(tween(160))
+                    )
+                ) {
+                    ConfirmDateDialog(
+                        dateSummaries = uiState.dateSummaries,
+                        currentConfirmedDate = uiState.confirmedDate,
+                        hazeState = hazeState,
+                        glass = overlayGlass,
+                        onDateSelected = { date ->
+                            showConfirmDateDialog = false
+                            // Elegido el día, preguntamos la hora: cuadrar solo el día
+                            // deja la coordinación a medias.
+                            pendingConfirmDate = date
+                        },
+                        onClearDate = {
+                            showConfirmDateDialog = false
+                            viewModel.clearConfirmedDate()
+                        }
+                    )
                 }
-            )
+            }
         }
     }
 
@@ -1032,18 +1046,24 @@ private fun MoreOptionsDialog(
 }
 
 @Composable
-private fun ConfirmDateSheetContent(
+private fun ConfirmDateDialog(
     dateSummaries: List<DateSummary>,
     currentConfirmedDate: LocalDate?,
     hazeState: HazeState,
+    glass: LiquidGlassState?,
     onDateSelected: (LocalDate) -> Unit,
     onClearDate: () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
     val dateFormat = DateTimeFormatter.ofPattern("EEEE d 'de' MMMM", Locale("es"))
     val sorted = remember(dateSummaries) { dateSummaries.sortedByDescending { it.count } }
-    val sheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+    val dialogShape = RoundedCornerShape(28.dp)
     val tintColor = if (isDark) Color(0xFF1C1C1E).copy(alpha = 0.55f) else Color.White.copy(alpha = 0.55f)
+    // Más velo que en la top bar: aquí hay texto que leer sobre el cristal.
+    val glassTint = if (isDark)
+        Color(0xFF1C1C1E).copy(alpha = 0.62f)
+    else
+        Color.White.copy(alpha = 0.68f)
     val topBorderColor = if (isDark) Color.White.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.85f)
     val innerBorderBrush = Brush.verticalGradient(
         listOf(
@@ -1051,44 +1071,36 @@ private fun ConfirmDateSheetContent(
             Color.Transparent
         )
     )
+    // Cristal sobre cristal no tiene sentido físico: la lista interior muestrearía el
+    // mismo fondo que el diálogo, ignorando que este está delante. Va con relleno plano.
+    val innerFill = if (isDark) Color(0xFF27272A) else Color(0xFFF0F0F2)
 
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(sheetShape)
-            .hazeEffect(state = hazeState) {
-                blurRadius = 24.dp
-                backgroundColor = if (isDark) Color(0xFF1C1C1E) else Color.White
-                tints = listOf(HazeTint(tintColor))
-            }
+            .fillMaxWidth(0.85f)
+            .wrapContentHeight()
+            .clip(dialogShape)
+            .frostedSurface(
+                glass = glass,
+                hazeState = hazeState,
+                cornerRadius = 28.dp,
+                hazeBackground = if (isDark) Color(0xFF1C1C1E) else Color.White,
+                hazeTint = tintColor,
+                glassTint = glassTint,
+            )
             .border(
                 width = 1.dp,
                 brush = Brush.verticalGradient(
                     listOf(topBorderColor, Color.Transparent)
                 ),
-                shape = sheetShape
+                shape = dialogShape
             )
     ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = 24.dp, vertical = 24.dp)
     ) {
-        // iOS pill handle
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp, bottom = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(width = 36.dp, height = 5.dp)
-                    .clip(RoundedCornerShape(2.5.dp))
-                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f))
-            )
-        }
-
         Text(
             text = "Elige la fecha",
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
@@ -1097,33 +1109,14 @@ private fun ConfirmDateSheetContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Date list
-        val listScrollConnection = remember {
-            object : NestedScrollConnection {
-                override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset = available
-            }
-        }
-
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .hazeEffect(state = hazeState) {
-                    blurRadius = 20.dp
-                    backgroundColor = if (isDark) Color(0xFF27272A) else Color(0xFFF0F0F2)
-                    tints = listOf(
-                        HazeTint(
-                            if (isDark) Color(0xFF27272A).copy(alpha = 0.65f)
-                            else Color(0xFFF0F0F2).copy(alpha = 0.65f)
-                        )
-                    )
-                }
+                .background(innerFill.copy(alpha = 0.65f))
                 .border(1.dp, innerBorderBrush, RoundedCornerShape(16.dp))
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .heightIn(max = 380.dp)
-                    .nestedScroll(listScrollConnection)
-            ) {
+            LazyColumn(modifier = Modifier.heightIn(max = 380.dp)) {
                 itemsIndexed(sorted) { index, summary ->
                     val isConfirmed = summary.date == currentConfirmedDate
                     val interaction = remember { MutableInteractionSource() }
@@ -1203,12 +1196,8 @@ private fun ConfirmDateSheetContent(
             }
         }
 
-        Spacer(modifier = Modifier
-            .navigationBarsPadding()
-            .height(24.dp)
-        )
     }
-    } // hazeEffect Box
+    } // Box de cristal
 }
 
 
