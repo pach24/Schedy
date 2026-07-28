@@ -10,6 +10,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,6 +48,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.schednd.ui.components.ComingSoonDayDialog
+import com.schednd.ui.components.DialogBlurRadius
 import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.MiniWeekCalendar
 import com.schednd.ui.components.liquidGlassBackdrop
@@ -56,8 +59,12 @@ import com.schednd.ui.session.SessionBottomBarHeight
 import com.schednd.ui.session.SessionTab
 import com.schednd.ui.session.tabs.ProfileTabScreen
 import com.schednd.ui.theme.FadeIn
+import com.schednd.ui.theme.LightHeroSurface
 import com.schednd.ui.theme.SquircleShape
 import com.schednd.ui.theme.pressScale
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import java.time.LocalDate
 
 @Composable
 fun HomeScreen(
@@ -99,13 +106,23 @@ fun HomeContent(
     // La barra se dibuja fuera del Scaffold: el shader del cristal refracta lo que hay
     // dentro del Scaffold, así que la barra no puede formar parte de esa capa.
     val glass = rememberLiquidGlassState()
+    // Fondo del diálogo de día: el cristal refracta el contenido del Scaffold, y por
+    // debajo de API 33 el mismo contenido se difumina con Haze. Lleva capa aparte de la
+    // barra porque el radio de difuminado es un uniform del backdrop, no de la pieza, y
+    // el diálogo lo quiere bastante más alto que la bolita.
+    val hazeState = remember { HazeState() }
+    val dayDialogGlass = rememberLiquidGlassState()
+    var tappedDate by remember { mutableStateOf<LocalDate?>(null) }
     val navigationBarsBottom = WindowInsets.navigationBars
         .asPaddingValues()
         .calculateBottomPadding()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            modifier = Modifier.liquidGlassBackdrop(glass),
+            modifier = Modifier
+                .hazeSource(state = hazeState)
+                .liquidGlassBackdrop(dayDialogGlass, blurRadius = DialogBlurRadius)
+                .liquidGlassBackdrop(glass),
             containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
                 // Hueco del mismo alto que la barra real, para que innerPadding siga valiendo.
@@ -122,7 +139,11 @@ fun HomeContent(
                 label = "homeTabCrossfade"
             ) { tab ->
                 when (tab) {
-                    SessionTab.CALENDAR -> HomeCalendarTab(uiState = uiState, innerPadding = innerPadding)
+                    SessionTab.CALENDAR -> HomeCalendarTab(
+                        uiState = uiState,
+                        innerPadding = innerPadding,
+                        onDayTap = { date -> tappedDate = date }
+                    )
                     SessionTab.PROFILE -> ProfileTabScreen(
                         bottomPadding = innerPadding,
                         onBack = { selectedTab = SessionTab.HOME }
@@ -140,7 +161,8 @@ fun HomeContent(
                         onCreateEvent = onCreateEvent,
                         onJoinEvent = onJoinEvent,
                         onSeeAllSessions = { selectedTab = SessionTab.SESSIONS },
-                        onOpenCalendar = { selectedTab = SessionTab.CALENDAR }
+                        onOpenCalendar = { selectedTab = SessionTab.CALENDAR },
+                        onOpenEvent = onOpenEvent
                     )
                 }
             }
@@ -152,6 +174,15 @@ fun HomeContent(
             modifier = Modifier.align(Alignment.BottomCenter),
             glass = glass
         )
+
+        tappedDate?.let { date ->
+            ComingSoonDayDialog(
+                date = date,
+                hazeState = hazeState,
+                glass = dayDialogGlass,
+                onDismiss = { tappedDate = null }
+            )
+        }
     }
 }
 
@@ -163,7 +194,8 @@ private fun HomeMainTab(
     onCreateEvent: () -> Unit,
     onJoinEvent: () -> Unit,
     onSeeAllSessions: () -> Unit,
-    onOpenCalendar: () -> Unit
+    onOpenCalendar: () -> Unit,
+    onOpenEvent: (String) -> Unit
 ) {
     if (!uiState.isAuthReady && uiState.error == null) {
         LoadingTab(innerPadding = innerPadding)
@@ -191,16 +223,37 @@ private fun HomeMainTab(
 
         item {
             FadeIn(delayMs = 50) {
+                val session = uiState.nextSession
+                val heroInteraction = remember { MutableInteractionSource() }
+                // Sin próxima sesión la tarjeta es solo informativa: no hay adónde llevar.
+                val openHero = session?.let { { onOpenEvent(it.code) } }
                 Column(
                     modifier = Modifier
                         .padding(horizontal = 20.dp, vertical = 8.dp)
                         .fillMaxWidth()
+                        .then(
+                            if (openHero != null) Modifier.pressScale(heroInteraction) else Modifier
+                        )
                         .clip(SquircleShape(24.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                        .background(
+                            if (isSystemInDarkTheme()) {
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                            } else {
+                                LightHeroSurface
+                            }
+                        )
+                        .then(
+                            if (openHero != null) {
+                                Modifier.clickable(
+                                    indication = LocalIndication.current,
+                                    interactionSource = heroInteraction,
+                                    onClick = openHero
+                                )
+                            } else Modifier
+                        )
                         .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    val session = uiState.nextSession
                     if (session != null) {
                         HeroDate(session = session)
                         HeroSessionLabel(session = session)

@@ -35,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.schednd.ui.components.GenCard
-import com.schednd.ui.components.ComingSoonDayDialog
 import com.schednd.ui.components.HomeScheduleCalendar
 import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.pressScale
@@ -44,7 +43,8 @@ import java.time.LocalDate
 @Composable
 internal fun HomeCalendarTab(
     uiState: HomeUiState,
-    innerPadding: PaddingValues
+    innerPadding: PaddingValues,
+    onDayTap: (LocalDate) -> Unit
 ) {
     val sessionDates = remember(uiState.allSessions) {
         uiState.allSessions
@@ -52,14 +52,6 @@ internal fun HomeCalendarTab(
             .associate { it.confirmedDate!! to it.name.ifBlank { it.code } }
     }
     val nextDate = uiState.nextSession?.confirmedDate
-    var tappedDate by remember { mutableStateOf<LocalDate?>(null) }
-
-    if (tappedDate != null) {
-        ComingSoonDayDialog(
-            date = tappedDate!!,
-            onDismiss = { tappedDate = null }
-        )
-    }
 
     Column(
         modifier = Modifier
@@ -88,6 +80,7 @@ internal fun HomeCalendarTab(
             HomeScheduleCalendar(
                 sessionDates = sessionDates,
                 nextSessionDate = nextDate,
+                onDayTap = onDayTap,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
@@ -108,7 +101,7 @@ internal fun HomeCalendarTab(
             HomeCalendarSessionList(
                 sessions = upcomingSessions,
                 nextSession = uiState.nextSession,
-                onSessionClick = { date -> tappedDate = date }
+                onSessionClick = onDayTap
             )
         } else if (uiState.isAuthReady) {
             Spacer(modifier = Modifier.height(32.dp))

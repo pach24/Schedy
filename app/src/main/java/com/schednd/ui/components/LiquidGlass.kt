@@ -146,6 +146,11 @@ fun rememberLiquidGlassState(
  * Marca este composable como pieza de cristal: se mide sola y se registra en [state].
  * Debe dibujarse fuera del contenido que lleva [liquidGlassBackdrop].
  *
+ * Solo vale para piezas quietas: mide el layout, que no recoge lo que haga un
+ * `graphicsLayer` por encima. Una pieza que se escale o se mueva por ahí debe registrarse
+ * a mano con [LiquidGlassState.updateShape], como hacen la bolita de la barra y el
+ * diálogo de día.
+ *
  * @param cornerRadius radio de la pieza; para un círculo, la mitad del lado
  */
 @Composable

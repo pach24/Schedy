@@ -65,6 +65,7 @@ fun ScheduleCalendar(
     dateSummaries: List<DateSummary>,
     totalParticipants: Int,
     confirmedDate: LocalDate?,
+    onDayTap: (LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
@@ -78,15 +79,6 @@ fun ScheduleCalendar(
 
     var currentMonth by remember { mutableStateOf(initialMonth) }
     var slideDirection by remember { mutableIntStateOf(1) }
-    var tappedDate by remember { mutableStateOf<LocalDate?>(null) }
-
-    if (tappedDate != null) {
-        ComingSoonDayDialog(
-            date = tappedDate!!,
-            onDismiss = { tappedDate = null }
-        )
-    }
-
     Column(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -154,7 +146,7 @@ fun ScheduleCalendar(
                                     totalParticipants = totalParticipants,
                                     isConfirmed = date == confirmedDate,
                                     isDark = isDark,
-                                    onTap = { tappedDate = date },
+                                    onTap = { onDayTap(date) },
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -248,6 +240,7 @@ private fun ScheduleDay(
 fun HomeScheduleCalendar(
     sessionDates: Map<LocalDate, String>,
     nextSessionDate: LocalDate?,
+    onDayTap: (LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val today = LocalDate.now()
@@ -260,7 +253,6 @@ fun HomeScheduleCalendar(
 
     var currentMonth by remember { mutableStateOf(initialMonth) }
     var slideDirection by remember { mutableIntStateOf(1) }
-    var tappedDate by remember { mutableStateOf<LocalDate?>(null) }
 
     // Único movimiento del calendario: el punto de la próxima sesión respira despacio.
     // Solo ese, y solo en opacidad: en una rejilla densa cualquier cosa que crezca o se
@@ -275,13 +267,6 @@ fun HomeScheduleCalendar(
         ),
         label = "nextSessionDot"
     )
-
-    if (tappedDate != null) {
-        ComingSoonDayDialog(
-            date = tappedDate!!,
-            onDismiss = { tappedDate = null }
-        )
-    }
 
     Column(modifier = modifier) {
         Row(
@@ -380,7 +365,7 @@ fun HomeScheduleCalendar(
                                             if (hasSession) Modifier.clickable(
                                                 indication = LocalIndication.current,
                                                 interactionSource = interaction,
-                                                onClick = { tappedDate = date }
+                                                onClick = { onDayTap(date) }
                                             ) else Modifier
                                         ),
                                     contentAlignment = Alignment.Center

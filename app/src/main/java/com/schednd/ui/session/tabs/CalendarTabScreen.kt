@@ -51,6 +51,7 @@ fun CalendarTabScreen(
     dateSummaries: List<DateSummary>,
     totalParticipants: Int,
     confirmedDate: LocalDate?,
+    onDayTap: (LocalDate) -> Unit,
     onBack: () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
@@ -77,6 +78,7 @@ fun CalendarTabScreen(
                     dateSummaries = dateSummaries,
                     totalParticipants = totalParticipants,
                     confirmedDate = confirmedDate,
+                    onDayTap = onDayTap,
                     modifier = Modifier.fillMaxWidth()
                 )
 

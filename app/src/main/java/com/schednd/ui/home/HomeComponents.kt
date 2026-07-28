@@ -268,7 +268,7 @@ internal fun SessionRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                painter = painterResource(R.drawable.dice_d20_svgrepo_com),
+                painter = painterResource(R.drawable.ic_dice),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(26.dp)
@@ -361,7 +361,7 @@ internal fun EmptySessionsHint(modifier: Modifier = Modifier) {
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                painter = painterResource(R.drawable.dice_d20_svgrepo_com),
+                painter = painterResource(R.drawable.ic_dice),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(32.dp)

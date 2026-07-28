@@ -25,12 +25,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.schednd.ui.components.ComingSoonDayDialog
+import com.schednd.ui.components.DialogBlurRadius
 import com.schednd.ui.components.liquidGlassBackdrop
 import com.schednd.ui.components.rememberLiquidGlassState
 import com.schednd.ui.detail.EventDetailScreen
 import com.schednd.ui.detail.EventDetailViewModel
 import com.schednd.ui.session.tabs.CalendarTabScreen
 import com.schednd.ui.session.tabs.ProfileTabScreen
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import java.time.LocalDate
 
 @Composable
 fun SessionShellScreen(
@@ -44,6 +49,13 @@ fun SessionShellScreen(
     // Igual que en Home: la barra vive fuera del Scaffold porque el shader refracta lo
     // que hay dentro de esa capa, y la barra no puede refractarse a sí misma.
     val glass = rememberLiquidGlassState()
+    // Fondo del diálogo de día: el cristal refracta el contenido del Scaffold, y por
+    // debajo de API 33 el mismo contenido se difumina con Haze. Lleva capa aparte de la
+    // barra porque el radio de difuminado es un uniform del backdrop, no de la pieza, y
+    // el diálogo lo quiere bastante más alto que la bolita.
+    val hazeState = remember { HazeState() }
+    val dayDialogGlass = rememberLiquidGlassState()
+    var tappedDate by remember { mutableStateOf<LocalDate?>(null) }
     val navigationBarsBottom = WindowInsets.navigationBars
         .asPaddingValues()
         .calculateBottomPadding()
@@ -54,6 +66,8 @@ fun SessionShellScreen(
         Scaffold(
             modifier = Modifier
                 .fillMaxSize()
+                .hazeSource(state = hazeState)
+                .liquidGlassBackdrop(dayDialogGlass, blurRadius = DialogBlurRadius)
                 .liquidGlassBackdrop(glass)
                 .background(MaterialTheme.colorScheme.background),
             containerColor = Color.Transparent,
@@ -85,6 +99,7 @@ fun SessionShellScreen(
                             dateSummaries = eventState.dateSummaries,
                             totalParticipants = eventState.participants.size,
                             confirmedDate = eventState.confirmedDate,
+                            onDayTap = { date -> tappedDate = date },
                             onBack = onLeaveSession
                         )
                         SessionTab.PROFILE -> ProfileTabScreen(
@@ -110,5 +125,14 @@ fun SessionShellScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
             glass = glass
         )
+
+        tappedDate?.let { date ->
+            ComingSoonDayDialog(
+                date = date,
+                hazeState = hazeState,
+                glass = dayDialogGlass,
+                onDismiss = { tappedDate = null }
+            )
+        }
     }
 }

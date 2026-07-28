@@ -17,7 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -28,7 +28,7 @@ import com.schednd.ui.theme.SquircleShape
 fun ComingSoonScreen(
     title: String,
     subtitle: String,
-    icon: ImageVector,
+    icon: Painter,
     bottomPadding: PaddingValues
 ) {
     Box(
@@ -53,7 +53,7 @@ fun ComingSoonScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = icon,
+                        painter = icon,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(44.dp)

@@ -21,11 +21,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
-import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
@@ -53,16 +47,28 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.schednd.ui.components.LiquidGlassState
 import com.schednd.ui.components.TravelingHoleShape
-import com.schednd.ui.theme.LightBottomBar
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
+import com.schednd.R
+import com.schednd.ui.theme.LightRaisedSurface
 import com.schednd.ui.theme.SchedyTheme
 import kotlin.math.PI
 import kotlin.math.sin
 
-enum class SessionTab(val label: String, val icon: ImageVector) {
-    HOME("Inicio", Icons.Outlined.Home),
-    SESSIONS("Sesiones", Icons.AutoMirrored.Outlined.FormatListBulleted),
-    CALENDAR("Calendario", Icons.Outlined.CalendarMonth),
-    PROFILE("Perfil", Icons.Outlined.Person)
+enum class SessionTab(val label: String) {
+    HOME("Inicio"),
+    SESSIONS("Sesiones"),
+    CALENDAR("Calendario"),
+    PROFILE("Perfil");
+
+    /** Las cuatro son dibujos propios, de la misma familia de trazo. */
+    val icon: Painter
+        @Composable get() = when (this) {
+            HOME -> painterResource(R.drawable.ic_home)
+            CALENDAR -> painterResource(R.drawable.ic_calendar)
+            SESSIONS -> painterResource(R.drawable.ic_list)
+            PROFILE -> painterResource(R.drawable.ic_user)
+        }
 }
 
 /**
@@ -81,7 +87,7 @@ fun SessionBottomBar(
     // El cristal es solo la bolita: la barra se queda opaca como siempre.
     val glassActive = glass?.isSupported == true
     val darkTheme = isSystemInDarkTheme()
-    val containerColor = if (darkTheme) MaterialTheme.colorScheme.surface else LightBottomBar
+    val containerColor = if (darkTheme) MaterialTheme.colorScheme.surface else LightRaisedSurface
     val ballColor = when {
         // Sin cristal, la bolita es sólida como toda la vida.
         !glassActive -> MaterialTheme.colorScheme.onSurface
@@ -248,7 +254,7 @@ fun SessionBottomBar(
                         }
                     ) {
                         Icon(
-                            imageVector = tab.icon,
+                            painter = tab.icon,
                             contentDescription = tab.label,
                             tint = iconColor
                         )

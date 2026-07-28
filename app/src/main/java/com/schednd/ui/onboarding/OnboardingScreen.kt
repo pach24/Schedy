@@ -119,7 +119,7 @@ fun OnboardingScreen(
     ) {
         // ── D20 decorativo de fondo ───────────────────────────────────────────
         Icon(
-            painter = painterResource(R.drawable.dice_d20_svgrepo_com),
+            painter = painterResource(R.drawable.ic_dice),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.045f),
             modifier = Modifier
@@ -299,7 +299,7 @@ private fun OnboardingPreview() {
                 .background(MaterialTheme.colorScheme.background)
         ) {
             Icon(
-                painter = painterResource(R.drawable.dice_d20_svgrepo_com),
+                painter = painterResource(R.drawable.ic_dice),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.045f),
                 modifier = Modifier
@@ -392,7 +392,7 @@ private fun OnboardingPreviewDark() {
                 .background(MaterialTheme.colorScheme.background)
         ) {
             Icon(
-                painter = painterResource(R.drawable.dice_d20_svgrepo_com),
+                painter = painterResource(R.drawable.ic_dice),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.045f),
                 modifier = Modifier
