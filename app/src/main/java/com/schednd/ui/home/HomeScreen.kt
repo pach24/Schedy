@@ -37,7 +37,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.res.painterResource
 import com.schednd.R
 import androidx.compose.material3.CircularProgressIndicator
@@ -607,24 +606,6 @@ private fun Header(title: String, greeting: String? = null) {
             .statusBarsPadding()
             .padding(start = 24.dp, end = 16.dp, top = 12.dp, bottom = 8.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
-            HeaderIconButton(
-                icon = Icons.Filled.Search,
-                contentDescription = "Buscar",
-                onClick = { /* TODO buscar sesiones */ }
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            HeaderIconButton(
-                icon = Icons.Filled.Add,
-                contentDescription = "Nueva sesión",
-                onClick = { /* TODO acceso rápido a crear/unirse */ }
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
         if (greeting != null) {
             Text(
                 text = greeting,
@@ -639,35 +620,6 @@ private fun Header(title: String, greeting: String? = null) {
                 letterSpacing = (-1).sp
             ),
             color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-private fun HeaderIconButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit
-) {
-    val interaction = remember { MutableInteractionSource() }
-    Box(
-        modifier = Modifier
-            .pressScale(interaction)
-            .size(40.dp)
-            .clip(CircleShape)
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), CircleShape)
-            .clickable(
-                indication = LocalIndication.current,
-                interactionSource = interaction,
-                onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(18.dp)
         )
     }
 }
