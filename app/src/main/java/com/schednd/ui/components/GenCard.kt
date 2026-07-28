@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.schednd.ui.theme.CardShape
 
 @Composable
-fun AppleCard(
+fun GenCard(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {

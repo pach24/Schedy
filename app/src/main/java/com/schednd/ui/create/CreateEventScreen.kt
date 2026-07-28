@@ -63,7 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.schednd.R
-import com.schednd.ui.components.AppleTextField
+import com.schednd.ui.components.GenTextField
 import com.schednd.ui.components.CalendarGrid
 import com.schednd.ui.components.LoadingDots
 import com.schednd.ui.theme.CardShape
@@ -71,7 +71,7 @@ import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.PhaseEnterTransition
 import com.schednd.ui.theme.PhaseExitTransition
-import com.schednd.ui.theme.SchedndTheme
+import com.schednd.ui.theme.SchedyTheme
 import com.schednd.ui.theme.pressScale
 import java.time.LocalDate
 import kotlinx.coroutines.delay
@@ -181,7 +181,7 @@ fun CreateEventContent(
                 if (!isPhase2) {
                     // Phase 1: event details
                     FadeIn(delayMs = 0) {
-                        AppleTextField(
+                        GenTextField(
                             value = uiState.eventName,
                             onValueChange = onNameChanged,
                             label = "Nombre de la sesion",
@@ -193,7 +193,7 @@ fun CreateEventContent(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     FadeIn(delayMs = 100) {
-                        AppleTextField(
+                        GenTextField(
                             value = uiState.creatorName,
                             onValueChange = onCreatorNameChanged,
                             label = "Tu nombre",
@@ -389,7 +389,7 @@ fun CreateEventContent(
 @Preview(name = "Crear – Fase 1 formulario (Light)", showBackground = true, device = "spec:width=411dp,height=891dp")
 @Composable
 private fun CreatePhase1Preview() {
-    SchedndTheme(darkTheme = false) {
+    SchedyTheme(darkTheme = false) {
         CreateEventContent(
             uiState = CreateEventUiState(
                 eventName = "Partida de D&D: El Resurgir",
@@ -411,7 +411,7 @@ private fun CreatePhase1Preview() {
 @Preview(name = "Crear – Fase 2 código + calendario (Dark)", showBackground = true, device = "spec:width=411dp,height=891dp", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun CreatePhase2Preview() {
-    SchedndTheme(darkTheme = true) {
+    SchedyTheme(darkTheme = true) {
         val today = LocalDate.now()
         CreateEventContent(
             uiState = CreateEventUiState(

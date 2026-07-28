@@ -33,7 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.schednd.ui.theme.CalendarCellShape
-import com.schednd.ui.theme.SchedndTheme
+import com.schednd.ui.theme.SchedyTheme
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -57,7 +57,7 @@ fun MiniWeekCalendar(
     val days = remember(weekStart) { (0L..6L).map { weekStart.plusDays(it) } }
 
     val interaction = remember { MutableInteractionSource() }
-    AppleCard(
+    GenCard(
         modifier = modifier
             .fillMaxWidth()
             .then(
@@ -178,7 +178,7 @@ private fun weekDayInitial(date: LocalDate): String = when (date.dayOfWeek) {
 @Preview(showBackground = true)
 @Composable
 private fun MiniWeekCalendarPreview() {
-    SchedndTheme(darkTheme = false) {
+    SchedyTheme(darkTheme = false) {
         val today = LocalDate.now()
         MiniWeekCalendar(
             sessionDates = setOf(today.plusDays(2), today.plusDays(4)),

@@ -23,7 +23,7 @@ import com.schednd.ui.theme.NavPopEnterTransition
 import com.schednd.ui.theme.NavPopExitTransition
 
 @Composable
-fun SchedndNavGraph(
+fun SchedyNavGraph(
     navController: NavHostController,
     startDestination: String = "home"
 ) {
@@ -67,7 +67,7 @@ fun SchedndNavGraph(
                 type = NavType.StringType
                 defaultValue = ""
             }),
-            deepLinks = listOf(navDeepLink { uriPattern = "schednd://join?code={code}" })
+            deepLinks = listOf(navDeepLink { uriPattern = "schedy://join?code={code}" })
         ) { backStackEntry ->
             val prefilledCode = backStackEntry.arguments?.getString("code").orEmpty()
             JoinEventScreen(
@@ -88,7 +88,7 @@ fun SchedndNavGraph(
             composable(
                 route = "event/{code}/home",
                 // Entrada desde el push del grupo y desde el recordatorio local.
-                deepLinks = listOf(navDeepLink { uriPattern = "schednd://event/{code}" })
+                deepLinks = listOf(navDeepLink { uriPattern = "schedy://event/{code}" })
             ) { backStackEntry ->
                 val code = backStackEntry.arguments?.getString("code").orEmpty()
                 val parentEntry = remember(backStackEntry) {

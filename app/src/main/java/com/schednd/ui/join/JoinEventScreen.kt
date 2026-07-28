@@ -40,14 +40,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.schednd.model.Event
-import com.schednd.ui.components.AppleTextField
+import com.schednd.ui.components.GenTextField
 import com.schednd.ui.components.CalendarGrid
 import com.schednd.ui.components.LoadingDots
 import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.PhaseEnterTransition
 import com.schednd.ui.theme.PhaseExitTransition
-import com.schednd.ui.theme.SchedndTheme
+import com.schednd.ui.theme.SchedyTheme
 import com.schednd.ui.theme.pressScale
 import java.time.LocalDate
 
@@ -132,7 +132,7 @@ fun JoinEventContent(
             Spacer(modifier = Modifier.height(8.dp))
 
             FadeIn(delayMs = 0) {
-                AppleTextField(
+                GenTextField(
                     value = uiState.code,
                     onValueChange = onCodeChanged,
                     label = "Codigo de la sesión",
@@ -147,7 +147,7 @@ fun JoinEventContent(
             Spacer(modifier = Modifier.height(12.dp))
 
             FadeIn(delayMs = 100) {
-                AppleTextField(
+                GenTextField(
                     value = uiState.participantName,
                     onValueChange = onNameChanged,
                     label = "Tu nombre",
@@ -264,7 +264,7 @@ fun JoinEventContent(
 @Preview(name = "Unirse – Buscar sesión (Light)", showBackground = true, device = "spec:width=411dp,height=891dp")
 @Composable
 private fun JoinPhase1Preview() {
-    SchedndTheme(darkTheme = false) {
+    SchedyTheme(darkTheme = false) {
         JoinEventContent(
             uiState = JoinEventUiState(
                 code = "ABC123",
@@ -285,7 +285,7 @@ private fun JoinPhase1Preview() {
 @Preview(name = "Unirse – Seleccionar fechas (Dark)", showBackground = true, device = "spec:width=411dp,height=891dp", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun JoinPhase2Preview() {
-    SchedndTheme(darkTheme = true) {
+    SchedyTheme(darkTheme = true) {
         val today = LocalDate.now()
         JoinEventContent(
             uiState = JoinEventUiState(

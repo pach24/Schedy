@@ -26,7 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.launch
 
-// ── Trade Republic-style navigation transitions ──────────────────────
+// ── Transiciones de navegación ───────────────────────────────────────
 // Forward: new screen slides up from bottom, old screen scales down + dims
 // Back:    current screen slides down, background screen scales back up
 
@@ -59,7 +59,7 @@ val NavPopExitTransition: ExitTransition =
     ) { it } + fadeOut(tween(280))
 
 // ── Phase transition specs (internal screen transitions) ─────────────
-// Slide up from bottom + fade, like Trade Republic's sheet presentations
+// Slide up from bottom + fade, para presentaciones tipo hoja
 
 val PhaseEnterTransition: EnterTransition =
     slideInVertically(
@@ -76,7 +76,7 @@ val PhaseExitTransition: ExitTransition =
 
 /**
  * Modifier that scales down with spring physics on press.
- * Trade Republic uses a subtle, responsive press scale.
+ * Escala de pulsación sutil y responsiva.
  */
 @Composable
 fun Modifier.pressScale(
@@ -103,7 +103,7 @@ fun Modifier.pressScale(
 
 /**
  * Composable wrapper — fade + spring slide-up on first appearance.
- * Emulates Trade Republic's staggered content reveal.
+ * Revelado escalonado del contenido.
  */
 @Composable
 fun FadeIn(
@@ -152,7 +152,7 @@ fun StaggeredColumn(
 }
 
 /**
- * Crossfade with scale — Trade Republic style loading transitions.
+ * Crossfade con escala — transiciones de carga.
  * Content scales up slightly from 0.96 as it fades in.
  */
 @Composable

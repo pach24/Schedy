@@ -53,7 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.schednd.model.NoteTag
-import com.schednd.ui.components.AppleCard
+import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.Avatar
 import com.schednd.ui.components.TagChip
 import com.schednd.ui.components.color
@@ -103,7 +103,7 @@ fun NoteEditorScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            AppleCard(modifier = Modifier
+            GenCard(modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -182,7 +182,7 @@ fun NoteEditorScreen(
 
             if (!uiState.isEditMode) {
                 Spacer(modifier = Modifier.height(16.dp))
-                AppleCard(modifier = Modifier
+                GenCard(modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)) {
                     Column {

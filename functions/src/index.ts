@@ -77,6 +77,6 @@ function buildMessage(code: string, data: Payload): { title: string; body: strin
         body: "La sesión vuelve a estar sin fecha",
       };
     default:
-      return { title: "S&R", body: `Novedades en la sesión ${code}` };
+      return { title: "Schedy", body: `Novedades en la sesión ${code}` };
   }
 }

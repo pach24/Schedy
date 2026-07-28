@@ -28,12 +28,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
-import com.schednd.ui.theme.SchedndTheme
+import com.schednd.ui.theme.SchedyTheme
 import java.time.LocalDate
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.schednd.ui.components.AppleTextField
+import com.schednd.ui.components.GenTextField
 import com.schednd.ui.components.CalendarGrid
 import com.schednd.ui.components.LoadingDots
 import com.schednd.ui.theme.FadeIn
@@ -101,7 +101,7 @@ fun EditAvailabilityContent(
             }
 
             FadeIn(delayMs = 80) {
-                AppleTextField(
+                GenTextField(
                     value = uiState.myName,
                     onValueChange = onMyNameChanged,
                     label = "Tu nombre",
@@ -186,7 +186,7 @@ fun EditAvailabilityContent(
 @Preview(name = "Editar disponibilidad (Light)", showBackground = true, device = "spec:width=411dp,height=891dp")
 @Composable
 private fun EditAvailabilityPreviewLight() {
-    SchedndTheme(darkTheme = false) {
+    SchedyTheme(darkTheme = false) {
         val today = LocalDate.now()
         EditAvailabilityContent(
             uiState = EventDetailUiState(
@@ -212,7 +212,7 @@ private fun EditAvailabilityPreviewLight() {
 @Preview(name = "Editar disponibilidad (Dark)", showBackground = true, device = "spec:width=411dp,height=891dp", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun EditAvailabilityPreviewDark() {
-    SchedndTheme(darkTheme = true) {
+    SchedyTheme(darkTheme = true) {
         val today = LocalDate.now()
         EditAvailabilityContent(
             uiState = EventDetailUiState(

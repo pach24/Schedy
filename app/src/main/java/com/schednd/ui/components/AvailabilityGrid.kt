@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.sp
 import com.schednd.model.Participant
 import com.schednd.ui.theme.CalendarCellShape
 import com.schednd.ui.theme.VerticalSquircleShape
-import com.schednd.ui.theme.SchedndTheme
+import com.schednd.ui.theme.SchedyTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -306,7 +306,7 @@ fun AvailabilityGrid(
 )
 @Composable
 fun AvailabilityGridPreview() {
-    SchedndTheme {
+    SchedyTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
             val today = remember { LocalDate.now() }
             val dates = remember { (0..5).map { today.plusDays(it.toLong()) } }

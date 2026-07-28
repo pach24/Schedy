@@ -49,7 +49,7 @@ fun NoteCard(
 ) {
     val interaction = remember { MutableInteractionSource() }
 
-    AppleCard(
+    GenCard(
         modifier = modifier
             .pressScale(interaction)
             .clickable(

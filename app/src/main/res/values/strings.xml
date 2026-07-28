@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">S&amp;R</string>
-    <string name="share_event">¡Únete a mi sesión de D&amp;D en S&amp;R!\n\nEntra directamente aquí y solo pon tu nombre:\nschednd://join?code=%1$s\n\nO usa el código: %1$s</string>
+    <string name="app_name">Schedy</string>
+    <string name="share_event">¡Únete a mi sesión de D&amp;D en Schedy!\n\nEntra directamente aquí y solo pon tu nombre:\nschedy://join?code=%1$s\n\nO usa el código: %1$s</string>
 </resources>

@@ -39,7 +39,7 @@ import dev.chrisbanes.haze.HazeState
  *   detrás lleve `liquidGlassBackdrop` con ese mismo estado.
  */
 @Composable
-fun AppleTopBar(
+fun GenTopBar(
     title: String,
     hazeState: HazeState,
     onBack: () -> Unit,

@@ -2,7 +2,7 @@ package com.schednd.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Trade Republic inspired — monochrome, minimal, no accent blue
+// Paleta monocroma, minimal, sin azul de acento
 // Primary actions are white/black depending on theme
 
 // Light mode

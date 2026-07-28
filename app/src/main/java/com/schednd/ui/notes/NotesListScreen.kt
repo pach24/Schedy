@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.sp
 import com.schednd.model.Note
 import com.schednd.model.NoteTag
 import com.schednd.model.NoteTemplate
-import com.schednd.ui.components.AppleCard
+import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.FilterChip
 import com.schednd.ui.components.NoteCard
 import com.schednd.ui.theme.FadeIn
@@ -407,7 +407,7 @@ private fun TemplateRow(
     modifier: Modifier = Modifier
 ) {
     val interaction = remember { MutableInteractionSource() }
-    AppleCard(
+    GenCard(
         modifier = modifier
             .pressScale(interaction)
             .clickable(

@@ -12,7 +12,7 @@ import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.schednd.R
-import com.schednd.SchedndApp
+import com.schednd.SchedyApp
 
 /**
  * Muestra el recordatorio local "la sesión es mañana". Se programa desde
@@ -34,7 +34,7 @@ class SessionReminderWorker(
         ) == PackageManager.PERMISSION_GRANTED
         if (!granted) return Result.success()
 
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("schednd://event/$code")).apply {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("schedy://event/$code")).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pending = PendingIntent.getActivity(
@@ -46,7 +46,7 @@ class SessionReminderWorker(
 
         val notification = NotificationCompat.Builder(
             applicationContext,
-            SchedndApp.NOTIFICATION_CHANNEL_ID
+            SchedyApp.NOTIFICATION_CHANNEL_ID
         )
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("🎲 ${sessionName.ifBlank { "Tu sesión" }} es mañana")

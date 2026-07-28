@@ -6,8 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.navigation.compose.rememberNavController
 import com.schednd.data.repository.PlayerRepository
-import com.schednd.ui.navigation.SchedndNavGraph
-import com.schednd.ui.theme.SchedndTheme
+import com.schednd.ui.navigation.SchedyNavGraph
+import com.schednd.ui.theme.SchedyTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -21,9 +21,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val startDestination = if (playerRepository.isOnboardingComplete()) "home" else "onboarding"
         setContent {
-            SchedndTheme {
+            SchedyTheme {
                 val navController = rememberNavController()
-                SchedndNavGraph(
+                SchedyNavGraph(
                     navController = navController,
                     startDestination = startDestination
                 )

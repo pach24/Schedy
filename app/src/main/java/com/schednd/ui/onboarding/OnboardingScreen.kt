@@ -63,7 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.schednd.R
 import com.schednd.ui.theme.GolosFamily
-import com.schednd.ui.theme.SchedndTheme
+import com.schednd.ui.theme.SchedyTheme
 import com.schednd.ui.theme.TierFull
 import com.schednd.ui.theme.pressScale
 import kotlinx.coroutines.delay
@@ -179,7 +179,7 @@ fun OnboardingScreen(
                     )
                 ) {
                     Text(
-                        text = "Bienvenido a S&R.\nEmpecemos por conocerte.",
+                        text = "Bienvenido a Schedy.\nEmpecemos por conocerte.",
                         style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -207,7 +207,7 @@ fun OnboardingScreen(
                         modifier = Modifier.padding(start = 4.dp, bottom = 10.dp)
                     )
 
-                    // Campo limpio iOS-style
+                    // Campo limpio, sin decoración
                     val fieldInteraction = remember { MutableInteractionSource() }
 
                     BasicTextField(
@@ -292,7 +292,7 @@ fun OnboardingScreen(
 @Preview(showBackground = true, device = "spec:width=393dp,height=852dp")
 @Composable
 private fun OnboardingPreview() {
-    SchedndTheme(darkTheme = false) {
+    SchedyTheme(darkTheme = false) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -329,7 +329,7 @@ private fun OnboardingPreview() {
                     )
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        text = "Bienvenido a S&R.\nEmpecemos por conocerte.",
+                        text = "Bienvenido a Schedy.\nEmpecemos por conocerte.",
                         style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -385,7 +385,7 @@ private fun OnboardingPreview() {
 @Preview(showBackground = true, device = "spec:width=393dp,height=852dp", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun OnboardingPreviewDark() {
-    SchedndTheme(darkTheme = true) {
+    SchedyTheme(darkTheme = true) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -422,7 +422,7 @@ private fun OnboardingPreviewDark() {
                     )
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        text = "Bienvenido a S&R.\nEmpecemos por conocerte.",
+                        text = "Bienvenido a Schedy.\nEmpecemos por conocerte.",
                         style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

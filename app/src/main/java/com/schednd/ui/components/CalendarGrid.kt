@@ -108,7 +108,7 @@ fun CalendarGrid(
             }
         }
 
-        // Animated month transition — spring-based like Trade Republic
+        // Animated month transition — spring-based
         val dir = slideDirection
         AnimatedContent(
             targetState = currentMonth,

@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.dp
 import com.schednd.ui.components.LiquidGlassState
 import com.schednd.ui.components.TravelingHoleShape
 import com.schednd.ui.theme.LightBottomBar
-import com.schednd.ui.theme.SchedndTheme
+import com.schednd.ui.theme.SchedyTheme
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -287,7 +287,7 @@ val SessionBottomBarHeight = BottomBarHeight
 @Preview(showBackground = true)
 @Composable
 private fun SessionBottomBarPreview() {
-    SchedndTheme(darkTheme = false) {
+    SchedyTheme(darkTheme = false) {
         var selected by remember { mutableStateOf(SessionTab.HOME) }
         SessionBottomBar(selectedTab = selected, onTabSelected = { selected = it })
     }

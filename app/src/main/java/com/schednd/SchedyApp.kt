@@ -6,7 +6,7 @@ import android.app.NotificationManager
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
-class SchedndApp : Application() {
+class SchedyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
@@ -26,6 +26,6 @@ class SchedndApp : Application() {
     }
 
     companion object {
-        const val NOTIFICATION_CHANNEL_ID = "schednd_events"
+        const val NOTIFICATION_CHANNEL_ID = "schedy_events"
     }
 }
