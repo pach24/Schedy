@@ -1,7 +1,12 @@
 package com.schednd.ui.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -19,9 +24,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -39,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -240,9 +250,7 @@ fun HomeScheduleCalendar(
     nextSessionDate: LocalDate?,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
     val today = LocalDate.now()
-    val maxHeatColor = getHeatmapColor(1, 1)
 
     val initialMonth = remember(nextSessionDate, sessionDates) {
         nextSessionDate?.let { YearMonth.from(it) }
@@ -253,6 +261,20 @@ fun HomeScheduleCalendar(
     var currentMonth by remember { mutableStateOf(initialMonth) }
     var slideDirection by remember { mutableIntStateOf(1) }
     var tappedDate by remember { mutableStateOf<LocalDate?>(null) }
+
+    // Único movimiento del calendario: el punto de la próxima sesión respira despacio.
+    // Solo ese, y solo en opacidad: en una rejilla densa cualquier cosa que crezca o se
+    // repita en varias celdas se lee como un fallo de carga, no como un acento.
+    val pulse = rememberInfiniteTransition(label = "calendarPulse")
+    val nextDotAlpha by pulse.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(PulseMillis, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "nextSessionDot"
+    )
 
     if (tappedDate != null) {
         ComingSoonDayDialog(
@@ -327,13 +349,13 @@ fun HomeScheduleCalendar(
                                 val isToday = date == today
                                 val hasSession = sessionName != null
 
-                                val bgColor = if (hasSession) maxHeatColor else Color.Transparent
-                                val onHeat = if (isDark) Color(0xFF111111) else Color.White
-                                val textColor = when {
-                                    hasSession -> onHeat
-                                    isToday -> MaterialTheme.colorScheme.primary
-                                    else -> MaterialTheme.colorScheme.onSurface
-                                }
+                                // Mismo lenguaje que el mini calendario de Inicio: hoy es la
+                                // celda maciza y la sesión es contorno más punto. El verde
+                                // del mapa de calor se queda fuera a propósito: en esta app
+                                // significa disponibilidad, y usarlo también para
+                                // "confirmada" mezcla dos cosas distintas.
+                                val onSurface = MaterialTheme.colorScheme.onSurface
+                                val contentColor = if (isToday) MaterialTheme.colorScheme.surface else onSurface
 
                                 val interaction = remember { MutableInteractionSource() }
 
@@ -343,11 +365,16 @@ fun HomeScheduleCalendar(
                                         .aspectRatio(1f)
                                         .padding(3.dp)
                                         .clip(CalendarCellShape)
-                                        .background(bgColor, CalendarCellShape)
+                                        .background(
+                                            if (isToday) onSurface else Color.Transparent,
+                                            CalendarCellShape
+                                        )
                                         .then(
-                                            if (isNext) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CalendarCellShape)
-                                            else if (isToday && !hasSession) Modifier.border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.45f), CalendarCellShape)
-                                            else Modifier
+                                            if (hasSession && !isToday) Modifier.border(
+                                                width = if (isNext) 1.5.dp else 1.dp,
+                                                color = onSurface.copy(alpha = if (isNext) 0.45f else 0.22f),
+                                                shape = CalendarCellShape
+                                            ) else Modifier
                                         )
                                         .then(
                                             if (hasSession) Modifier.clickable(
@@ -358,12 +385,27 @@ fun HomeScheduleCalendar(
                                         ),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        text = "${date.dayOfMonth}",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = if (hasSession || isToday) FontWeight.SemiBold else FontWeight.Normal,
-                                        color = textColor
-                                    )
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = "${date.dayOfMonth}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (hasSession || isToday) FontWeight.SemiBold else FontWeight.Normal,
+                                            color = contentColor
+                                        )
+                                        Spacer(modifier = Modifier.height(3.dp))
+                                        // El hueco del punto se reserva siempre, tenga
+                                        // sesión o no: así todos los números del mes caen
+                                        // sobre la misma línea.
+                                        Box(
+                                            modifier = Modifier
+                                                .size(4.dp)
+                                                .graphicsLayer { alpha = if (isNext) nextDotAlpha else 1f }
+                                                .background(
+                                                    if (hasSession) contentColor else Color.Transparent,
+                                                    CircleShape
+                                                )
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -376,3 +418,6 @@ fun HomeScheduleCalendar(
         }
     }
 }
+
+/** Medio ciclo del respiro del punto de la próxima sesión. */
+private const val PulseMillis = 1400
