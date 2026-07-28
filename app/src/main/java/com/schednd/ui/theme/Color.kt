@@ -15,6 +15,10 @@ val LightOutline = Color(0xFFD8D8D8)
 val LightPrimary = Color(0xFF111111)
 val LightOnPrimary = Color(0xFFFFFFFF)
 
+/** El blanco puro de [LightSurface] se pierde sobre el fondo claro: la barra inferior
+ *  necesita un tono algo más oscuro para que se lea su silueta y el hueco de la bolita. */
+val LightBottomBar = Color(0xFFE3E3E9)
+
 // Dark mode
 val DarkBackground = Color(0xFF0D0D0D)
 val DarkSurface = Color(0xFF1A1A1A)

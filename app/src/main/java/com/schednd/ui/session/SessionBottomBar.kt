@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,6 +48,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.schednd.ui.components.TravelingHoleShape
+import com.schednd.ui.theme.LightBottomBar
 import com.schednd.ui.theme.SchedndTheme
 import kotlin.math.PI
 import kotlin.math.sin
@@ -70,7 +72,8 @@ fun SessionBottomBar(
     modifier: Modifier = Modifier,
     items: List<SessionTab> = SessionTab.entries
 ) {
-    val containerColor = MaterialTheme.colorScheme.surface
+    val containerColor =
+        if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surface else LightBottomBar
     val ballColor = MaterialTheme.colorScheme.onSurface
 
     var previousTab by remember { mutableStateOf(selectedTab) }
