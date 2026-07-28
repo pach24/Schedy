@@ -2,7 +2,7 @@ package com.schednd.ui.session
 
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
@@ -103,7 +103,7 @@ fun SessionBottomBar(
         try {
             animationProgress.animateTo(
                 targetValue = 1f,
-                animationSpec = tween(SlideDurationMillis, easing = FastOutSlowInEasing)
+                animationSpec = tween(SlideDurationMillis, easing = LinearOutSlowInEasing)
             )
         } finally {
             // Aunque se cancele a medias, el origen del siguiente recorrido es este destino.
@@ -220,12 +220,12 @@ fun SessionBottomBar(
                     // El icono viaja con la bolita: mismo easing que el recorrido.
                     val elevationOffset by transition.animateFloat(
                         label = "tabElevation",
-                        transitionSpec = { tween(SlideDurationMillis, easing = FastOutSlowInEasing) }
+                        transitionSpec = { tween(SlideDurationMillis, easing = LinearOutSlowInEasing) }
                     ) { isSelected -> if (isSelected) -bottomBarHeightPx / 2 else 0f }
 
                     val iconScale by transition.animateFloat(
                         label = "tabScale",
-                        transitionSpec = { tween(SlideDurationMillis, easing = FastOutSlowInEasing) }
+                        transitionSpec = { tween(SlideDurationMillis, easing = LinearOutSlowInEasing) }
                     ) { isSelected -> if (isSelected) SelectedIconScale else 1f }
 
                     val iconColor by transition.animateColor(
@@ -270,7 +270,7 @@ fun SessionBottomBar(
 /** Suaviza los extremos (smoothstep) para que huecos y curvas no arranquen ni paren en seco. */
 private fun smoothStep(t: Float): Float = t * t * (3f - 2f * t)
 
-private const val SlideDurationMillis = 340
+private const val SlideDurationMillis = 220
 private const val ArcHeightFactor = .5f
 private const val StretchFactor = .12f
 private const val SelectedIconScale = 1.12f

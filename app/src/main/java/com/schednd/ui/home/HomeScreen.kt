@@ -143,7 +143,7 @@ fun HomeContent(
         ) { innerPadding ->
             Crossfade(
                 targetState = selectedTab,
-                animationSpec = tween(durationMillis = 220),
+                animationSpec = tween(durationMillis = 130),
                 label = "homeTabCrossfade"
             ) { tab ->
                 when (tab) {

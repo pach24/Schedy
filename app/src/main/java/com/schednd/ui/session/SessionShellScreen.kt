@@ -68,7 +68,7 @@ fun SessionShellScreen(
         ) { innerPadding ->
             Crossfade(
                 targetState = selectedTab,
-                animationSpec = tween(durationMillis = 220),
+                animationSpec = tween(durationMillis = 130),
                 label = "shellCrossfade"
             ) { tab ->
                 Box(modifier = Modifier.fillMaxSize()) {
