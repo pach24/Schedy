@@ -17,9 +17,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -34,7 +37,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.res.painterResource
 import com.schednd.R
 import androidx.compose.material3.CircularProgressIndicator
@@ -63,8 +65,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.schednd.ui.components.AppleCard
 import com.schednd.ui.components.ComingSoonDayDialog
 import com.schednd.ui.components.HomeScheduleCalendar
+import com.schednd.ui.components.MiniWeekCalendar
+import com.schednd.ui.components.liquidGlassBackdrop
+import com.schednd.ui.components.rememberLiquidGlassState
 import com.schednd.ui.session.SessionBottomBar
+import com.schednd.ui.session.SessionBottomBarHeight
 import com.schednd.ui.session.SessionTab
+import com.schednd.ui.session.tabs.ProfileTabScreen
 import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.SchedndTheme
@@ -112,60 +119,79 @@ fun HomeContent(
     onJoinEvent: () -> Unit,
     onOpenEvent: (String) -> Unit
 ) {
-    var selectedTab by rememberSaveable { mutableStateOf(SessionTab.SESSION) }
+    var selectedTab by rememberSaveable { mutableStateOf(SessionTab.HOME) }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            SessionBottomBar(
-                selectedTab = selectedTab,
-                onTabSelected = { tab ->
-                    if (tab == SessionTab.SESSION || tab == SessionTab.CALENDAR) {
-                        selectedTab = tab
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Crossfade(
-            targetState = selectedTab,
-            animationSpec = tween(durationMillis = 220),
-            label = "homeTabCrossfade"
-        ) { tab ->
-            when (tab) {
-                SessionTab.CALENDAR -> HomeCalendarTab(uiState = uiState, innerPadding = innerPadding)
-                else -> HomeSessionTab(
-                    uiState = uiState,
-                    innerPadding = innerPadding,
-                    onCreateEvent = onCreateEvent,
-                    onJoinEvent = onJoinEvent,
-                    onOpenEvent = onOpenEvent
+    // La barra se dibuja fuera del Scaffold: el shader del cristal refracta lo que hay
+    // dentro del Scaffold, así que la barra no puede formar parte de esa capa.
+    val glass = rememberLiquidGlassState()
+    val navigationBarsBottom = WindowInsets.navigationBars
+        .asPaddingValues()
+        .calculateBottomPadding()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.liquidGlassBackdrop(glass),
+            containerColor = MaterialTheme.colorScheme.background,
+            bottomBar = {
+                // Hueco del mismo alto que la barra real, para que innerPadding siga valiendo.
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(SessionBottomBarHeight + navigationBarsBottom)
                 )
             }
+        ) { innerPadding ->
+            Crossfade(
+                targetState = selectedTab,
+                animationSpec = tween(durationMillis = 130),
+                label = "homeTabCrossfade"
+            ) { tab ->
+                when (tab) {
+                    SessionTab.CALENDAR -> HomeCalendarTab(uiState = uiState, innerPadding = innerPadding)
+                    SessionTab.PROFILE -> ProfileTabScreen(
+                        bottomPadding = innerPadding,
+                        onBack = { selectedTab = SessionTab.HOME }
+                    )
+                    SessionTab.SESSIONS -> HomeSessionsTab(
+                        uiState = uiState,
+                        innerPadding = innerPadding,
+                        onCreateEvent = onCreateEvent,
+                        onJoinEvent = onJoinEvent,
+                        onOpenEvent = onOpenEvent
+                    )
+                    SessionTab.HOME -> HomeMainTab(
+                        uiState = uiState,
+                        innerPadding = innerPadding,
+                        onCreateEvent = onCreateEvent,
+                        onJoinEvent = onJoinEvent,
+                        onSeeAllSessions = { selectedTab = SessionTab.SESSIONS },
+                        onOpenCalendar = { selectedTab = SessionTab.CALENDAR }
+                    )
+                }
+            }
         }
+
+        SessionBottomBar(
+            selectedTab = selectedTab,
+            onTabSelected = { tab -> selectedTab = tab },
+            modifier = Modifier.align(Alignment.BottomCenter),
+            glass = glass
+        )
     }
 }
 
+/** Pestaña Inicio: cuenta atrás de la próxima sesión y accesos rápidos. */
 @Composable
-private fun HomeSessionTab(
+private fun HomeMainTab(
     uiState: HomeUiState,
     innerPadding: PaddingValues,
     onCreateEvent: () -> Unit,
     onJoinEvent: () -> Unit,
-    onOpenEvent: (String) -> Unit
+    onSeeAllSessions: () -> Unit,
+    onOpenCalendar: () -> Unit
 ) {
     if (!uiState.isAuthReady && uiState.error == null) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(
-                color = MaterialTheme.colorScheme.primary,
-                strokeWidth = 2.dp
-            )
-        }
+        LoadingTab(innerPadding = innerPadding)
         return
     }
 
@@ -176,7 +202,7 @@ private fun HomeSessionTab(
             bottom = innerPadding.calculateBottomPadding() + 24.dp
         )
     ) {
-        item { Header() }
+        item { Header(title = "Tus sesiones", greeting = "Hola") }
 
         if (uiState.error != null) {
             item {
@@ -188,35 +214,111 @@ private fun HomeSessionTab(
             }
         }
 
-        uiState.nextSession?.let { session ->
-            item {
-                FadeIn(delayMs = 50) {
-                    Column(
-                        modifier = Modifier
-                            .padding(horizontal = 20.dp, vertical = 8.dp)
-                            .fillMaxWidth()
-                            .clip(SquircleShape(24.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
+        item {
+            FadeIn(delayMs = 50) {
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                        .fillMaxWidth()
+                        .clip(SquircleShape(24.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    val session = uiState.nextSession
+                    if (session != null) {
                         HeroDate(session = session)
                         HeroSessionLabel(session = session)
                         HeroCountdown(session = session)
+                    } else {
+                        NoUpcomingSessionHero()
                     }
                 }
             }
         }
 
-        if (uiState.allSessions.isNotEmpty()) {
+        item {
+            val sessionDays = remember(uiState.allSessions) {
+                uiState.allSessions.mapNotNull { it.confirmedDate }.toSet()
+            }
+            FadeIn(delayMs = 90) {
+                MiniWeekCalendar(
+                    sessionDates = sessionDays,
+                    onClick = onOpenCalendar,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                )
+            }
+        }
+
+        if (uiState.allSessions.isEmpty()) {
+            item {
+                EmptySessionsHint(modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp))
+            }
+        } else {
+            item {
+                SeeAllSessionsRow(
+                    total = uiState.allSessions.size,
+                    onClick = onSeeAllSessions,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+                )
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(12.dp)) }
+        item {
+            ActionButtons(
+                onCreateEvent = onCreateEvent,
+                onJoinEvent = onJoinEvent,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+        }
+    }
+}
+
+/** Pestaña Sesiones: el listado completo, próximas y pasadas. */
+@Composable
+private fun HomeSessionsTab(
+    uiState: HomeUiState,
+    innerPadding: PaddingValues,
+    onCreateEvent: () -> Unit,
+    onJoinEvent: () -> Unit,
+    onOpenEvent: (String) -> Unit
+) {
+    if (!uiState.isAuthReady && uiState.error == null) {
+        LoadingTab(innerPadding = innerPadding)
+        return
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            top = 0.dp,
+            bottom = innerPadding.calculateBottomPadding() + 24.dp
+        )
+    ) {
+        item { Header(title = "Sesiones") }
+
+        if (uiState.allSessions.isEmpty()) {
+            item {
+                EmptySessionsHint(modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp))
+            }
+        } else {
             item {
                 SectionHeader(
-                    title = "TODAS LAS SESIONES",
-                    trailing = "${uiState.allSessions.size}",
+                    title = "PRÓXIMAS SESIONES",
+                    trailing = "${uiState.upcomingSessions.size}",
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
                 )
             }
-            items(uiState.allSessions, key = { it.code }) { session ->
+            if (uiState.upcomingSessions.isEmpty()) {
+                item {
+                    SectionEmptyHint(
+                        text = "No hay sesiones próximas.",
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
+                    )
+                }
+            }
+            items(uiState.upcomingSessions, key = { "upcoming-${it.code}" }) { session ->
                 SessionRow(
                     session = session,
                     isNext = session.code == uiState.nextSession?.code,
@@ -224,9 +326,29 @@ private fun HomeSessionTab(
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
                 )
             }
-        } else {
+
             item {
-                EmptySessionsHint(modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp))
+                SectionHeader(
+                    title = "SESIONES PASADAS",
+                    trailing = "${uiState.pastSessions.size}",
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                )
+            }
+            if (uiState.pastSessions.isEmpty()) {
+                item {
+                    SectionEmptyHint(
+                        text = "Todavía no hay sesiones pasadas.",
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
+                    )
+                }
+            }
+            items(uiState.pastSessions, key = { "past-${it.code}" }) { session ->
+                SessionRow(
+                    session = session,
+                    isNext = false,
+                    onClick = { onOpenEvent(session.code) },
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                )
             }
         }
 
@@ -236,6 +358,65 @@ private fun HomeSessionTab(
                 onCreateEvent = onCreateEvent,
                 onJoinEvent = onJoinEvent,
                 modifier = Modifier.padding(horizontal = 20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingTab(innerPadding: PaddingValues) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            color = MaterialTheme.colorScheme.primary,
+            strokeWidth = 2.dp
+        )
+    }
+}
+
+@Composable
+private fun SeeAllSessionsRow(
+    total: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interaction = remember { MutableInteractionSource() }
+    AppleCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .pressScale(interaction)
+            .clickable(
+                indication = LocalIndication.current,
+                interactionSource = interaction,
+                onClick = onClick
+            )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Todas las sesiones",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = if (total == 1) "1 sesión" else "$total sesiones",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -294,10 +475,19 @@ private fun HomeCalendarTab(
             )
         }
 
-        if (sessionDates.isNotEmpty()) {
+        // "Fechas confirmadas" mira hacia delante: una sesión ya jugada no es una fecha
+        // que haya que tener presente. En la rejilla sí se quedan marcadas, como registro.
+        val upcomingSessions = remember(uiState.allSessions) {
+            val today = LocalDate.now()
+            uiState.allSessions
+                .filter { it.confirmedDate != null && !it.confirmedDate.isBefore(today) }
+                .sortedBy { it.confirmedDate }
+        }
+
+        if (upcomingSessions.isNotEmpty()) {
             Spacer(modifier = Modifier.height(20.dp))
             HomeCalendarSessionList(
-                sessions = uiState.allSessions.filter { it.confirmedDate != null },
+                sessions = upcomingSessions,
                 nextSession = uiState.nextSession,
                 onSessionClick = { date -> tappedDate = date }
             )
@@ -418,72 +608,27 @@ private fun EmptyCalendarHint(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun Header() {
+private fun Header(title: String, greeting: String? = null) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
             .padding(start = 24.dp, end = 16.dp, top = 12.dp, bottom = 8.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
-            HeaderIconButton(
-                icon = Icons.Filled.Search,
-                contentDescription = "Buscar",
-                onClick = { /* TODO buscar sesiones */ }
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            HeaderIconButton(
-                icon = Icons.Filled.Add,
-                contentDescription = "Nueva sesión",
-                onClick = { /* TODO acceso rápido a crear/unirse */ }
+        if (greeting != null) {
+            Text(
+                text = greeting,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Hola",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = "Tus sesiones",
+            text = title,
             style = MaterialTheme.typography.displaySmall.copy(
                 fontWeight = FontWeight.Black,
                 letterSpacing = (-1).sp
             ),
             color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-private fun HeaderIconButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit
-) {
-    val interaction = remember { MutableInteractionSource() }
-    Box(
-        modifier = Modifier
-            .pressScale(interaction)
-            .size(40.dp)
-            .clip(CircleShape)
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), CircleShape)
-            .clickable(
-                indication = LocalIndication.current,
-                interactionSource = interaction,
-                onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(18.dp)
         )
     }
 }
@@ -538,13 +683,52 @@ private fun HeroDate(session: HomeSessionCard, modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun NoUpcomingSessionHero(modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            text = "PRÓXIMA SESIÓN",
+            style = MaterialTheme.typography.labelSmall.copy(
+                letterSpacing = 1.5.sp,
+                fontWeight = FontWeight.Medium
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = "Sin sesiones\npróximas",
+            style = MaterialTheme.typography.displaySmall.copy(
+                fontWeight = FontWeight.Black,
+                letterSpacing = (-1).sp,
+                lineHeight = 40.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Confirma una fecha o crea una sesión para ver la cuenta atrás.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun SectionEmptyHint(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier.fillMaxWidth()
+    )
+}
+
+@Composable
 private fun HeroSessionLabel(session: HomeSessionCard, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Text(text = "⚔️", style = MaterialTheme.typography.bodyMedium)
         Text(
             text = session.name.ifBlank { "Sesión" },
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -568,8 +752,8 @@ private fun HeroCountdown(session: HomeSessionCard, modifier: Modifier = Modifie
         }
     }
 
-    val totalMinutes: Long = session.confirmedDate?.let { date ->
-        val diff = Duration.between(now, date.atStartOfDay())
+    val totalMinutes: Long = session.startDateTime?.let { start ->
+        val diff = Duration.between(now, start)
         if (diff.isNegative) 0L else diff.toMinutes()
     } ?: 0L
 
@@ -640,20 +824,12 @@ private fun SessionRow(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(SquircleShape(10.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.dice_d20_svgrepo_com),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
+            Icon(
+                painter = painterResource(R.drawable.dice_d20_svgrepo_com),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(26.dp)
+            )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -893,6 +1069,7 @@ private fun HomePreviewLight() {
             uiState = HomeUiState(
                 isAuthReady = true,
                 allSessions = sample,
+                upcomingSessions = sample,
                 nextSession = sample.first()
             ),
             onCreateEvent = {},
@@ -921,6 +1098,7 @@ private fun HomePreviewDark() {
             uiState = HomeUiState(
                 isAuthReady = true,
                 allSessions = sample,
+                upcomingSessions = sample,
                 nextSession = sample.first()
             ),
             onCreateEvent = {},
