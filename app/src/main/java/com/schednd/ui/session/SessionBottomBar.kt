@@ -31,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -41,12 +42,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.schednd.ui.components.LiquidGlassState
 import com.schednd.ui.components.TravelingHoleShape
 import com.schednd.ui.theme.LightBottomBar
 import com.schednd.ui.theme.SchedndTheme
@@ -70,11 +75,21 @@ fun SessionBottomBar(
     selectedTab: SessionTab,
     onTabSelected: (SessionTab) -> Unit,
     modifier: Modifier = Modifier,
-    items: List<SessionTab> = SessionTab.entries
+    items: List<SessionTab> = SessionTab.entries,
+    glass: LiquidGlassState? = null
 ) {
-    val containerColor =
-        if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surface else LightBottomBar
-    val ballColor = MaterialTheme.colorScheme.onSurface
+    // El cristal es solo la bolita: la barra se queda opaca como siempre.
+    val glassActive = glass?.isSupported == true
+    val darkTheme = isSystemInDarkTheme()
+    val containerColor = if (darkTheme) MaterialTheme.colorScheme.surface else LightBottomBar
+    val ballColor = when {
+        // Sin cristal, la bolita es sólida como toda la vida.
+        !glassActive -> MaterialTheme.colorScheme.onSurface
+        // Teñir con onSurface solo funciona en oscuro, donde es casi blanco. En claro es
+        // casi negro y ensucia el cristal, así que en claro el tinte es blanco.
+        darkTheme -> MaterialTheme.colorScheme.onSurface.copy(alpha = GlassBallAlphaDark)
+        else -> Color.White.copy(alpha = GlassBallAlphaLight)
+    }
 
     var previousTab by remember { mutableStateOf(selectedTab) }
     // Un único progreso 0..1 orquesta el recorrido y la deformación del fondo.
@@ -99,6 +114,14 @@ fun SessionBottomBar(
     val density = LocalDensity.current
     val ballSizePx = with(density) { BallSize.toPx() }
     var barWidthPx by remember { mutableFloatStateOf(0f) }
+    // La bolita no puede usar `liquidGlassShape`: se mueve por `graphicsLayer` sin
+    // recomponer ni relayoutar, así que publica su geometría a mano en cada frame.
+    val ballShapeId = remember { LiquidGlassState.newShapeId() }
+    var barTopPx by remember { mutableFloatStateOf(Float.NaN) }
+
+    DisposableEffect(glass, ballShapeId) {
+        onDispose { glass?.removeShape(ballShapeId) }
+    }
 
     // Arco sinusoidal: sin picos, sube y baja sin que se note el vértice.
     val arc by remember(animationProgress.value) {
@@ -133,6 +156,9 @@ fun SessionBottomBar(
                 .fillMaxWidth()
                 .height(BottomBarHeight)
                 .onSizeChanged { barWidthPx = it.width.toFloat() }
+                .onGloballyPositioned { coordinates ->
+                    barTopPx = coordinates.positionInRoot().y
+                }
         ) {
             // La bolita va debajo del fondo: así parece hundirse en el hueco.
             Surface(
@@ -145,6 +171,22 @@ fun SessionBottomBar(
                         // Se estira levemente en el tramo alto del recorrido.
                         scaleY = 1f + StretchFactor * arc
                         scaleX = 1f - StretchFactor * arc
+
+                        // El shader del fondo necesita la geometría de este frame.
+                        if (glass != null && !barTopPx.isNaN()) {
+                            val halfWidth = ballSizePx / 2 * scaleX
+                            val halfHeight = ballSizePx / 2 * scaleY
+                            glass.updateShape(
+                                id = ballShapeId,
+                                centerX = ballOffset.x - 1f / items.size * barWidthPx / 2,
+                                centerY = barTopPx + ballOffset.y,
+                                halfWidth = halfWidth,
+                                halfHeight = halfHeight,
+                                // Radio al máximo: el rectángulo redondeado se convierte
+                                // en el círculo (o la elipse, al estirarse) de la bolita.
+                                cornerRadius = minOf(halfWidth, halfHeight),
+                            )
+                        }
                     },
                 shape = CircleShape,
                 color = ballColor,
@@ -190,7 +232,11 @@ fun SessionBottomBar(
                         label = "tabColor",
                         transitionSpec = { tween(SlideDurationMillis) }
                     ) { isSelected ->
-                        if (isSelected) containerColor else MaterialTheme.colorScheme.onSurfaceVariant
+                        // Con cristal la bolita es transparente, así que el icono elegido
+                        // no puede ir del color de la barra: se perdería contra el fondo.
+                        if (!isSelected) MaterialTheme.colorScheme.onSurfaceVariant
+                        else if (glassActive) MaterialTheme.colorScheme.onSurface
+                        else containerColor
                     }
 
                     IconButton(
@@ -228,9 +274,15 @@ private const val SlideDurationMillis = 340
 private const val ArcHeightFactor = .5f
 private const val StretchFactor = .12f
 private const val SelectedIconScale = 1.12f
+// La bolita es cristal, no relleno: si tapa el fondo no se ve su propia refracción.
+private const val GlassBallAlphaDark = .22f
+private const val GlassBallAlphaLight = .5f
 private val BallSize = 52.dp
 private val BottomBarHeight = 72.dp
 private val BottomTonalElevation = 3.dp
+
+/** Alto de la barra sin los insets del sistema, para reservarle sitio desde fuera. */
+val SessionBottomBarHeight = BottomBarHeight
 
 @Preview(showBackground = true)
 @Composable

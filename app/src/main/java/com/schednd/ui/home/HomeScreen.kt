@@ -17,9 +17,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -64,7 +67,10 @@ import com.schednd.ui.components.AppleCard
 import com.schednd.ui.components.ComingSoonDayDialog
 import com.schednd.ui.components.HomeScheduleCalendar
 import com.schednd.ui.components.MiniWeekCalendar
+import com.schednd.ui.components.liquidGlassBackdrop
+import com.schednd.ui.components.rememberLiquidGlassState
 import com.schednd.ui.session.SessionBottomBar
+import com.schednd.ui.session.SessionBottomBarHeight
 import com.schednd.ui.session.SessionTab
 import com.schednd.ui.session.tabs.ProfileTabScreen
 import com.schednd.ui.theme.FadeIn
@@ -116,43 +122,62 @@ fun HomeContent(
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(SessionTab.HOME) }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            SessionBottomBar(
-                selectedTab = selectedTab,
-                onTabSelected = { tab -> selectedTab = tab }
-            )
-        }
-    ) { innerPadding ->
-        Crossfade(
-            targetState = selectedTab,
-            animationSpec = tween(durationMillis = 220),
-            label = "homeTabCrossfade"
-        ) { tab ->
-            when (tab) {
-                SessionTab.CALENDAR -> HomeCalendarTab(uiState = uiState, innerPadding = innerPadding)
-                SessionTab.PROFILE -> ProfileTabScreen(
-                    bottomPadding = innerPadding,
-                    onBack = { selectedTab = SessionTab.HOME }
-                )
-                SessionTab.SESSIONS -> HomeSessionsTab(
-                    uiState = uiState,
-                    innerPadding = innerPadding,
-                    onCreateEvent = onCreateEvent,
-                    onJoinEvent = onJoinEvent,
-                    onOpenEvent = onOpenEvent
-                )
-                SessionTab.HOME -> HomeMainTab(
-                    uiState = uiState,
-                    innerPadding = innerPadding,
-                    onCreateEvent = onCreateEvent,
-                    onJoinEvent = onJoinEvent,
-                    onSeeAllSessions = { selectedTab = SessionTab.SESSIONS },
-                    onOpenCalendar = { selectedTab = SessionTab.CALENDAR }
+    // La barra se dibuja fuera del Scaffold: el shader del cristal refracta lo que hay
+    // dentro del Scaffold, así que la barra no puede formar parte de esa capa.
+    val glass = rememberLiquidGlassState()
+    val navigationBarsBottom = WindowInsets.navigationBars
+        .asPaddingValues()
+        .calculateBottomPadding()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.liquidGlassBackdrop(glass),
+            containerColor = MaterialTheme.colorScheme.background,
+            bottomBar = {
+                // Hueco del mismo alto que la barra real, para que innerPadding siga valiendo.
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(SessionBottomBarHeight + navigationBarsBottom)
                 )
             }
+        ) { innerPadding ->
+            Crossfade(
+                targetState = selectedTab,
+                animationSpec = tween(durationMillis = 220),
+                label = "homeTabCrossfade"
+            ) { tab ->
+                when (tab) {
+                    SessionTab.CALENDAR -> HomeCalendarTab(uiState = uiState, innerPadding = innerPadding)
+                    SessionTab.PROFILE -> ProfileTabScreen(
+                        bottomPadding = innerPadding,
+                        onBack = { selectedTab = SessionTab.HOME }
+                    )
+                    SessionTab.SESSIONS -> HomeSessionsTab(
+                        uiState = uiState,
+                        innerPadding = innerPadding,
+                        onCreateEvent = onCreateEvent,
+                        onJoinEvent = onJoinEvent,
+                        onOpenEvent = onOpenEvent
+                    )
+                    SessionTab.HOME -> HomeMainTab(
+                        uiState = uiState,
+                        innerPadding = innerPadding,
+                        onCreateEvent = onCreateEvent,
+                        onJoinEvent = onJoinEvent,
+                        onSeeAllSessions = { selectedTab = SessionTab.SESSIONS },
+                        onOpenCalendar = { selectedTab = SessionTab.CALENDAR }
+                    )
+                }
+            }
         }
+
+        SessionBottomBar(
+            selectedTab = selectedTab,
+            onTabSelected = { tab -> selectedTab = tab },
+            modifier = Modifier.align(Alignment.BottomCenter),
+            glass = glass
+        )
     }
 }
 
