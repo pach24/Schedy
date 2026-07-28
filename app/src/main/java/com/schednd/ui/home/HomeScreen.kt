@@ -475,10 +475,19 @@ private fun HomeCalendarTab(
             )
         }
 
-        if (sessionDates.isNotEmpty()) {
+        // "Fechas confirmadas" mira hacia delante: una sesión ya jugada no es una fecha
+        // que haya que tener presente. En la rejilla sí se quedan marcadas, como registro.
+        val upcomingSessions = remember(uiState.allSessions) {
+            val today = LocalDate.now()
+            uiState.allSessions
+                .filter { it.confirmedDate != null && !it.confirmedDate.isBefore(today) }
+                .sortedBy { it.confirmedDate }
+        }
+
+        if (upcomingSessions.isNotEmpty()) {
             Spacer(modifier = Modifier.height(20.dp))
             HomeCalendarSessionList(
-                sessions = uiState.allSessions.filter { it.confirmedDate != null },
+                sessions = upcomingSessions,
                 nextSession = uiState.nextSession,
                 onSessionClick = { date -> tappedDate = date }
             )
