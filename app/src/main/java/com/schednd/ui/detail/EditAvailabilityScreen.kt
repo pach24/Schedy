@@ -28,17 +28,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
-import com.schednd.ui.theme.SchedndTheme
+import com.schednd.ui.theme.SchedyTheme
 import java.time.LocalDate
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.schednd.ui.components.AppleTextField
+import com.schednd.ui.components.GenTextField
 import com.schednd.ui.components.CalendarGrid
 import com.schednd.ui.components.LoadingDots
 import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.pressScale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.schednd.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,10 +73,10 @@ fun EditAvailabilityContent(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Mi disponibilidad") },
+                title = { Text(stringResource(R.string.edit_availability_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBackIos, "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBackIos, stringResource(R.string.action_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -94,14 +97,14 @@ fun EditAvailabilityContent(
 
             FadeIn(delayMs = 0) {
                 Text(
-                    text = "Marca los dias en los que puedes",
+                    text = stringResource(R.string.edit_availability_pick_days),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
             FadeIn(delayMs = 80) {
-                AppleTextField(
+                GenTextField(
                     value = uiState.myName,
                     onValueChange = onMyNameChanged,
                     label = "Tu nombre",
@@ -112,7 +115,11 @@ fun EditAvailabilityContent(
 
             FadeIn(delayMs = 150) {
                 Text(
-                    text = "${uiState.myDraftDates.size} dia(s) seleccionado(s)",
+                    text = pluralStringResource(
+                        R.plurals.days_selected,
+                        uiState.myDraftDates.size,
+                        uiState.myDraftDates.size
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -162,7 +169,7 @@ fun EditAvailabilityContent(
                             modifier = Modifier.padding(end = 10.dp)
                         )
                     }
-                    Text("Guardar")
+                    Text(stringResource(R.string.action_save))
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
@@ -171,7 +178,7 @@ fun EditAvailabilityContent(
                     onClick = onBack,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
 
@@ -186,7 +193,7 @@ fun EditAvailabilityContent(
 @Preview(name = "Editar disponibilidad (Light)", showBackground = true, device = "spec:width=411dp,height=891dp")
 @Composable
 private fun EditAvailabilityPreviewLight() {
-    SchedndTheme(darkTheme = false) {
+    SchedyTheme(darkTheme = false) {
         val today = LocalDate.now()
         EditAvailabilityContent(
             uiState = EventDetailUiState(
@@ -212,7 +219,7 @@ private fun EditAvailabilityPreviewLight() {
 @Preview(name = "Editar disponibilidad (Dark)", showBackground = true, device = "spec:width=411dp,height=891dp", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun EditAvailabilityPreviewDark() {
-    SchedndTheme(darkTheme = true) {
+    SchedyTheme(darkTheme = true) {
         val today = LocalDate.now()
         EditAvailabilityContent(
             uiState = EventDetailUiState(

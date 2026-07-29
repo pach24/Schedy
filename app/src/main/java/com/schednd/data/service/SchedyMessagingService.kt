@@ -14,9 +14,9 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.schednd.R
-import com.schednd.SchedndApp
+import com.schednd.SchedyApp
 
-class SchedndMessagingService : FirebaseMessagingService() {
+class SchedyMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
@@ -34,11 +34,11 @@ class SchedndMessagingService : FirebaseMessagingService() {
         ) == PackageManager.PERMISSION_GRANTED
         if (!granted) return
 
-        val title = data["title"] ?: message.notification?.title ?: "S&R"
+        val title = data["title"] ?: message.notification?.title ?: "Schedy"
         val body = data["body"] ?: message.notification?.body
-            ?: "Novedades en tu sesión"
+            ?: getString(R.string.notification_default_body)
 
-        val builder = NotificationCompat.Builder(this, SchedndApp.NOTIFICATION_CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, SchedyApp.NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(body)
@@ -54,7 +54,7 @@ class SchedndMessagingService : FirebaseMessagingService() {
     }
 
     private fun sessionIntent(code: String): PendingIntent {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("schednd://event/$code")).apply {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("schedy://event/$code")).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         return PendingIntent.getActivity(

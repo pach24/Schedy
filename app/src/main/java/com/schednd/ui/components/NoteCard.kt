@@ -40,6 +40,9 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 import kotlin.math.absoluteValue
+import androidx.compose.ui.res.stringResource
+import com.schednd.R
+import androidx.compose.ui.res.pluralStringResource
 
 @Composable
 fun NoteCard(
@@ -49,7 +52,7 @@ fun NoteCard(
 ) {
     val interaction = remember { MutableInteractionSource() }
 
-    AppleCard(
+    GenCard(
         modifier = modifier
             .pressScale(interaction)
             .clickable(
@@ -64,7 +67,7 @@ fun NoteCard(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = note.authorName.ifBlank { "Anónimo" },
+                        text = note.authorName.ifBlank { stringResource(R.string.anonymous_player) },
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -80,13 +83,13 @@ fun NoteCard(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.PushPin,
-                            contentDescription = "Fijada",
+                            contentDescription = stringResource(R.string.note_editor_pin),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(12.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Fijada",
+                            text = stringResource(R.string.note_editor_pin),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -150,15 +153,16 @@ private fun com.google.firebase.Timestamp.toLocalDateTime(): LocalDateTime =
         .atZone(ZoneId.systemDefault())
         .toLocalDateTime()
 
+@Composable
 private fun relativeDate(dt: LocalDateTime): String {
     val today = LocalDate.now()
     val noteDate = dt.toLocalDate()
     val days = ChronoUnit.DAYS.between(noteDate, today)
-    val timeFmt = DateTimeFormatter.ofPattern("HH:mm", Locale("es"))
+    val timeFmt = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
     return when {
-        days == 0L -> "Hoy ${dt.format(timeFmt)}"
-        days == 1L -> "Ayer"
-        days in 2L..6L -> "hace $days días"
-        else -> noteDate.format(DateTimeFormatter.ofPattern("d MMM", Locale("es")))
+        days == 0L -> stringResource(R.string.note_relative_today, dt.format(timeFmt))
+        days == 1L -> stringResource(R.string.note_relative_yesterday)
+        days in 2L..6L -> pluralStringResource(R.plurals.days_ago, days.toInt(), days.toInt())
+        else -> noteDate.format(DateTimeFormatter.ofPattern("d MMM", Locale.getDefault()))
     }
 }

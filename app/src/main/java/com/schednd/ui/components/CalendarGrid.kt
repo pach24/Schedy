@@ -48,6 +48,8 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
+import com.schednd.R
 
 @Composable
 fun CalendarGrid(
@@ -79,17 +81,17 @@ fun CalendarGrid(
                     }
                 }
             ) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Mes anterior")
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.calendar_previous_month))
             }
             Text(
-                text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale("es")).replaceFirstChar { it.uppercase() }} ${currentMonth.year}",
+                text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercase() }} ${currentMonth.year}",
                 style = MaterialTheme.typography.titleLarge
             )
             IconButton(onClick = {
                 slideDirection = 1
                 currentMonth = currentMonth.plusMonths(1)
             }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Mes siguiente")
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.calendar_next_month))
             }
         }
 
@@ -108,7 +110,7 @@ fun CalendarGrid(
             }
         }
 
-        // Animated month transition — spring-based like Trade Republic
+        // Animated month transition — spring-based
         val dir = slideDirection
         AnimatedContent(
             targetState = currentMonth,

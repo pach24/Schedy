@@ -50,13 +50,16 @@ import androidx.compose.ui.unit.sp
 import com.schednd.model.Note
 import com.schednd.model.NoteTag
 import com.schednd.model.NoteTemplate
-import com.schednd.ui.components.AppleCard
+import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.FilterChip
 import com.schednd.ui.components.NoteCard
 import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.SquircleShape
 import com.schednd.ui.theme.pressScale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.schednd.R
 
 @Composable
 fun NotesListScreen(
@@ -128,7 +131,7 @@ fun NotesListScreen(
                             val c = counts[tag] ?: 0
                             if (c > 0) {
                                 FilterChip(
-                                    label = tag.label,
+                                    label = stringResource(tag.labelRes),
                                     count = c,
                                     selected = uiState.selectedTag == tag,
                                     onClick = { viewModel.setSelectedTag(tag) }
@@ -156,7 +159,7 @@ fun NotesListScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Ninguna nota coincide con tu búsqueda",
+                                text = stringResource(R.string.notes_search_empty),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -202,7 +205,7 @@ private fun NotesHeader(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = sessionName.ifBlank { "Sesión" },
+                    text = sessionName.ifBlank { stringResource(R.string.session_fallback_name) },
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -223,7 +226,7 @@ private fun NotesHeader(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
-                    contentDescription = "Nueva nota",
+                    contentDescription = stringResource(R.string.notes_new),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp)
                 )
@@ -231,7 +234,7 @@ private fun NotesHeader(
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Notas",
+            text = stringResource(R.string.notes_title),
             style = MaterialTheme.typography.displaySmall.copy(
                 fontWeight = FontWeight.Black,
                 letterSpacing = (-1).sp
@@ -239,8 +242,11 @@ private fun NotesHeader(
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = "$notesCount ${if (notesCount == 1) "nota" else "notas"} · " +
-                "$participantsCount ${if (participantsCount == 1) "jugador" else "jugadores"}",
+            text = stringResource(
+                R.string.notes_summary,
+                pluralStringResource(R.plurals.notes_count, notesCount, notesCount),
+                pluralStringResource(R.plurals.players_count, participantsCount, participantsCount)
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -337,7 +343,7 @@ private fun EmptyNotes(
                 }
                 Spacer(modifier = Modifier.height(20.dp))
                 Text(
-                    text = "Aún no hay notas",
+                    text = stringResource(R.string.notes_empty_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -407,7 +413,7 @@ private fun TemplateRow(
     modifier: Modifier = Modifier
 ) {
     val interaction = remember { MutableInteractionSource() }
-    AppleCard(
+    GenCard(
         modifier = modifier
             .pressScale(interaction)
             .clickable(
@@ -429,14 +435,14 @@ private fun TemplateRow(
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = template.title,
+                    text = stringResource(template.titleRes),
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = template.subtitle,
+                    text = stringResource(template.subtitleRes),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

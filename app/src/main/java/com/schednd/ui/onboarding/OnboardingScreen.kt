@@ -63,10 +63,11 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.schednd.R
 import com.schednd.ui.theme.GolosFamily
-import com.schednd.ui.theme.SchedndTheme
+import com.schednd.ui.theme.SchedyTheme
 import com.schednd.ui.theme.TierFull
 import com.schednd.ui.theme.pressScale
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun OnboardingScreen(
@@ -119,7 +120,7 @@ fun OnboardingScreen(
     ) {
         // ── D20 decorativo de fondo ───────────────────────────────────────────
         Icon(
-            painter = painterResource(R.drawable.dice_d20_svgrepo_com),
+            painter = painterResource(R.drawable.ic_dice),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.045f),
             modifier = Modifier
@@ -179,7 +180,7 @@ fun OnboardingScreen(
                     )
                 ) {
                     Text(
-                        text = "Bienvenido a S&R.\nEmpecemos por conocerte.",
+                        text = stringResource(R.string.onboarding_welcome),
                         style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -201,13 +202,13 @@ fun OnboardingScreen(
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp)
                 ) {
                     Text(
-                        text = "¿Cómo te llamas?",
+                        text = stringResource(R.string.onboarding_question),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(start = 4.dp, bottom = 10.dp)
                     )
 
-                    // Campo limpio iOS-style
+                    // Campo limpio, sin decoración
                     val fieldInteraction = remember { MutableInteractionSource() }
 
                     BasicTextField(
@@ -240,7 +241,7 @@ fun OnboardingScreen(
                             Box(contentAlignment = Alignment.CenterStart) {
                                 if (name.isEmpty()) {
                                     Text(
-                                        text = "Tu nombre de jugador",
+                                        text = stringResource(R.string.onboarding_name_placeholder),
                                         style = MaterialTheme.typography.bodyLarge.copy(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 .copy(alpha = 0.45f)
@@ -275,7 +276,7 @@ fun OnboardingScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Continuar",
+                            text = stringResource(R.string.action_continue),
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.SemiBold
                             ),
@@ -292,14 +293,14 @@ fun OnboardingScreen(
 @Preview(showBackground = true, device = "spec:width=393dp,height=852dp")
 @Composable
 private fun OnboardingPreview() {
-    SchedndTheme(darkTheme = false) {
+    SchedyTheme(darkTheme = false) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
             Icon(
-                painter = painterResource(R.drawable.dice_d20_svgrepo_com),
+                painter = painterResource(R.drawable.ic_dice),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.045f),
                 modifier = Modifier
@@ -329,14 +330,14 @@ private fun OnboardingPreview() {
                     )
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        text = "Bienvenido a S&R.\nEmpecemos por conocerte.",
+                        text = stringResource(R.string.onboarding_welcome),
                         style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp)) {
                     Text(
-                        text = "¿Cómo te llamas?",
+                        text = stringResource(R.string.onboarding_question),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(start = 4.dp, bottom = 10.dp)
@@ -355,7 +356,7 @@ private fun OnboardingPreview() {
                             .padding(horizontal = 16.dp, vertical = 17.dp)
                     ) {
                         Text(
-                            text = "Tu nombre de jugador",
+                            text = stringResource(R.string.onboarding_name_placeholder),
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
                             )
@@ -371,7 +372,7 @@ private fun OnboardingPreview() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Continuar",
+                            text = stringResource(R.string.action_continue),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                             color = MaterialTheme.colorScheme.surface
                         )
@@ -385,14 +386,14 @@ private fun OnboardingPreview() {
 @Preview(showBackground = true, device = "spec:width=393dp,height=852dp", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun OnboardingPreviewDark() {
-    SchedndTheme(darkTheme = true) {
+    SchedyTheme(darkTheme = true) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
             Icon(
-                painter = painterResource(R.drawable.dice_d20_svgrepo_com),
+                painter = painterResource(R.drawable.ic_dice),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.045f),
                 modifier = Modifier
@@ -422,14 +423,14 @@ private fun OnboardingPreviewDark() {
                     )
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        text = "Bienvenido a S&R.\nEmpecemos por conocerte.",
+                        text = stringResource(R.string.onboarding_welcome),
                         style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp)) {
                     Text(
-                        text = "¿Cómo te llamas?",
+                        text = stringResource(R.string.onboarding_question),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(start = 4.dp, bottom = 10.dp)
@@ -448,7 +449,7 @@ private fun OnboardingPreviewDark() {
                             .padding(horizontal = 16.dp, vertical = 17.dp)
                     ) {
                         Text(
-                            text = "Tu nombre de jugador",
+                            text = stringResource(R.string.onboarding_name_placeholder),
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
                             )
@@ -464,7 +465,7 @@ private fun OnboardingPreviewDark() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Continuar",
+                            text = stringResource(R.string.action_continue),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                             color = MaterialTheme.colorScheme.surface
                         )

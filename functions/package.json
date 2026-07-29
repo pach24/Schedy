@@ -1,5 +1,5 @@
 {
-  "name": "schednd-functions",
+  "name": "schedy-functions",
   "scripts": {
     "build": "tsc",
     "serve": "npm run build && firebase emulators:start --only functions",

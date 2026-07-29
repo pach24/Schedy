@@ -46,9 +46,31 @@ import org.intellij.lang.annotations.Language
 class LiquidGlassState internal constructor(val isSupported: Boolean) {
 
     private val ids = LongArray(MaxShapes)
+    private val profileSamples = FloatArray(MaxProfileSamples)
     internal val centers = FloatArray(MaxShapes * 2)
     internal val halfSizes = FloatArray(MaxShapes * 2)
     internal val radii = FloatArray(MaxShapes)
+
+    /**
+     * La barra inferior no es un rectángulo: su borde superior lleva la muesca por la que
+     * asoma la bolita. Va aparte del array de piezas porque solo puede haberla una y
+     * porque se describe con un perfil de alturas, no con centro y tamaño.
+     */
+    internal val profileTop = FloatArray(MaxProfileSamples)
+    internal var profileLeft = 0f
+        private set
+    internal var profileRight = 0f
+        private set
+    internal var profileTopY = 0f
+        private set
+    internal var profileBottom = 0f
+        private set
+    internal var profileSpanStart = 0f
+        private set
+    internal var profileSpanEnd = 0f
+        private set
+    internal var hasProfile = false
+        private set
 
     /** Cambia en cada movimiento: el backdrop lo lee para saber que debe redibujarse. */
     internal var revision by mutableIntStateOf(0)
@@ -57,11 +79,14 @@ class LiquidGlassState internal constructor(val isSupported: Boolean) {
         private set
 
     internal val isMeasured: Boolean
-        get() = size > 0
+        get() = size > 0 || hasProfile
 
     /**
      * Registra o mueve una pieza. Todas son rectángulos redondeados; un círculo es el
      * caso en que el radio llega a la mitad del lado corto.
+     *
+     * El hueco de la barra no se pasa por aquí: lo lleva [updateHole], porque se mueve en
+     * cada frame mientras el rectángulo de la pieza solo cambia al medirse.
      */
     fun updateShape(
         id: Long,
@@ -90,6 +115,82 @@ class LiquidGlassState internal constructor(val isSupported: Boolean) {
         halfSizes[index * 2] = halfWidth
         halfSizes[index * 2 + 1] = halfHeight
         radii[index] = radius
+        revision++
+    }
+
+    /**
+     * Coloca la muesca de la barra inferior, con la misma curva que
+     * [buildTravelingHolePath] traza: se muestrea su borde superior y el shader interpola
+     * entre esas alturas. No es una aproximación de la curva, es la curva.
+     *
+     * Va aparte de [updateShape] porque se mueve en cada frame, mientras que el rectángulo
+     * de la barra solo cambia cuando se mide.
+     *
+     * @param topY borde superior de la barra, en coordenadas de la raíz
+     * @param holeSize diámetro de la muesca, el de la bolita
+     * @param depthProgress 0 = borde recto, 1 = muesca completa
+     */
+    fun updateHole(centerX: Float, topY: Float, holeSize: Float, depthProgress: Float) {
+        if (!isSupported || !hasProfile) return
+
+        val half = holeSize * TravelingHoleSpanFactor
+        val spanStart: Float
+        val spanEnd: Float
+        if (depthProgress <= 0.001f) {
+            // Sin fondo no hay muesca: el borde vuelve a ser recto de lado a lado.
+            spanStart = 0f
+            spanEnd = 0f
+        } else {
+            spanStart = centerX - half
+            spanEnd = centerX + half
+            sampleTravelingHoleTop(profileSamples, holeSize, depthProgress)
+        }
+
+        var changed = profileSpanStart != spanStart || profileSpanEnd != spanEnd || profileTopY != topY
+        if (spanEnd > spanStart) {
+            for (index in profileTop.indices) {
+                val value = topY + profileSamples[index]
+                if (!(profileTop[index] approx value)) {
+                    profileTop[index] = value
+                    changed = true
+                }
+            }
+        }
+        if (!changed) return
+
+        profileSpanStart = spanStart
+        profileSpanEnd = spanEnd
+        profileTopY = topY
+        revision++
+    }
+
+    /** Rectángulo de la pieza perfilada. Su borde superior lo pone [updateHole]. */
+    internal fun setProfileBounds(left: Float, top: Float, right: Float, bottom: Float) {
+        if (!isSupported) return
+        if (
+            hasProfile &&
+            profileLeft approx left && profileTopY approx top &&
+            profileRight approx right && profileBottom approx bottom
+        ) {
+            return
+        }
+        profileLeft = left
+        profileRight = right
+        profileBottom = bottom
+        if (!hasProfile) {
+            // Hasta que llegue la primera muesca, borde recto.
+            profileTop.fill(top)
+            profileTopY = top
+            hasProfile = true
+        }
+        revision++
+    }
+
+    internal fun clearProfile() {
+        if (!hasProfile) return
+        hasProfile = false
+        profileSpanStart = 0f
+        profileSpanEnd = 0f
         revision++
     }
 
@@ -132,6 +233,9 @@ class LiquidGlassState internal constructor(val isSupported: Boolean) {
 
         /** Id estable para piezas que no pueden usar [liquidGlassShape]. */
         fun newShapeId(): Long = nextId.getAndIncrement()
+
+        /** Alturas con las que se describe el borde perfilado de la barra. */
+        internal const val MaxProfileSamples = 24
     }
 }
 
@@ -146,22 +250,44 @@ fun rememberLiquidGlassState(
  * Marca este composable como pieza de cristal: se mide sola y se registra en [state].
  * Debe dibujarse fuera del contenido que lleva [liquidGlassBackdrop].
  *
+ * Solo vale para piezas quietas: mide el layout, que no recoge lo que haga un
+ * `graphicsLayer` por encima. Una pieza que se escale o se mueva por ahí debe registrarse
+ * a mano con [LiquidGlassState.updateShape], como hacen la bolita de la barra y el
+ * diálogo de día.
+ *
  * @param cornerRadius radio de la pieza; para un círculo, la mitad del lado
+ * @param carveHole si esta es la pieza a la que [LiquidGlassState.updateHole] le resta el
+ *   hueco de la bolita. Solo puede serlo una.
  */
 @Composable
-fun Modifier.liquidGlassShape(state: LiquidGlassState?, cornerRadius: Dp): Modifier {
+fun Modifier.liquidGlassShape(
+    state: LiquidGlassState?,
+    cornerRadius: Dp,
+    carveHole: Boolean = false,
+): Modifier {
     if (state?.isSupported != true) return this
 
     val id = remember { LiquidGlassState.newShapeId() }
     val density = LocalDensity.current
     val cornerRadiusPx = with(density) { cornerRadius.toPx() }
 
-    DisposableEffect(state, id) {
-        onDispose { state.removeShape(id) }
+    DisposableEffect(state, id, carveHole) {
+        onDispose {
+            if (carveHole) state.clearProfile() else state.removeShape(id)
+        }
     }
 
     return this.onGloballyPositioned { coordinates ->
         val position = coordinates.positionInRoot()
+        if (carveHole) {
+            state.setProfileBounds(
+                left = position.x,
+                top = position.y,
+                right = position.x + coordinates.size.width,
+                bottom = position.y + coordinates.size.height,
+            )
+            return@onGloballyPositioned
+        }
         val halfWidth = coordinates.size.width / 2f
         val halfHeight = coordinates.size.height / 2f
         state.updateShape(
@@ -218,6 +344,13 @@ fun Modifier.liquidGlassBackdrop(
         shader.setFloatUniform("shapeCenters", state.centers)
         shader.setFloatUniform("shapeHalfSizes", state.halfSizes)
         shader.setFloatUniform("shapeRadii", state.radii)
+        shader.setIntUniform("profileActive", if (state.hasProfile) 1 else 0)
+        shader.setFloatUniform(
+            "profileRect",
+            state.profileLeft, state.profileTopY, state.profileRight, state.profileBottom
+        )
+        shader.setFloatUniform("profileSpan", state.profileSpanStart, state.profileSpanEnd)
+        shader.setFloatUniform("profileTop", state.profileTop)
         shader.setFloatUniform("warpStrength", warpStrength)
         shader.setFloatUniform("maxWarpBand", warpBandPx)
         shader.setFloatUniform("blurRadius", blurRadiusPx)
@@ -239,6 +372,10 @@ private val LIQUID_GLASS_SHADER = """
     uniform float2 shapeCenters[${LiquidGlassState.MaxShapes}];
     uniform float2 shapeHalfSizes[${LiquidGlassState.MaxShapes}];
     uniform float shapeRadii[${LiquidGlassState.MaxShapes}];
+    uniform int profileActive;
+    uniform float4 profileRect;
+    uniform float2 profileSpan;
+    uniform float profileTop[${LiquidGlassState.MaxProfileSamples}];
     uniform float warpStrength;
     uniform float maxWarpBand;
     uniform float blurRadius;
@@ -340,9 +477,16 @@ private val LIQUID_GLASS_SHADER = """
         // el SDF completo en la inmensa mayoría de la pantalla.
         bool hit = false;
         float sdf = 0.0;
+        // Distancia al borde que hace de silueta. Coincide con el SDF salvo en la barra,
+        // cuyos otros tres bordes son el filo de la pantalla y no de la pieza.
+        float edgeSdf = 0.0;
         float2 hitCenter = float2(0.0);
         float2 hitHalfSize = float2(0.0);
         float hitRadius = 0.0;
+        // La pieza perfilada trae su propia normal: su contorno no es un rectángulo y el
+        // gradiente por diferencias finitas no la sacaría bien en las esquinas en pico.
+        bool hasOwnNormal = false;
+        float2 ownNormal = float2(0.0, -1.0);
 
         for (int i = 0; i < ${LiquidGlassState.MaxShapes}; i++) {
             if (i >= shapeCount) break;
@@ -358,9 +502,70 @@ private val LIQUID_GLASS_SHADER = """
             if (d < 0.0 && (!hit || d < sdf)) {
                 hit = true;
                 sdf = d;
+                edgeSdf = d;
                 hitCenter = center;
                 hitHalfSize = halfSize;
                 hitRadius = radius;
+            }
+        }
+
+        // La barra inferior: rectángulo cuyo borde superior sigue el perfil muestreado de
+        // la muesca. Va fuera del bucle de piezas porque no cabe en centro-y-tamaño, y
+        // porque interpolar el perfil pide su propio bucle desenrollado.
+        if (profileActive == 1
+            && fragCoord.x >= profileRect.x && fragCoord.x <= profileRect.z
+            && fragCoord.y >= profileRect.y && fragCoord.y <= profileRect.w) {
+
+            float edgeY = profileRect.y;
+            float slope = 0.0;
+            float span = profileSpan.y - profileSpan.x;
+
+            if (span > 0.0 && fragCoord.x > profileSpan.x && fragCoord.x < profileSpan.y) {
+                float step = span / float(${LiquidGlassState.MaxProfileSamples} - 1);
+                for (int j = 0; j < ${LiquidGlassState.MaxProfileSamples} - 1; j++) {
+                    float x0 = profileSpan.x + step * float(j);
+                    if (fragCoord.x >= x0 && fragCoord.x < x0 + step) {
+                        float y0 = profileTop[j];
+                        float y1 = profileTop[j + 1];
+                        edgeY = mix(y0, y1, (fragCoord.x - x0) / step);
+                        slope = (y1 - y0) / step;
+                    }
+                }
+            }
+
+            // Distancia a cada borde; manda el mayor. Con `max` pelado —sin el suavizado
+            // que llevan los rectángulos redondeados— las esquinas quedan en pico y el
+            // filo no se curva al llegar a los extremos.
+            //
+            // La del borde superior se mide en vertical, así que en las cuestas de la
+            // muesca sale más larga que la real; se corrige por la pendiente para que el
+            // filo mantenga su grosor también ahí.
+            float dTop = (edgeY - fragCoord.y) * inversesqrt(1.0 + slope * slope);
+            float dBottom = fragCoord.y - profileRect.w;
+            float dLeft = profileRect.x - fragCoord.x;
+            float dRight = fragCoord.x - profileRect.z;
+            float d = max(max(dTop, dBottom), max(dLeft, dRight));
+
+            if (d < 0.0 && (!hit || d < sdf)) {
+                hit = true;
+                sdf = d;
+                // Solo el borde de arriba es silueta: los laterales y el de abajo son el
+                // borde de la pantalla, y ahí no hay canto que refracte ni que brille.
+                // Midiendo desde él, el warp y el filo se apagan solos en los otros tres.
+                edgeSdf = dTop;
+                hitCenter = float2(
+                    (profileRect.x + profileRect.z) * 0.5,
+                    (profileRect.y + profileRect.w) * 0.5
+                );
+                hitHalfSize = float2(
+                    (profileRect.z - profileRect.x) * 0.5,
+                    (profileRect.w - profileRect.y) * 0.5
+                );
+                hitRadius = 0.0;
+                hasOwnNormal = true;
+                // Sigue la pendiente de la curva, así que la refracción y el filo se
+                // hunden con la muesca en vez de cruzarla rectos.
+                ownNormal = normalize(float2(slope, -1.0));
             }
         }
 
@@ -374,18 +579,20 @@ private val LIQUID_GLASS_SHADER = """
         // tamaño de la pieza: sin tope, un diálogo grande refractaría en una franja
         // enorme y arrastraría el fondo medio cuerpo hacia dentro.
         float reference = max(min(min(hitHalfSize.x, hitHalfSize.y), maxWarpBand), 1.0);
-        float2 n = safeNormalize(gradientOfRect(fragCoord, hitCenter, hitHalfSize, hitRadius));
+        float2 n = hasOwnNormal
+            ? ownNormal
+            : safeNormalize(gradientOfRect(fragCoord, hitCenter, hitHalfSize, hitRadius));
 
         // Refracta en todo el cuerpo: la muestra se aleja del centro de forma cúbica,
         // así que el centro queda casi limpio y el borde comprime lo que hay alrededor,
         // como una gota de cristal.
-        float d = clamp(1.0 + sdf / reference, 0.0, 1.0);
+        float d = clamp(1.0 + edgeSdf / reference, 0.0, 1.0);
         float amount = d * d * d * warpStrength * reference;
         float4 color = hazeSample(fragCoord + n * amount);
 
         // Brillo del filo, por dentro del borde. La luz viene de arriba.
-        if (sdf > -rimWidth && rimStrength > 0.0) {
-            float rim = (rimWidth + sdf) / rimWidth;
+        if (edgeSdf > -rimWidth && rimStrength > 0.0) {
+            float rim = (rimWidth + edgeSdf) / rimWidth;
             rim = rim * rim;
             float lighting = mix(0.6, 1.25, clamp((1.0 - n.y) * 0.5, 0.0, 1.0));
 

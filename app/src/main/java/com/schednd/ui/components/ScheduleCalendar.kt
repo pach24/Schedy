@@ -59,12 +59,15 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
+import com.schednd.R
 
 @Composable
 fun ScheduleCalendar(
     dateSummaries: List<DateSummary>,
     totalParticipants: Int,
     confirmedDate: LocalDate?,
+    onDayTap: (LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
@@ -78,15 +81,6 @@ fun ScheduleCalendar(
 
     var currentMonth by remember { mutableStateOf(initialMonth) }
     var slideDirection by remember { mutableIntStateOf(1) }
-    var tappedDate by remember { mutableStateOf<LocalDate?>(null) }
-
-    if (tappedDate != null) {
-        ComingSoonDayDialog(
-            date = tappedDate!!,
-            onDismiss = { tappedDate = null }
-        )
-    }
-
     Column(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -97,10 +91,10 @@ fun ScheduleCalendar(
                 slideDirection = -1
                 currentMonth = currentMonth.minusMonths(1)
             }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Mes anterior", tint = MaterialTheme.colorScheme.onSurface)
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.calendar_previous_month), tint = MaterialTheme.colorScheme.onSurface)
             }
             Text(
-                text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale("es")).replaceFirstChar { it.uppercase() }} ${currentMonth.year}",
+                text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercase() }} ${currentMonth.year}",
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -108,7 +102,7 @@ fun ScheduleCalendar(
                 slideDirection = 1
                 currentMonth = currentMonth.plusMonths(1)
             }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Mes siguiente", tint = MaterialTheme.colorScheme.onSurface)
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.calendar_next_month), tint = MaterialTheme.colorScheme.onSurface)
             }
         }
 
@@ -154,7 +148,7 @@ fun ScheduleCalendar(
                                     totalParticipants = totalParticipants,
                                     isConfirmed = date == confirmedDate,
                                     isDark = isDark,
-                                    onTap = { tappedDate = date },
+                                    onTap = { onDayTap(date) },
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -248,6 +242,7 @@ private fun ScheduleDay(
 fun HomeScheduleCalendar(
     sessionDates: Map<LocalDate, String>,
     nextSessionDate: LocalDate?,
+    onDayTap: (LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val today = LocalDate.now()
@@ -260,7 +255,6 @@ fun HomeScheduleCalendar(
 
     var currentMonth by remember { mutableStateOf(initialMonth) }
     var slideDirection by remember { mutableIntStateOf(1) }
-    var tappedDate by remember { mutableStateOf<LocalDate?>(null) }
 
     // Único movimiento del calendario: el punto de la próxima sesión respira despacio.
     // Solo ese, y solo en opacidad: en una rejilla densa cualquier cosa que crezca o se
@@ -276,13 +270,6 @@ fun HomeScheduleCalendar(
         label = "nextSessionDot"
     )
 
-    if (tappedDate != null) {
-        ComingSoonDayDialog(
-            date = tappedDate!!,
-            onDismiss = { tappedDate = null }
-        )
-    }
-
     Column(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -293,10 +280,10 @@ fun HomeScheduleCalendar(
                 slideDirection = -1
                 currentMonth = currentMonth.minusMonths(1)
             }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Mes anterior", tint = MaterialTheme.colorScheme.onSurface)
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.calendar_previous_month), tint = MaterialTheme.colorScheme.onSurface)
             }
             Text(
-                text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale("es")).replaceFirstChar { it.uppercase() }} ${currentMonth.year}",
+                text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercase() }} ${currentMonth.year}",
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -304,7 +291,7 @@ fun HomeScheduleCalendar(
                 slideDirection = 1
                 currentMonth = currentMonth.plusMonths(1)
             }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Mes siguiente", tint = MaterialTheme.colorScheme.onSurface)
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.calendar_next_month), tint = MaterialTheme.colorScheme.onSurface)
             }
         }
 
@@ -380,7 +367,7 @@ fun HomeScheduleCalendar(
                                             if (hasSession) Modifier.clickable(
                                                 indication = LocalIndication.current,
                                                 interactionSource = interaction,
-                                                onClick = { tappedDate = date }
+                                                onClick = { onDayTap(date) }
                                             ) else Modifier
                                         ),
                                     contentAlignment = Alignment.Center

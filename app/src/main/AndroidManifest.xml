@@ -6,20 +6,21 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:name=".SchedndApp"
+        android:name=".SchedyApp"
         android:allowBackup="true"
+        android:localeConfig="@xml/locales_config"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Schednd">
+        android:theme="@style/Theme.Schedy">
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.Schednd">
+            android:theme="@style/Theme.Schedy">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -28,13 +29,13 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="schednd" android:host="join" />
-                <data android:scheme="schednd" android:host="event" />
+                <data android:scheme="schedy" android:host="join" />
+                <data android:scheme="schedy" android:host="event" />
             </intent-filter>
         </activity>
 
         <service
-            android:name=".data.service.SchedndMessagingService"
+            android:name=".data.service.SchedyMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />

@@ -2,7 +2,7 @@ package com.schednd.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Trade Republic inspired — monochrome, minimal, no accent blue
+// Paleta monocroma, minimal, sin azul de acento
 // Primary actions are white/black depending on theme
 
 // Light mode
@@ -15,9 +15,18 @@ val LightOutline = Color(0xFFD8D8D8)
 val LightPrimary = Color(0xFF111111)
 val LightOnPrimary = Color(0xFFFFFFFF)
 
-/** El blanco puro de [LightSurface] se pierde sobre el fondo claro: la barra inferior
- *  necesita un tono algo más oscuro para que se lea su silueta y el hueco de la bolita. */
-val LightBottomBar = Color(0xFFE3E3E9)
+/** Gris de las superficies que se apoyan directamente sobre [LightBackground]: el blanco
+ *  de [LightSurface] y el [LightSurfaceVariant] del tema quedan a un par de puntos del
+ *  fondo y no se recortan. Lo comparten la barra inferior y la cabecera de la cuadrícula
+ *  de disponibilidad, que deben leerse con el mismo peso. */
+val LightRaisedSurface = Color(0xFFE0E0E9)
+
+/** Tarjeta de próxima sesión: mismo problema que [LightRaisedSurface]. */
+val LightHeroSurface = Color(0xFFE4E4EA)
+
+/** Hueco vacío de las cuadrículas de disponibilidad. Tiene que leerse como celda sin
+ *  marcar, no como fondo, así que va bastante más oscuro que [LightRaisedSurface]. */
+val LightEmptyCell = Color(0xFFD1D1DC)
 
 // Dark mode
 val DarkBackground = Color(0xFF0D0D0D)

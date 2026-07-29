@@ -22,6 +22,8 @@ import dev.chrisbanes.haze.hazeEffect
  * @param glassTint velo de la pieza en modo cristal. Va más bajo que el de Haze a
  *   propósito: el shader ya difumina por debajo, y un tinte alto taparía justo lo que
  *   tiene que dejar ver.
+ * @param hazeBlurRadius difuminado del camino Haze. El del camino de cristal no se fija
+ *   aquí: es un uniform del `liquidGlassBackdrop` que tenga detrás la pieza.
  */
 @Composable
 fun Modifier.frostedSurface(
@@ -31,11 +33,12 @@ fun Modifier.frostedSurface(
     hazeBackground: Color,
     hazeTint: Color,
     glassTint: Color,
+    hazeBlurRadius: Dp = 20.dp,
 ): Modifier = if (glass?.isSupported == true) {
     liquidGlassShape(glass, cornerRadius).background(glassTint)
 } else {
     hazeEffect(state = hazeState) {
-        blurRadius = 20.dp
+        blurRadius = hazeBlurRadius
         backgroundColor = hazeBackground
         tints = listOf(HazeTint(hazeTint))
     }

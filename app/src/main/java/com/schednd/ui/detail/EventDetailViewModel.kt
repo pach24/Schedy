@@ -24,10 +24,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import android.content.Context
+import com.schednd.R
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Locale
 
 
 data class EventDetailUiState(
@@ -38,6 +44,8 @@ data class EventDetailUiState(
     val dateSummaries: List<DateSummary> = emptyList(),
     val confirmedDate: LocalDate? = null,
     val startTime: LocalTime? = null,
+    /** Cuándo se creó la sesión: es el punto de partida de la barra de espera del hero. */
+    val createdAt: LocalDateTime? = null,
     val isCreator: Boolean = false,
     val isDeleted: Boolean = false,
     val isLoading: Boolean = true,
@@ -51,6 +59,7 @@ data class EventDetailUiState(
 
 @HiltViewModel
 class EventDetailViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     savedStateHandle: SavedStateHandle,
     private val eventRepository: EventRepository,
     private val authRepository: AuthRepository,
@@ -129,6 +138,7 @@ class EventDetailViewModel @Inject constructor(
                                     dateSummaries = dateSummaries,
                                     confirmedDate = confirmedDate,
                                     startTime = event.startLocalTime,
+                                    createdAt = event.createdAt.toLocalDateTime(),
                                     isCreator = isCreator,
                                     isLoading = false,
                                     mySavedDates = mySavedDates,
@@ -140,7 +150,7 @@ class EventDetailViewModel @Inject constructor(
                             }
                         } else {
                             _uiState.update {
-                                it.copy(isLoading = false, error = "Sesión no encontrada")
+                                it.copy(isLoading = false, error = appContext.getString(R.string.detail_session_not_found))
                             }
                         }
                     }
@@ -201,10 +211,16 @@ class EventDetailViewModel @Inject constructor(
             try {
                 eventRepository.confirmDate(code, date, startTime)
                 val userId = authRepository.getCurrentUserId().orEmpty()
-                val whenText = buildString {
-                    append(date.format(DATE_FORMAT))
-                    startTime?.let { append(" a las ").append(it.format(TIME_FORMAT)) }
-                }
+                val dateFormat = DateTimeFormatter.ofPattern(
+                    appContext.getString(R.string.date_pattern_day_month), Locale.getDefault()
+                )
+                val whenText = startTime?.let {
+                    appContext.getString(
+                        R.string.detail_confirmed_at,
+                        date.format(dateFormat),
+                        it.format(TIME_FORMAT)
+                    )
+                } ?: date.format(dateFormat)
                 runCatching {
                     notificationRepository.notifyDateConfirmed(code, userId, whenText)
                 }
@@ -252,8 +268,17 @@ class EventDetailViewModel @Inject constructor(
         return Instant.ofEpochSecond(seconds).atZone(ZoneOffset.UTC).toLocalDate()
     }
 
+    /**
+     * La fecha elegida se guarda a mediodía UTC y se lee como día suelto, pero la creación
+     * es un instante real: va a la zona del móvil para poder restarla del reloj local.
+     */
+    private fun Timestamp.toLocalDateTime(): LocalDateTime =
+        Instant.ofEpochSecond(seconds, nanoseconds.toLong())
+            .atZone(ZoneId.systemDefault())
+            .toLocalDateTime()
+
     private companion object {
         val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-        val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("d 'de' MMMM")
+
     }
 }

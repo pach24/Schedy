@@ -30,10 +30,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.schednd.ui.theme.SquircleShape
 
-private val AppleFieldShape = SquircleShape(14.dp)
+private val GenFieldShape = SquircleShape(14.dp)
 
 @Composable
-fun AppleTextField(
+fun GenTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
@@ -54,7 +54,7 @@ fun AppleTextField(
         else
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "appleFieldBg"
+        label = "fieldBg"
     )
     val borderColor by animateColorAsState(
         targetValue = if (isFocused)
@@ -62,7 +62,7 @@ fun AppleTextField(
         else
             MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "appleFieldBorder"
+        label = "fieldBorder"
     )
 
     Column(modifier = modifier) {
@@ -78,9 +78,9 @@ fun AppleTextField(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(AppleFieldShape)
+                .clip(GenFieldShape)
                 .background(bgColor)
-                .border(1.5.dp, borderColor, AppleFieldShape)
+                .border(1.5.dp, borderColor, GenFieldShape)
         ) {
             BasicTextField(
                 value = value,

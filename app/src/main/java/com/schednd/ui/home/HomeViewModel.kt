@@ -6,6 +6,7 @@ import com.google.firebase.Timestamp
 import com.schednd.data.repository.AuthRepository
 import com.schednd.data.repository.EventRepository
 import com.schednd.data.repository.NoteRepository
+import com.schednd.data.repository.PlayerRepository
 import com.schednd.data.repository.RecentEventsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -52,6 +53,8 @@ data class HomeSessionCard(
 
 data class HomeUiState(
     val isAuthReady: Boolean = false,
+    /** Nombre elegido en el onboarding; null en sesiones creadas antes de pedirlo. */
+    val playerName: String? = null,
     val nextSession: HomeSessionCard? = null,
     val allSessions: List<HomeSessionCard> = emptyList(),
     val upcomingSessions: List<HomeSessionCard> = emptyList(),
@@ -64,7 +67,8 @@ class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val eventRepository: EventRepository,
     private val noteRepository: NoteRepository,
-    private val recentEventsRepository: RecentEventsRepository
+    private val recentEventsRepository: RecentEventsRepository,
+    private val playerRepository: PlayerRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -74,7 +78,10 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 authRepository.ensureSignedIn()
-                _uiState.value = _uiState.value.copy(isAuthReady = true)
+                _uiState.value = _uiState.value.copy(
+                    isAuthReady = true,
+                    playerName = playerRepository.getPlayerName()
+                )
                 loadRecentEvents()
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = e.message)
@@ -83,7 +90,12 @@ class HomeViewModel @Inject constructor(
     }
 
     fun refresh() {
-        viewModelScope.launch { loadRecentEvents() }
+        viewModelScope.launch {
+            // El nombre se relee al volver a home: si algún día se puede cambiar, el
+            // saludo no se queda con el viejo hasta reiniciar la app.
+            _uiState.value = _uiState.value.copy(playerName = playerRepository.getPlayerName())
+            loadRecentEvents()
+        }
     }
 
     private suspend fun loadRecentEvents() {

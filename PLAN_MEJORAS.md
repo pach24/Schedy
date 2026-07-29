@@ -17,7 +17,7 @@
 **Agujeros críticos detectados**
 - 🔴 **Las notificaciones push NO se envían.** Hay cableado (`enqueueNotification`, `subscribeToEvent`) pero **no existe Cloud Function** que publique el FCM. Y solo las *notas* encolan algo — ni "cambió disponibilidad" ni "fecha confirmada" notifican.
 - 🔴 **No hay reglas de seguridad de Firestore.** Cualquiera puede leer/escribir/borrar eventos ajenos.
-- 🔴 **Marca inconsistente:** README dice "S&R", `strings.xml` muestra "S&D", el código dice "Schednd".
+- 🔴 **Marca inconsistente:** README, `strings.xml` y el código usaban nombres distintos.
 - 🟠 **El nombre del jugador no se reutiliza:** el onboarding lo guarda pero Crear/Unirse lo piden otra vez.
 - 🟠 **Solo se cuadra el día, no la hora** (aunque `DayTimeSlot`/`AvailabilitySlot`/`SlotCounts` ya existen sin usar).
 - 🟡 Pestaña **Perfil vacía**, buscador del Home sin implementar, sin sesiones recurrentes.
@@ -84,9 +84,9 @@ Esfuerzo: **S** ≈ medio día · **M** ≈ 1–2 días · **L** ≈ 3–5 días
 **DoD:** ✅ reglas escritas y alineadas con la UI; queda desplegarlas.
 
 ### 0.3 — Unificar marca 🔴 ✅
-**Decisión:** nombre oficial = **S&R — Schedule and Role** (forma corta **S&R**).
-- [x] Nombre definitivo elegido: **S&R**.
-- [x] `strings.xml` (`app_name` → S&R), `README.md` (título + overview), onboarding ("Bienvenido a S&R") y fallback de notificación.
+**Decisión:** nombre oficial = **Schedy — Schedule and Role** (forma corta **Schedy**).
+- [x] Nombre definitivo elegido: **Schedy**.
+- [x] `strings.xml` (`app_name` → Schedy), `README.md` (título + overview), onboarding ("Bienvenido a Schedy") y fallback de notificación.
 - [x] Textos de compartir externalizados a `strings.xml` (`share_event`) y unificados (los de Crear y Detalle divergían).
 
 **DoD:** ✅ el nombre es idéntico en launcher, README y mensajes de compartir.

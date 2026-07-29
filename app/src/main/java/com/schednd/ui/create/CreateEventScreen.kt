@@ -63,7 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.schednd.R
-import com.schednd.ui.components.AppleTextField
+import com.schednd.ui.components.GenTextField
 import com.schednd.ui.components.CalendarGrid
 import com.schednd.ui.components.LoadingDots
 import com.schednd.ui.theme.CardShape
@@ -71,10 +71,12 @@ import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.PhaseEnterTransition
 import com.schednd.ui.theme.PhaseExitTransition
-import com.schednd.ui.theme.SchedndTheme
+import com.schednd.ui.theme.SchedyTheme
 import com.schednd.ui.theme.pressScale
 import java.time.LocalDate
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -153,7 +155,7 @@ fun CreateEventContent(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBackIos, "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBackIos, stringResource(R.string.action_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -181,11 +183,11 @@ fun CreateEventContent(
                 if (!isPhase2) {
                     // Phase 1: event details
                     FadeIn(delayMs = 0) {
-                        AppleTextField(
+                        GenTextField(
                             value = uiState.eventName,
                             onValueChange = onNameChanged,
-                            label = "Nombre de la sesion",
-                            placeholder = "Ej: Sesion D&D semanal",
+                            label = stringResource(R.string.create_name_label),
+                            placeholder = stringResource(R.string.create_name_placeholder),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -193,11 +195,11 @@ fun CreateEventContent(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     FadeIn(delayMs = 100) {
-                        AppleTextField(
+                        GenTextField(
                             value = uiState.creatorName,
                             onValueChange = onCreatorNameChanged,
-                            label = "Tu nombre",
-                            placeholder = "Ej: Pizpireto",
+                            label = stringResource(R.string.create_player_label),
+                            placeholder = stringResource(R.string.create_player_placeholder),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -227,7 +229,7 @@ fun CreateEventContent(
                                     modifier = Modifier.padding(end = 10.dp)
                                 )
                             }
-                            Text("Crear sesion", modifier = Modifier.padding(vertical = 4.dp))
+                            Text(stringResource(R.string.create_submit), modifier = Modifier.padding(vertical = 4.dp))
                         }
                     }
                 } else {
@@ -251,7 +253,7 @@ fun CreateEventContent(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Codigo de la sesion",
+                                        text = stringResource(R.string.create_code_label),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -295,7 +297,7 @@ fun CreateEventContent(
                                         )
                                         type = "text/plain"
                                     }
-                                    context.startActivity(Intent.createChooser(sendIntent, "Compartir codigo"))
+                                    context.startActivity(Intent.createChooser(sendIntent, context.getString(R.string.chooser_share_code)))
                                 }) {
                                     Icon(
                                         Icons.Filled.Share,
@@ -312,11 +314,15 @@ fun CreateEventContent(
                     FadeIn(delayMs = 150) {
                         Column {
                             Text(
-                                text = "Selecciona los dias que puedes",
+                                text = stringResource(R.string.create_pick_days),
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "${uiState.selectedDates.size} dia(s) seleccionado(s)",
+                                text = pluralStringResource(
+                                    R.plurals.days_selected,
+                                    uiState.selectedDates.size,
+                                    uiState.selectedDates.size
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -357,7 +363,7 @@ fun CreateEventContent(
                                         modifier = Modifier.padding(end = 10.dp)
                                     )
                                 }
-                                Text("Guardar mi disponibilidad", modifier = Modifier.padding(vertical = 4.dp))
+                                Text(stringResource(R.string.create_save_availability), modifier = Modifier.padding(vertical = 4.dp))
                             }
 
                             Spacer(modifier = Modifier.height(8.dp))
@@ -371,7 +377,7 @@ fun CreateEventContent(
                                 shape = FullRoundShape,
                                 interactionSource = skipInteraction
                             ) {
-                                Text("Saltar por ahora", modifier = Modifier.padding(vertical = 4.dp))
+                                Text(stringResource(R.string.create_skip), modifier = Modifier.padding(vertical = 4.dp))
                             }
                         }
                     }
@@ -389,7 +395,7 @@ fun CreateEventContent(
 @Preview(name = "Crear – Fase 1 formulario (Light)", showBackground = true, device = "spec:width=411dp,height=891dp")
 @Composable
 private fun CreatePhase1Preview() {
-    SchedndTheme(darkTheme = false) {
+    SchedyTheme(darkTheme = false) {
         CreateEventContent(
             uiState = CreateEventUiState(
                 eventName = "Partida de D&D: El Resurgir",
@@ -411,7 +417,7 @@ private fun CreatePhase1Preview() {
 @Preview(name = "Crear – Fase 2 código + calendario (Dark)", showBackground = true, device = "spec:width=411dp,height=891dp", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun CreatePhase2Preview() {
-    SchedndTheme(darkTheme = true) {
+    SchedyTheme(darkTheme = true) {
         val today = LocalDate.now()
         CreateEventContent(
             uiState = CreateEventUiState(

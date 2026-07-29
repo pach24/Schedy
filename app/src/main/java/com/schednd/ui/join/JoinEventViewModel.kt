@@ -17,6 +17,9 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import com.google.firebase.Timestamp
 import javax.inject.Inject
+import android.content.Context
+import com.schednd.R
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 data class JoinEventUiState(
     val code: String = "",
@@ -31,6 +34,7 @@ data class JoinEventUiState(
 
 @HiltViewModel
 class JoinEventViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val eventRepository: EventRepository,
     private val authRepository: AuthRepository,
     private val messagingRepository: MessagingRepository,
@@ -65,7 +69,7 @@ class JoinEventViewModel @Inject constructor(
             try {
                 val event = eventRepository.getEvent(code)
                 if (event == null) {
-                    _uiState.update { it.copy(isLoading = false, error = "Sesión no encontrada") }
+                    _uiState.update { it.copy(isLoading = false, error = appContext.getString(R.string.detail_session_not_found)) }
                 } else {
                     _uiState.update { it.copy(isLoading = false, event = event) }
                     observeParticipants(code)

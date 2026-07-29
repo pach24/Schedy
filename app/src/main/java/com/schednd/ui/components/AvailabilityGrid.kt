@@ -43,8 +43,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.schednd.model.Participant
 import com.schednd.ui.theme.CalendarCellShape
+import com.schednd.ui.theme.LightEmptyCell
+import com.schednd.ui.theme.LightRaisedSurface
 import com.schednd.ui.theme.VerticalSquircleShape
-import com.schednd.ui.theme.SchedndTheme
+import com.schednd.ui.theme.SchedyTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -64,7 +66,9 @@ fun getHeatmapColor(count: Int, total: Int): Color {
         )
     } else {
         listOf(
-            Color(0xFFEBEDF0),
+            // El gris de "sin nadie" comparte tono con la celda vacía de la cuadrícula;
+            // el original se confundía con el fondo claro.
+            LightEmptyCell,
             Color(0xFF9BE9A8),
             Color(0xFF40C463),
             Color(0xFF30A14E),
@@ -88,13 +92,22 @@ fun AvailabilityGrid(
     showBestStripe: Boolean = false
 ) {
     val total = participants.size
-    val dayNameFormatter = DateTimeFormatter.ofPattern("EEE", Locale("es"))
-    val dayNumFormatter = DateTimeFormatter.ofPattern("d", Locale("es"))
-    val monthFormatter = DateTimeFormatter.ofPattern("MMM", Locale("es"))
+    val dayNameFormatter = DateTimeFormatter.ofPattern("EEE", Locale.getDefault())
+    val dayNumFormatter = DateTimeFormatter.ofPattern("d", Locale.getDefault())
+    val monthFormatter = DateTimeFormatter.ofPattern("MMM", Locale.getDefault())
 
     val cellSize = 48.dp
     val nameWidth = 85.dp
-    val unavailableColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+    val isDark = isSystemInDarkTheme()
+    val unavailableColor = if (isDark) {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+    } else {
+        LightEmptyCell
+    }
+    // En claro el surfaceVariant del tema queda a cuatro puntos del fondo y la fila de días
+    // no se distinguía. Va algo más clara que [LightEmptyCell] para que la cabecera no pese
+    // más que las propias celdas.
+    val headerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant else LightRaisedSurface
     val bestAlpha = 0.12f
 
     // Control de la franja (Píldora)
@@ -185,7 +198,7 @@ fun AvailabilityGrid(
                             .padding(2.dp)
                             // Usamos el shape solicitado
                             .clip(VerticalSquircleShape(cornerRadius = 14.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                            .background(headerColor),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
@@ -306,7 +319,7 @@ fun AvailabilityGrid(
 )
 @Composable
 fun AvailabilityGridPreview() {
-    SchedndTheme {
+    SchedyTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
             val today = remember { LocalDate.now() }
             val dates = remember { (0..5).map { today.plusDays(it.toLong()) } }

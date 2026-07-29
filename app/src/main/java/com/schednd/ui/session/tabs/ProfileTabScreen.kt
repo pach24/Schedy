@@ -1,9 +1,10 @@
 package com.schednd.ui.session.tabs
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.painterResource
+import com.schednd.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun ProfileTabScreen(
@@ -11,9 +12,9 @@ fun ProfileTabScreen(
     onBack: () -> Unit
 ) {
     ComingSoonScreen(
-        title = "Perfil",
-        subtitle = "Aquí podrás gestionar tu nombre, tu avatar y las sesiones a las que perteneces.",
-        icon = Icons.Outlined.Person,
+        title = stringResource(R.string.profile_title),
+        subtitle = stringResource(R.string.profile_soon),
+        icon = painterResource(R.drawable.ic_user),
         bottomPadding = bottomPadding
     )
 }
