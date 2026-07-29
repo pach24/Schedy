@@ -151,7 +151,12 @@ fun CreateEventContent(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(if (uiState.createdCode == null) "Crear sesion" else "Tus fechas disponibles")
+                    Text(
+                        stringResource(
+                            if (uiState.createdCode == null) R.string.create_title
+                            else R.string.create_dates_title
+                        )
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

@@ -190,7 +190,7 @@ fun NoteEditorScreen(
                     Column {
                         ToggleRow(
                             icon = Icons.Filled.PushPin,
-                            label = "Fijar arriba",
+                            label = stringResource(R.string.note_editor_pin),
                             checked = uiState.pinned,
                             onCheckedChange = { viewModel.onTogglePinned() }
                         )
@@ -200,7 +200,7 @@ fun NoteEditorScreen(
                         )
                         ToggleRow(
                             icon = Icons.Filled.Share,
-                            label = "Notificar al grupo",
+                            label = stringResource(R.string.note_editor_notify),
                             checked = uiState.notifyGroup,
                             onCheckedChange = { viewModel.onToggleNotify() }
                         )

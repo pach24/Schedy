@@ -504,7 +504,7 @@ internal fun ConfirmDateDialog(
                 )
             ) {
                 Text(
-                    "Quitar fecha elegida",
+                    stringResource(R.string.dialog_pick_date_clear),
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(vertical = 2.dp)
                 )

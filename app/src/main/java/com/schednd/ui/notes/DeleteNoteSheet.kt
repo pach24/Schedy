@@ -102,14 +102,14 @@ fun DeleteNoteSheet(
                     }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                     SheetActionRow(
-                        label = "Borrar nota",
+                        label = stringResource(R.string.note_delete_confirm),
                         tint = Color(0xFFFD3744),
                         bold = true,
                         onClick = onDelete
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                     SheetActionRow(
-                        label = "Archivar",
+                        label = stringResource(R.string.note_archive),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         bold = false,
                         onClick = { /* TODO próximamente */ }

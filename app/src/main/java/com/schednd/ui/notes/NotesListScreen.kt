@@ -278,7 +278,7 @@ private fun SearchField(
         Box(modifier = Modifier.weight(1f)) {
             if (value.isEmpty()) {
                 Text(
-                    text = "Buscar",
+                    text = stringResource(R.string.notes_search),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -349,7 +349,7 @@ private fun EmptyNotes(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Apunta tramas, loot, NPCs y planes para que el grupo no se pierda nada entre sesiones.",
+                    text = stringResource(R.string.notes_empty_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -377,7 +377,7 @@ private fun EmptyNotes(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Crear primera nota",
+                        text = stringResource(R.string.notes_empty_action),
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.surface
                     )
@@ -387,7 +387,7 @@ private fun EmptyNotes(
         item { Spacer(modifier = Modifier.height(36.dp)) }
         item {
             Text(
-                text = "PLANTILLAS",
+                text = stringResource(R.string.notes_templates_header),
                 style = MaterialTheme.typography.labelMedium.copy(
                     letterSpacing = 1.5.sp,
                     fontWeight = FontWeight.Bold

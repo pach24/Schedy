@@ -173,6 +173,8 @@
     <string name="note_not_found">Nota no encontrada</string>
     <string name="note_delete_title">¿Borrar esta nota?</string>
     <string name="note_delete_body">«%1$s» se eliminará para todo el grupo. Esta acción no se puede deshacer.</string>
+    <string name="note_delete_confirm">Borrar nota</string>
+    <string name="note_archive">Archivar</string>
     <string name="note_editor_session_fallback">esta sesión</string>
     <string name="note_untitled">Sin título</string>
     <string name="note_relative_today">Hoy %1$s</string>

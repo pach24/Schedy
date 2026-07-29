@@ -169,6 +169,8 @@
     <string name="note_not_found">Note not found</string>
     <string name="note_delete_title">Delete this note?</string>
     <string name="note_delete_body">“%1$s” will be removed for the whole group. This cannot be undone.</string>
+    <string name="note_delete_confirm">Delete note</string>
+    <string name="note_archive">Archive</string>
     <string name="note_editor_session_fallback">this session</string>
     <string name="note_untitled">Untitled</string>
     <string name="note_relative_today">Today %1$s</string>

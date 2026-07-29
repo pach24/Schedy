@@ -107,7 +107,7 @@ fun EditAvailabilityContent(
                 GenTextField(
                     value = uiState.myName,
                     onValueChange = onMyNameChanged,
-                    label = "Tu nombre",
+                    label = stringResource(R.string.create_player_label),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(10.dp))
