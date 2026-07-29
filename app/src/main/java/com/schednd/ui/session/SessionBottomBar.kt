@@ -1,11 +1,10 @@
 package com.schednd.ui.session
 
 import androidx.annotation.StringRes
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.SpringSpec
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,18 +20,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -56,7 +51,9 @@ import com.schednd.ui.components.buildTravelingHolePath
 import com.schednd.ui.components.liquidGlassShape
 import com.schednd.ui.theme.LightRaisedSurface
 import com.schednd.ui.theme.SchedyTheme
+import com.schednd.ui.theme.pressScale
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 enum class SessionTab(@StringRes val labelRes: Int) {
     HOME(R.string.tab_home),
@@ -82,18 +79,19 @@ enum class SessionTab(@StringRes val labelRes: Int) {
  * mientras el fondo cierra el hueco anterior y abre el nuevo. Adaptado de path_power
  * (enmanuel52).
  *
- * Todo el movimiento sale de un único [Animatable] con la posición continua de la bolita,
- * medida en pestañas. Dos consecuencias, y las dos son el motivo de que esté así montado:
+ * Todo el movimiento sale de [position], la posición continua de la bolita medida en
+ * pestañas: 0 es la primera, 1.5 el punto medio entre la segunda y la tercera. La barra no
+ * la anima, la lee — quien la mueve es el pager del contenido, así que el salto va pegado
+ * al dedo al deslizar y acompaña al recorrido al tocar, sin dos relojes que sincronizar.
  *
- * 1. El muelle se puede reapuntar en marcha conservando la velocidad, así que tocar otra
- *    pestaña a mitad de trayecto desvía la bolita en vez de teleportarla al origen.
- * 2. Nada de esto se lee durante la composición: la posición se consulta dentro de las
- *    lambdas de layout, `graphicsLayer` y dibujo. La barra no recompone ni un solo frame
- *    del recorrido; solo se reasignan transformaciones y se rehace un path ya reservado.
+ * Es una lambda y no un `Float` a propósito: así se consulta dentro de las lambdas de
+ * layout, `graphicsLayer` y dibujo, nunca durante la composición. La barra no recompone ni
+ * un solo frame del recorrido; solo se reasignan transformaciones y se rehace un path ya
+ * reservado.
  */
 @Composable
 fun SessionBottomBar(
-    selectedTab: SessionTab,
+    position: () -> Float,
     onTabSelected: (SessionTab) -> Unit,
     modifier: Modifier = Modifier,
     items: List<SessionTab> = SessionTab.entries,
@@ -125,44 +123,55 @@ fun SessionBottomBar(
     val activeIconColor =
         if (glassActive) MaterialTheme.colorScheme.onSurface else containerColor
 
-    // Posición de la bolita en pestañas, con decimales. Es la única fuente del movimiento.
-    val targetIndex = items.indexOf(selectedTab).coerceAtLeast(0).toFloat()
-    val position = remember { Animatable(targetIndex) }
-
-    // La velocidad que lleva la bolita ahora mismo, para entregársela al siguiente tramo:
-    // reapuntar a media trayectoria es entonces un desvío y no un frenazo con arranque.
-    //
-    // Hay que cogerla aquí, en la composición, porque cambiar la pestaña cancela el
-    // `LaunchedEffect` de abajo y `Animatable` pone la velocidad a cero al cancelarse:
-    // cuando el nuevo efecto arranca, ya se ha perdido. Y se lee sin observar porque
-    // observarla traería de vuelta justo lo que se quiere evitar, recomponer por frame.
-    val carriedVelocity = Snapshot.withoutReadObservation { position.velocity }
-
-    // Se dispara con cualquier cambio de pestaña, venga de un toque en la barra o de otro
-    // sitio de la pantalla (p. ej. "Todas las sesiones").
-    LaunchedEffect(targetIndex) {
-        if (position.value != targetIndex) {
-            position.animateTo(targetIndex, HopSpring, initialVelocity = carriedVelocity)
-        }
-    }
-
     val density = LocalDensity.current
     val ballSizePx = with(density) { BallSize.toPx() }
     val barHeightPx = with(density) { BottomBarHeight.toPx() }
     var barWidthPx by remember { mutableFloatStateOf(0f) }
     var barTopPx by remember { mutableFloatStateOf(Float.NaN) }
 
-    // Altura del salto. Sale de la velocidad del muelle, que es continua por construcción:
-    // vale 0 en reposo, sube al lanzarse y baja al posarse, y nunca da un tirón aunque se
-    // cambie de destino en pleno vuelo.
-    fun hopArc(): Float =
-        smoothStep((abs(position.velocity) / HopPeakVelocity).coerceIn(0f, 1f))
+    // Altura del salto: lo lejos que está la bolita de la muesca más cercana. Sube al
+    // salir de una y baja al entrar en la siguiente, sin depender de ningún reloj propio,
+    // así que al deslizar el salto va exactamente donde va el dedo.
+    fun hopArc(): Float {
+        val current = position()
+        val toNearestTab = abs(current - current.roundToInt())
+        return smoothStep((toNearestTab * 2f).coerceIn(0f, 1f))
+    }
 
-    fun ballCenterX(): Float = (position.value + .5f) / items.size * barWidthPx
+    /**
+     * Profundidad de la muesca. El hueco no salta entre posiciones: viaja con la bolita, se
+     * va cerrando cuando ella sube y se hunde otra vez cuando baja.
+     *
+     * Lo que no hace es llegar a cerrarse del todo. En lo alto del salto la bolita está
+     * estirada, y su borde de abajo se queda por debajo del de la barra: con el borde recto
+     * lo que se ve es la bolita cortada por una línea. Este mínimo le deja hueco siempre.
+     */
+    fun holeDepth(): Float = MinHoleDepth + (1f - MinHoleDepth) * (1f - hopArc())
 
-    /** Cuánto le toca a esta pestaña de estar "elegida": 1 con la bolita encima, 0 lejos. */
-    fun tabSelection(index: Int): Float =
-        (1f - abs(position.value - index)).coerceIn(0f, 1f)
+    fun ballCenterX(): Float = (position() + .5f) / items.size * barWidthPx
+
+    /** Centro del hueco de una pestaña. Con `SpaceAround` cae justo donde para la bolita. */
+    fun tabCenterX(index: Int): Float = (index + .5f) / items.size * barWidthPx
+
+    /**
+     * Cuánto va este icono montado en la bolita: 1 encima de ella, 0 quieto en su hueco.
+     *
+     * El relevo ocurre al cruzar el punto medio y dura poco. Mientras cruza, los dos iconos
+     * están a la vez encima de la bolita, uno apagándose y el otro encendiéndose, así que se
+     * lee como que el que viajaba se convierte en el de destino al llegar.
+     */
+    fun ride(index: Int): Float {
+        val distance = abs(position() - index)
+        val handoff = (distance - RideHandoffStart) / (RideHandoffEnd - RideHandoffStart)
+        return 1f - smoothStep(handoff.coerceIn(0f, 1f))
+    }
+
+    // Una fuente de interacción por pestaña: la alimenta la zona pulsable y la consume el
+    // icono. Van separadas porque la respuesta al dedo tiene que viajar con el icono, y la
+    // zona pulsable no se mueve.
+    val interactionSources = remember(items.size) {
+        List(items.size) { MutableInteractionSource() }
+    }
 
     // La bolita no puede usar `liquidGlassShape`: se mueve por `graphicsLayer` sin
     // recomponer ni relayoutar, así que publica su geometría a mano.
@@ -187,9 +196,7 @@ fun SessionBottomBar(
             centerX = centerX,
             topY = barTopPx,
             holeSize = ballSizePx,
-            // El hueco no salta entre posiciones: viaja con la bolita. Se aplana cuando
-            // ella está arriba y vuelve a hundirse a medida que baja.
-            depthProgress = 1f - arc,
+            depthProgress = holeDepth(),
         )
         val halfWidth = ballSizePx / 2f * (1f - StretchFactor * arc)
         val halfHeight = ballSizePx / 2f * (1f + StretchFactor * arc)
@@ -254,12 +261,40 @@ fun SessionBottomBar(
                     size = size,
                     holeSizePx = ballSizePx,
                     centerX = ballCenterX(),
-                    deepProgress = 1f - hopArc(),
+                    deepProgress = holeDepth(),
                 )
                 drawPath(barPath, containerColor)
             }
 
-            // Fuera del fondo con forma: si no, los iconos quedarían recortados.
+            // Las zonas pulsables van aparte de los iconos y no se mueven nunca: el icono
+            // elegido se va de viaje con la bolita, y una diana que se marcha con él —o que
+            // se planta encima de la pestaña vecina— no hay quien la acierte.
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items.forEachIndexed { index, tab ->
+                    val label = tab.label
+                    Box(
+                        modifier = Modifier
+                            .size(TabTouchSize)
+                            .clickable(
+                                interactionSource = interactionSources[index],
+                                // Sin ripple. Se dibuja donde está la zona pulsable, que se
+                                // queda quieta, mientras el icono se marcha con la bolita:
+                                // no hay tamaño ni posición que lo hagan cuadrar. Quien
+                                // responde al dedo es el icono, encogiéndose.
+                                indication = null,
+                                onClick = { onTabSelected(tab) }
+                            )
+                            .semantics { contentDescription = label }
+                    )
+                }
+            }
+
+            // Encima de todo y sin recortar: el icono que viaja se sale de su hueco, y
+            // cualquier clip por el camino se lo comería a medio recorrido.
             Row(
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.SpaceAround,
@@ -267,20 +302,9 @@ fun SessionBottomBar(
             ) {
                 items.forEachIndexed { index, tab ->
                     val painter = tab.icon
-                    val label = tab.label
-                    IconButton(
-                        onClick = { onTabSelected(tab) },
-                        modifier = Modifier
-                            .size(TabTouchSize)
-                            .semantics { contentDescription = label }
-                            // El icono viaja con la bolita: se eleva a medida que ella se
-                            // le acerca, así que el relevo entre pestañas es continuo.
-                            .graphicsLayer {
-                                val selection = tabSelection(index)
-                                translationY = -barHeightPx / 2f * selection
-                                scaleX = 1f + (SelectedIconScale - 1f) * selection
-                                scaleY = scaleX
-                            }
+                    Box(
+                        modifier = Modifier.size(TabTouchSize),
+                        contentAlignment = Alignment.Center
                     ) {
                         // Dos copias cruzándose por alfa: el tinte de `Icon` es un
                         // parámetro, y animarlo obligaría a recomponer en cada frame.
@@ -288,17 +312,28 @@ fun SessionBottomBar(
                             painter = painter,
                             contentDescription = null,
                             tint = idleIconColor,
-                            modifier = Modifier.graphicsLayer {
-                                alpha = 1f - tabSelection(index)
-                            }
+                            modifier = Modifier
+                                .graphicsLayer { alpha = 1f - ride(index) }
+                                .pressScale(interactionSources[index])
                         )
+                        // La copia elegida no se limita a levantarse en su sitio: se pega a
+                        // la bolita y hace con ella todo el trayecto, salto incluido.
                         Icon(
                             painter = painter,
                             contentDescription = null,
                             tint = activeIconColor,
-                            modifier = Modifier.graphicsLayer {
-                                alpha = tabSelection(index)
-                            }
+                            modifier = Modifier
+                                .graphicsLayer {
+                                    translationX = ballCenterX() - tabCenterX(index)
+                                    translationY = -barHeightPx / 2f -
+                                        ballSizePx * ArcHeightFactor * hopArc()
+                                    alpha = ride(index)
+                                    scaleX = SelectedIconScale
+                                    scaleY = SelectedIconScale
+                                }
+                                // Después de la capa de viaje, no antes: así se encoge
+                                // sobre su propio centro y no se desplaza al hacerlo.
+                                .pressScale(interactionSources[index])
                         )
                     }
                 }
@@ -319,18 +354,21 @@ fun SessionBottomBar(
 private fun smoothStep(t: Float): Float = t * t * (3f - 2f * t)
 
 /**
- * Rígido y casi sin rebote: el trayecto de una pestaña se resuelve en poco más de 100 ms,
- * pero sigue siendo un muelle, así que admite que le cambien el destino sin cortes.
+ * Distancias, en pestañas, entre las que el icono pasa de ir montado en la bolita a quedarse
+ * en su hueco. La ventana es estrecha y va centrada en el punto medio del trayecto, que es
+ * donde los dos iconos se cruzan encima de la bolita.
  */
-private val HopSpring: SpringSpec<Float> = spring(dampingRatio = .9f, stiffness = 1200f)
-
+private const val RideHandoffStart = .42f
+private const val RideHandoffEnd = .58f
 /**
- * Velocidad, en pestañas por segundo, a la que el salto llega a su altura máxima. Está
- * puesta un poco por debajo del pico que alcanza [HopSpring] al saltar una pestaña, para
- * que ese salto —el habitual— llegue arriba del todo; los de dos o tres pestañas van más
- * rápidos y lo único que cambia es que se mantienen arriba más rato.
+ * Lo que le queda de muesca a la barra en lo alto del salto, donde antes se quedaba recta.
+ *
+ * Sale de la cuenta: medido en [BallSize], el borde de abajo de la bolita está a
+ * `ArcHeightFactor - (ArcHeightFactor - StretchFactor / 2)` del borde de la barra —o sea,
+ * .06 por debajo— y el fondo de la muesca cae a .68 de su profundidad. Con .18 le quedan
+ * unos 3 dp de aire, suficiente para que no se vea el corte.
  */
-private const val HopPeakVelocity = 11f
+private const val MinHoleDepth = .18f
 private const val ArcHeightFactor = .5f
 private const val StretchFactor = .12f
 private const val SelectedIconScale = 1.12f
@@ -352,7 +390,6 @@ val SessionBottomBarHeight = BottomBarHeight
 @Composable
 private fun SessionBottomBarPreview() {
     SchedyTheme(darkTheme = false) {
-        var selected by remember { mutableStateOf(SessionTab.HOME) }
-        SessionBottomBar(selectedTab = selected, onTabSelected = { selected = it })
+        SessionBottomBar(position = { 0f }, onTabSelected = {})
     }
 }

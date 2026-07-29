@@ -4,8 +4,6 @@ import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,6 +26,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,8 +41,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +57,7 @@ import com.schednd.ui.components.rimHighlightBrush
 import com.schednd.ui.components.liquidGlassBackdrop
 import com.schednd.ui.components.rememberLiquidGlassState
 import com.schednd.ui.session.SessionBottomBar
+import com.schednd.ui.session.animateToTabPage
 import com.schednd.ui.session.SessionBottomBarHeight
 import com.schednd.ui.session.SessionTab
 import com.schednd.ui.session.tabs.ProfileTabScreen
@@ -67,6 +67,7 @@ import com.schednd.ui.theme.SquircleShape
 import com.schednd.ui.theme.pressScale
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
@@ -107,8 +108,14 @@ fun HomeContent(
     onJoinEvent: () -> Unit,
     onOpenEvent: (String) -> Unit
 ) {
-    var selectedTab by rememberSaveable { mutableStateOf(SessionTab.HOME) }
-    val tabStateHolder = rememberSaveableStateHolder()
+    // El pager es la única fuente de la pestaña actual: manda tanto al deslizar como al
+    // tocar la barra, y es su posición continua la que mueve la bolita.
+    val tabs = SessionTab.entries
+    val pagerState = rememberPagerState { tabs.size }
+    val scope = rememberCoroutineScope()
+    fun goToTab(tab: SessionTab) {
+        scope.launch { pagerState.animateToTabPage(tabs.indexOf(tab)) }
+    }
 
     // La barra se dibuja fuera del Scaffold: el shader del cristal refracta lo que hay
     // dentro del Scaffold, así que la barra no puede formar parte de esa capa.
@@ -140,49 +147,47 @@ fun HomeContent(
                 )
             }
         ) { innerPadding ->
-            Crossfade(
-                targetState = selectedTab,
-                animationSpec = tween(durationMillis = 130),
-                label = "homeTabCrossfade"
-            ) { tab ->
-                // Cada pestaña guarda su estado al descartarse y lo recupera al volver. Sin
-                // esto, el revelado escalonado de `FadeIn` se reproduce entero en cada
-                // cambio y el contenido tarda medio segundo en estar puesto.
-                tabStateHolder.SaveableStateProvider(tab.name) {
-                    when (tab) {
-                        SessionTab.CALENDAR -> HomeCalendarTab(
-                            uiState = uiState,
-                            innerPadding = innerPadding,
-                            onDayTap = { date -> tappedDate = date }
-                        )
-                        SessionTab.PROFILE -> ProfileTabScreen(
-                            bottomPadding = innerPadding,
-                            onBack = { selectedTab = SessionTab.HOME }
-                        )
-                        SessionTab.SESSIONS -> HomeSessionsTab(
-                            uiState = uiState,
-                            innerPadding = innerPadding,
-                            onCreateEvent = onCreateEvent,
-                            onJoinEvent = onJoinEvent,
-                            onOpenEvent = onOpenEvent
-                        )
-                        SessionTab.HOME -> HomeMainTab(
-                            uiState = uiState,
-                            innerPadding = innerPadding,
-                            onCreateEvent = onCreateEvent,
-                            onJoinEvent = onJoinEvent,
-                            onSeeAllSessions = { selectedTab = SessionTab.SESSIONS },
-                            onOpenCalendar = { selectedTab = SessionTab.CALENDAR },
-                            onOpenEvent = onOpenEvent
-                        )
-                    }
+            // El pager guarda el estado de cada página al descartarla y lo restaura al
+            // volver, así que el revelado escalonado de `FadeIn` no se repite en cada cambio.
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                key = { tabs[it].name }
+            ) { page ->
+                when (tabs[page]) {
+                    SessionTab.CALENDAR -> HomeCalendarTab(
+                        uiState = uiState,
+                        innerPadding = innerPadding,
+                        onDayTap = { date -> tappedDate = date }
+                    )
+                    SessionTab.PROFILE -> ProfileTabScreen(
+                        bottomPadding = innerPadding,
+                        onBack = { goToTab(SessionTab.HOME) }
+                    )
+                    SessionTab.SESSIONS -> HomeSessionsTab(
+                        uiState = uiState,
+                        innerPadding = innerPadding,
+                        onCreateEvent = onCreateEvent,
+                        onJoinEvent = onJoinEvent,
+                        onOpenEvent = onOpenEvent
+                    )
+                    SessionTab.HOME -> HomeMainTab(
+                        uiState = uiState,
+                        innerPadding = innerPadding,
+                        onCreateEvent = onCreateEvent,
+                        onJoinEvent = onJoinEvent,
+                        onSeeAllSessions = { goToTab(SessionTab.SESSIONS) },
+                        onOpenCalendar = { goToTab(SessionTab.CALENDAR) },
+                        onOpenEvent = onOpenEvent
+                    )
                 }
             }
         }
 
         SessionBottomBar(
-            selectedTab = selectedTab,
-            onTabSelected = { tab -> selectedTab = tab },
+            position = { pagerState.currentPage + pagerState.currentPageOffsetFraction },
+            items = tabs,
+            onTabSelected = { tab -> goToTab(tab) },
             modifier = Modifier.align(Alignment.BottomCenter),
             glass = glass
         )

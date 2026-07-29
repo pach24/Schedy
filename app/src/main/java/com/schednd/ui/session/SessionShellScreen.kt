@@ -1,7 +1,5 @@
 package com.schednd.ui.session
 
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -20,8 +20,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +35,7 @@ import com.schednd.ui.session.tabs.CalendarTabScreen
 import com.schednd.ui.session.tabs.ProfileTabScreen
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 @Composable
@@ -44,8 +44,6 @@ fun SessionShellScreen(
     onLeaveSession: () -> Unit,
     onEditAvailability: () -> Unit
 ) {
-    var selectedTab by rememberSaveable { mutableStateOf(SessionTab.HOME) }
-    val tabStateHolder = rememberSaveableStateHolder()
     val eventState by eventDetailViewModel.uiState.collectAsState()
 
     // Igual que en Home: la barra vive fuera del Scaffold porque el shader refracta lo
@@ -63,6 +61,10 @@ fun SessionShellScreen(
         .calculateBottomPadding()
     // Dentro de una sesión el listado general no tiene sentido.
     val tabs = remember { SessionTab.entries.filterNot { it == SessionTab.SESSIONS } }
+    // El pager es la única fuente de la pestaña actual: manda tanto al deslizar como al
+    // tocar la barra, y es su posición continua la que mueve la bolita.
+    val pagerState = rememberPagerState { tabs.size }
+    val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -82,51 +84,51 @@ fun SessionShellScreen(
                 )
             }
         ) { innerPadding ->
-            Crossfade(
-                targetState = selectedTab,
-                animationSpec = tween(durationMillis = 130),
-                label = "shellCrossfade"
-            ) { tab ->
-                // Cada pestaña guarda su estado al descartarse y lo recupera al volver. Sin
-                // esto, el revelado escalonado de `FadeIn` se reproduce entero en cada
-                // cambio y el contenido tarda medio segundo en estar puesto.
-                tabStateHolder.SaveableStateProvider(tab.name) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        when (tab) {
-                            SessionTab.HOME, SessionTab.SESSIONS -> EventDetailScreen(
-                                viewModel = eventDetailViewModel,
-                                bottomPadding = innerPadding,
-                                onBack = onLeaveSession,
-                                onEditAvailability = onEditAvailability
-                            )
-                            SessionTab.CALENDAR -> CalendarTabScreen(
-                                bottomPadding = innerPadding,
-                                sessionName = eventState.event?.name.orEmpty(),
-                                dateSummaries = eventState.dateSummaries,
-                                totalParticipants = eventState.participants.size,
-                                confirmedDate = eventState.confirmedDate,
-                                onDayTap = { date -> tappedDate = date },
-                                onBack = onLeaveSession
-                            )
-                            SessionTab.PROFILE -> ProfileTabScreen(
-                                bottomPadding = innerPadding,
-                                onBack = onLeaveSession
-                            )
-                        }
+            // El pager guarda el estado de cada página al descartarla y lo restaura al
+            // volver, así que el revelado escalonado de `FadeIn` no se repite en cada cambio.
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                key = { tabs[it].name }
+            ) { page ->
+                Box(modifier = Modifier.fillMaxSize()) {
+                    when (tabs[page]) {
+                        SessionTab.CALENDAR -> CalendarTabScreen(
+                            bottomPadding = innerPadding,
+                            sessionName = eventState.event?.name.orEmpty(),
+                            dateSummaries = eventState.dateSummaries,
+                            totalParticipants = eventState.participants.size,
+                            confirmedDate = eventState.confirmedDate,
+                            onDayTap = { date -> tappedDate = date },
+                            onBack = onLeaveSession
+                        )
+                        SessionTab.PROFILE -> ProfileTabScreen(
+                            bottomPadding = innerPadding,
+                            onBack = onLeaveSession
+                        )
+                        else -> EventDetailScreen(
+                            viewModel = eventDetailViewModel,
+                            bottomPadding = innerPadding,
+                            onBack = onLeaveSession,
+                            onEditAvailability = onEditAvailability
+                        )
                     }
                 }
             }
         }
 
         SessionBottomBar(
-            selectedTab = selectedTab,
+            position = { pagerState.currentPage + pagerState.currentPageOffsetFraction },
             items = tabs,
             onTabSelected = { tab ->
-                // Tocar "Inicio" estando ya en él devuelve al listado de sesiones.
-                if (tab == SessionTab.HOME && selectedTab == SessionTab.HOME) {
+                val target = tabs.indexOf(tab)
+                // Tocar "Inicio" estando ya en él devuelve al listado de sesiones. Se mira
+                // el destino y no la página actual: a mitad de un recorrido hacia otra
+                // pestaña, tocar "Inicio" es querer volver a él, no salirse.
+                if (tab == SessionTab.HOME && pagerState.targetPage == target) {
                     onLeaveSession()
                 } else {
-                    selectedTab = tab
+                    scope.launch { pagerState.animateToTabPage(target) }
                 }
             },
             modifier = Modifier.align(Alignment.BottomCenter),
