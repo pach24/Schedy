@@ -37,37 +37,53 @@ Instead of endless group chats and polls, participants submit their availability
 
 ## 🛠 Technical Stack & Architecture
 
-This project was built following **Clean Architecture** principles and **SOLID** design patterns to ensure scalability and testability.
+Clean Architecture in three layers, with MVVM on top. Dependencies point inwards:
+`presentation` and `data` both know `domain`; `domain` knows nobody.
 
-* **UI Layer:** 100% Jetpack Compose with Material 3. Implements advanced UI components like Custom Calendars and Availability Grids.
-* **Architecture:** MVVM (Model-View-ViewModel) + Repository Pattern.
-* **Dependency Injection:** Hilt (Dagger) for managing scoped dependencies and improving modularity.
-* **Asynchronous Programming:** Kotlin Coroutines and Flow for handling reactive data streams from Firestore.
-* **Backend Services:**
-    * **Cloud Firestore:** Real-time NoSQL database.
-    * **Firebase Auth:** For seamless anonymous user sessions.
-    * **Cloud Messaging (FCM):** Topic-based push notifications for event updates.
-* **Dependency Management:** Gradle Version Catalogs for a unified and clean build configuration.
+```
+presentation/   Compose screens + ViewModels (one immutable UiState per screen)
+      │ use cases
+domain/         models · repository interfaces · 32 use cases   ← pure Kotlin
+      ▲ implements
+data/           Firestore · Auth · FCM · SharedPreferences · WorkManager
+```
+
+* **UI:** 100% Jetpack Compose with Material 3, a custom squircle shape system and
+  glass surfaces (haze + a refraction shader).
+* **DI:** Hilt. `RepositoryModule` is the single place where a domain interface meets its
+  Firebase implementation.
+* **Async:** Coroutines and Flow — screens listen to Firestore snapshots, they never poll.
+* **Backend:** Cloud Firestore, anonymous Firebase Auth, FCM push published by a Cloud
+  Function, and Firebase Hosting for the verified Android App Links.
+* **Builds:** Gradle version catalogs; release signing read from `~/.gradle/gradle.properties`.
 
 ---
 
-## 📁 Project Highlights
+## 📖 Documentation
 
-* **Domain Logic:** Centrally managed Use Cases (e.g., `ComputeDateSummariesUseCase`) that handle complex availability calculations independently of the UI.
-* **Modern Navigation:** Uses the Compose Navigation component with a centralized and type-safe approach.
-* **Custom Theming:** A fully implemented Material 3 theme with support for dynamic colors and specialized RPG-style typography.
-* **Efficient Data Access:** Robust Repository pattern implementation that abstracts Firebase complexity from the business logic.
+In-depth docs live in [`docs/`](docs/):
+
+| | |
+|---|---|
+| [architecture.md](docs/architecture.md) | Layers, MVVM, use cases and the reasoning behind them |
+| [structure.md](docs/structure.md) | Package map: where everything lives |
+| [data.md](docs/data.md) | Firestore model, security rules, notification queue |
+| [environment.md](docs/environment.md) | Setup, everyday commands, release signing |
+| [links.md](docs/links.md) | App Links: why the shared link opens the app |
+| [ui.md](docs/ui.md) | Design system: type, squircles, glass, animations |
 
 ---
 
 ## ⚙️ Requirements & Setup
 
-* **Min SDK:** 29
-* **Target SDK:** 35
-* **Java Version:** 11+
+* **Min SDK:** 29 · **Target SDK:** 35 · **Java:** 11+ (JDK 17 to build)
 
 1. Clone the repository.
 2. Add your `google-services.json` to the `app/` directory.
-3. Build the project using the included Gradle wrapper: `./gradlew assembleDebug`.
+3. Build the project using the included Gradle wrapper: `./gradlew :app:assembleDebug`.
+
+Release signing, Firebase deploys and the App Links setup are covered in
+[docs/environment.md](docs/environment.md) and [docs/links.md](docs/links.md).
+
 ---
 
