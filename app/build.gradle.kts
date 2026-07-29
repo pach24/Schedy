@@ -7,6 +7,19 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Credenciales de firma: viven en ~/.gradle/gradle.properties, fuera del repo. Sin ellas
+// el proyecto sigue configurando y compilando (debug, tests, CI); solo la release sale
+// sin firmar, que es preferible a romperle la build a quien clone esto.
+val releaseStoreFile: String? = providers.gradleProperty("SCHEDY_RELEASE_STORE_FILE").orNull
+val releaseStorePassword: String? = providers.gradleProperty("SCHEDY_RELEASE_STORE_PASSWORD").orNull
+val releaseKeyAlias: String? = providers.gradleProperty("SCHEDY_RELEASE_KEY_ALIAS").orNull
+val releaseKeyPassword: String? = providers.gradleProperty("SCHEDY_RELEASE_KEY_PASSWORD").orNull
+val hasReleaseSigning: Boolean = !releaseStoreFile.isNullOrBlank() &&
+        !releaseStorePassword.isNullOrBlank() &&
+        !releaseKeyAlias.isNullOrBlank() &&
+        !releaseKeyPassword.isNullOrBlank() &&
+        file(releaseStoreFile).exists()
+
 android {
     namespace = "com.schednd"
     compileSdk = 35
@@ -21,8 +34,24 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // El APK de Releases tiene que ir firmado con la misma clave cuya huella está
+            // en assetlinks.json; si no, Android no verifica el enlace y abre el navegador.
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
