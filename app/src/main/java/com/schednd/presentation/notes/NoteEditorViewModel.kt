@@ -3,10 +3,15 @@ package com.schednd.presentation.notes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.schednd.domain.repository.AuthRepository
-import com.schednd.domain.repository.EventRepository
-import com.schednd.domain.repository.NoteRepository
-import com.schednd.domain.repository.NotificationRepository
+import com.schednd.domain.usecase.auth.EnsureSignedInUseCase
+import com.schednd.domain.usecase.auth.GetCurrentUserIdUseCase
+import com.schednd.domain.usecase.note.CreateNoteUseCase
+import com.schednd.domain.usecase.note.DeleteNoteUseCase
+import com.schednd.domain.usecase.note.ObserveNotesUseCase
+import com.schednd.domain.usecase.note.UpdateNoteUseCase
+import com.schednd.domain.usecase.notification.NotifyNewNoteUseCase
+import com.schednd.domain.usecase.session.GetSessionUseCase
+import com.schednd.domain.usecase.session.ObserveParticipantsUseCase
 import com.schednd.domain.model.Note
 import com.schednd.domain.model.NoteTag
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,10 +49,15 @@ data class NoteEditorUiState(
 class NoteEditorViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
     savedStateHandle: SavedStateHandle,
-    private val noteRepository: NoteRepository,
-    private val eventRepository: EventRepository,
-    private val authRepository: AuthRepository,
-    private val notificationRepository: NotificationRepository
+    private val ensureSignedIn: EnsureSignedInUseCase,
+    private val getCurrentUserId: GetCurrentUserIdUseCase,
+    private val getSession: GetSessionUseCase,
+    private val observeParticipants: ObserveParticipantsUseCase,
+    private val observeNotes: ObserveNotesUseCase,
+    private val createNote: CreateNoteUseCase,
+    private val updateNote: UpdateNoteUseCase,
+    private val deleteNoteUseCase: DeleteNoteUseCase,
+    private val notifyNewNote: NotifyNewNoteUseCase
 ) : ViewModel() {
 
     private val code: String = savedStateHandle.get<String>("code")!!
@@ -62,18 +72,18 @@ class NoteEditorViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             try {
-                authRepository.ensureSignedIn()
+                ensureSignedIn()
                 _uiState.update { it.copy(isLoading = true) }
 
-                val event = eventRepository.getEvent(code)
+                val event = getSession(code)
                 val sessionName = event?.name.orEmpty()
-                val myUserId = authRepository.getCurrentUserId()
-                val participants = eventRepository.observeParticipants(code).first()
+                val myUserId = getCurrentUserId()
+                val participants = observeParticipants(code).first()
                 val me = participants.find { it.userId == myUserId }
                 val myName = me?.name.orEmpty()
 
                 if (noteIdArg != null) {
-                    val existing = noteRepository.observeNotes(code).first()
+                    val existing = observeNotes(code).first()
                         .firstOrNull { it.id == noteIdArg }
                     if (existing != null) {
                         _uiState.update {
@@ -125,14 +135,14 @@ class NoteEditorViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
             try {
-                val userId = authRepository.ensureSignedIn()
+                val userId = ensureSignedIn()
                 val title = state.title.trim()
                 val body = state.body.trim()
                 val resultId = if (state.noteId != null) {
-                    noteRepository.updateNote(code, state.noteId, title, body, state.tag, state.pinned)
+                    updateNote(code, state.noteId, title, body, state.tag, state.pinned)
                     state.noteId
                 } else {
-                    noteRepository.createNote(
+                    createNote(
                         code = code,
                         authorId = userId,
                         authorName = state.authorName.ifBlank { appContext.getString(R.string.anonymous_player) },
@@ -144,7 +154,7 @@ class NoteEditorViewModel @Inject constructor(
                 }
                 if (state.notifyGroup) {
                     runCatching {
-                        notificationRepository.notifyNewNote(
+                        notifyNewNote(
                             code = code,
                             senderId = userId,
                             noteId = resultId,
@@ -165,7 +175,7 @@ class NoteEditorViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isDeleting = true, error = null) }
             try {
-                noteRepository.deleteNote(code, id)
+                deleteNoteUseCase(code, id)
                 _uiState.update { it.copy(isDeleting = false, isDeleted = true) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isDeleting = false, error = e.message) }
