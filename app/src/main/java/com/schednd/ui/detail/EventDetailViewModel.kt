@@ -28,6 +28,10 @@ import java.time.LocalTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import android.content.Context
+import com.schednd.R
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Locale
 
 
 data class EventDetailUiState(
@@ -51,6 +55,7 @@ data class EventDetailUiState(
 
 @HiltViewModel
 class EventDetailViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     savedStateHandle: SavedStateHandle,
     private val eventRepository: EventRepository,
     private val authRepository: AuthRepository,
@@ -140,7 +145,7 @@ class EventDetailViewModel @Inject constructor(
                             }
                         } else {
                             _uiState.update {
-                                it.copy(isLoading = false, error = "Sesión no encontrada")
+                                it.copy(isLoading = false, error = appContext.getString(R.string.detail_session_not_found))
                             }
                         }
                     }
@@ -201,10 +206,16 @@ class EventDetailViewModel @Inject constructor(
             try {
                 eventRepository.confirmDate(code, date, startTime)
                 val userId = authRepository.getCurrentUserId().orEmpty()
-                val whenText = buildString {
-                    append(date.format(DATE_FORMAT))
-                    startTime?.let { append(" a las ").append(it.format(TIME_FORMAT)) }
-                }
+                val dateFormat = DateTimeFormatter.ofPattern(
+                    appContext.getString(R.string.date_pattern_day_month), Locale.getDefault()
+                )
+                val whenText = startTime?.let {
+                    appContext.getString(
+                        R.string.detail_confirmed_at,
+                        date.format(dateFormat),
+                        it.format(TIME_FORMAT)
+                    )
+                } ?: date.format(dateFormat)
                 runCatching {
                     notificationRepository.notifyDateConfirmed(code, userId, whenText)
                 }
@@ -254,6 +265,6 @@ class EventDetailViewModel @Inject constructor(
 
     private companion object {
         val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-        val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("d 'de' MMMM")
+
     }
 }

@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import com.schednd.ui.theme.pressScale
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun AvatarPickerButton(
@@ -59,7 +60,7 @@ fun AvatarPickerButton(
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_photo_camera),
-                contentDescription = "Cambiar foto",
+                contentDescription = stringResource(R.string.profile_change_photo),
                 tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.padding(3.dp)
             )

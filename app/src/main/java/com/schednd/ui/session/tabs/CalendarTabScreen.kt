@@ -43,6 +43,8 @@ import com.schednd.ui.theme.FadeIn
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
+import com.schednd.R
 
 @Composable
 fun CalendarTabScreen(
@@ -133,7 +135,7 @@ private fun CalendarHeader(sessionName: String, onBack: () -> Unit) {
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBackIos,
-                contentDescription = "Volver",
+                contentDescription = stringResource(R.string.action_back),
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(16.dp).padding(start = 3.dp)
             )
@@ -141,7 +143,7 @@ private fun CalendarHeader(sessionName: String, onBack: () -> Unit) {
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(
-                text = "Calendario",
+                text = stringResource(R.string.calendar_title),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -167,7 +169,7 @@ private fun HeatmapLegend(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Poca",
+            text = stringResource(R.string.calendar_legend_low),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -185,7 +187,7 @@ private fun HeatmapLegend(
         }
         Spacer(modifier = Modifier.width(3.dp))
         Text(
-            text = "Todos",
+            text = stringResource(R.string.calendar_legend_all),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -194,9 +196,9 @@ private fun HeatmapLegend(
 
 @Composable
 private fun ConfirmedDateCard(date: LocalDate) {
-    val dayName = DateTimeFormatter.ofPattern("EEEE", Locale("es"))
+    val dayName = DateTimeFormatter.ofPattern(stringResource(R.string.date_pattern_weekday), Locale.getDefault())
         .format(date).replaceFirstChar { it.uppercaseChar() }
-    val fullDate = DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", Locale("es"))
+    val fullDate = DateTimeFormatter.ofPattern(stringResource(R.string.date_pattern_full_date), Locale.getDefault())
         .format(date)
 
     Row(
@@ -216,7 +218,7 @@ private fun ConfirmedDateCard(date: LocalDate) {
         Spacer(modifier = Modifier.width(10.dp))
         Column {
             Text(
-                text = "Fecha confirmada",
+                text = stringResource(R.string.calendar_confirmed_date),
                 style = MaterialTheme.typography.labelSmall.copy(
                     letterSpacing = 1.sp,
                     fontWeight = FontWeight.Medium

@@ -49,7 +49,14 @@ class SessionReminderWorker(
             SchedyApp.NOTIFICATION_CHANNEL_ID
         )
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("🎲 ${sessionName.ifBlank { "Tu sesión" }} es mañana")
+            .setContentTitle(
+                applicationContext.getString(
+                    R.string.notification_reminder_title,
+                    sessionName.ifBlank {
+                        applicationContext.getString(R.string.session_fallback_name)
+                    }
+                )
+            )
             .setContentText(whenText)
             .setContentIntent(pending)
             .setAutoCancel(true)

@@ -36,7 +36,7 @@ class SchedyMessagingService : FirebaseMessagingService() {
 
         val title = data["title"] ?: message.notification?.title ?: "Schedy"
         val body = data["body"] ?: message.notification?.body
-            ?: "Novedades en tu sesión"
+            ?: getString(R.string.notification_default_body)
 
         val builder = NotificationCompat.Builder(this, SchedyApp.NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)

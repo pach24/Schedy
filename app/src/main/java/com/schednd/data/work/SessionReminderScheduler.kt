@@ -11,6 +11,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.schednd.R
 
 /**
  * Programa un aviso local el día antes de la sesión.
@@ -38,10 +39,12 @@ class SessionReminderScheduler @Inject constructor(
             return
         }
 
+        // Se compone al programar, con el idioma de ese momento. El aviso salta como
+        // mucho un dia despues, asi que un cambio de idioma por medio es despreciable.
         val whenText = if (startTime != null) {
-            "Mañana a las ${startTime.format(HOUR_FORMAT)}"
+            context.getString(R.string.notification_reminder_at, startTime.format(HOUR_FORMAT))
         } else {
-            "Mañana. Aún sin hora fijada"
+            context.getString(R.string.notification_reminder_no_time)
         }
 
         val request = OneTimeWorkRequestBuilder<SessionReminderWorker>()

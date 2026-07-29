@@ -49,6 +49,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
 
 @Composable
 internal fun Header(title: String, greeting: String? = null) {
@@ -80,7 +81,7 @@ internal fun Header(title: String, greeting: String? = null) {
 internal fun HeroDate(session: HomeSessionCard, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
         Text(
-            text = "PRÓXIMA SESIÓN",
+            text = stringResource(R.string.home_next_session),
             style = MaterialTheme.typography.labelSmall.copy(
                 letterSpacing = 1.5.sp,
                 fontWeight = FontWeight.Medium
@@ -89,10 +90,10 @@ internal fun HeroDate(session: HomeSessionCard, modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(6.dp))
         if (session.confirmedDate != null) {
-            val dayName = DateTimeFormatter.ofPattern("EEEE", java.util.Locale("es"))
+            val dayName = DateTimeFormatter.ofPattern(stringResource(R.string.date_pattern_weekday), Locale.getDefault())
                 .format(session.confirmedDate)
                 .replaceFirstChar { it.uppercaseChar() }
-            val dayMonth = DateTimeFormatter.ofPattern("d 'de' MMMM", java.util.Locale("es"))
+            val dayMonth = DateTimeFormatter.ofPattern(stringResource(R.string.date_pattern_day_month), Locale.getDefault())
                 .format(session.confirmedDate)
             Text(
                 text = dayName,
@@ -113,7 +114,7 @@ internal fun HeroDate(session: HomeSessionCard, modifier: Modifier = Modifier) {
             )
         } else {
             Text(
-                text = "Fecha por\nconfirmar",
+                text = stringResource(R.string.home_date_unconfirmed),
                 style = MaterialTheme.typography.displaySmall.copy(
                     fontWeight = FontWeight.Black,
                     letterSpacing = (-1).sp,
@@ -129,7 +130,7 @@ internal fun HeroDate(session: HomeSessionCard, modifier: Modifier = Modifier) {
 internal fun NoUpcomingSessionHero(modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
         Text(
-            text = "PRÓXIMA SESIÓN",
+            text = stringResource(R.string.home_next_session),
             style = MaterialTheme.typography.labelSmall.copy(
                 letterSpacing = 1.5.sp,
                 fontWeight = FontWeight.Medium
@@ -138,7 +139,7 @@ internal fun NoUpcomingSessionHero(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = "Sin sesiones\npróximas",
+            text = stringResource(R.string.home_no_upcoming_title),
             style = MaterialTheme.typography.displaySmall.copy(
                 fontWeight = FontWeight.Black,
                 letterSpacing = (-1).sp,
@@ -148,7 +149,7 @@ internal fun NoUpcomingSessionHero(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Confirma una fecha o crea una sesión para ver la cuenta atrás.",
+            text = stringResource(R.string.home_no_upcoming_body),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -173,12 +174,12 @@ internal fun HeroSessionLabel(session: HomeSessionCard, modifier: Modifier = Mod
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(
-            text = session.name.ifBlank { "Sesión" },
+            text = session.name.ifBlank { stringResource(R.string.session_fallback_name) },
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = "· ${session.code}",
+            text = stringResource(R.string.home_session_code, session.code),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -208,9 +209,9 @@ internal fun HeroCountdown(session: HomeSessionCard, modifier: Modifier = Modifi
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        CountdownBox(value = days, label = "DÍAS", modifier = Modifier.weight(1f))
-        CountdownBox(value = hours, label = "HORAS", modifier = Modifier.weight(1f))
-        CountdownBox(value = minutes, label = "MINUTOS", modifier = Modifier.weight(1f))
+        CountdownBox(value = days, label = stringResource(R.string.home_countdown_days), modifier = Modifier.weight(1f))
+        CountdownBox(value = hours, label = stringResource(R.string.home_countdown_hours), modifier = Modifier.weight(1f))
+        CountdownBox(value = minutes, label = stringResource(R.string.home_countdown_minutes), modifier = Modifier.weight(1f))
     }
 }
 
@@ -276,13 +277,13 @@ internal fun SessionRow(
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = session.name.ifBlank { "Sesión" },
+                    text = session.name.ifBlank { stringResource(R.string.session_fallback_name) },
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1
                 )
                 Text(
-                    text = session.confirmedDate?.let { dateShortLabel(it) } ?: "Sin fecha · ${session.code}",
+                    text = session.confirmedDate?.let { dateShortLabel(it) } ?: stringResource(R.string.home_session_undated, session.code),
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontFamily = if (session.confirmedDate == null) FontFamily.Monospace else FontFamily.Default,
                         letterSpacing = if (session.confirmedDate == null) 1.sp else 0.sp
@@ -299,7 +300,7 @@ internal fun SessionRow(
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "PRÓXIMA",
+                        text = stringResource(R.string.home_badge_next),
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
@@ -369,13 +370,13 @@ internal fun EmptySessionsHint(modifier: Modifier = Modifier) {
         }
         Spacer(modifier = Modifier.height(14.dp))
         Text(
-            text = "Aún no tienes mesas",
+            text = stringResource(R.string.home_empty_title),
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Crea una sesión o únete con un código para empezar.",
+            text = stringResource(R.string.home_empty_body),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -414,7 +415,7 @@ internal fun ActionButtons(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Crear sesión",
+                text = stringResource(R.string.home_create_session),
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.surface
             )
@@ -447,7 +448,7 @@ internal fun ActionButtons(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Unirse con código",
+                text = stringResource(R.string.home_join_session),
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -457,7 +458,8 @@ internal fun ActionButtons(
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+@Composable
 internal fun dateShortLabel(date: LocalDate): String {
-    val fmt = DateTimeFormatter.ofPattern("EEE d MMM", Locale("es"))
+    val fmt = DateTimeFormatter.ofPattern(stringResource(R.string.date_pattern_short), Locale.getDefault())
     return date.format(fmt).replaceFirstChar { it.uppercaseChar() }
 }

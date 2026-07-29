@@ -60,6 +60,8 @@ import com.schednd.ui.components.color
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.SquircleShape
 import com.schednd.ui.theme.pressScale
+import androidx.compose.ui.res.stringResource
+import com.schednd.R
 
 @Composable
 fun NoteEditorScreen(
@@ -120,7 +122,7 @@ fun NoteEditorScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "${uiState.body.length} / 1000",
+                        text = stringResource(R.string.note_editor_counter, uiState.body.length, 1000),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
@@ -155,7 +157,7 @@ fun NoteEditorScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "ETIQUETA",
+                text = stringResource(R.string.note_editor_tag_header),
                 style = MaterialTheme.typography.labelMedium.copy(
                     letterSpacing = 1.5.sp,
                     fontWeight = FontWeight.Bold
@@ -263,13 +265,13 @@ private fun EditorTopBar(
                 )
                 Spacer(modifier = Modifier.width(2.dp))
                 Text(
-                    text = "Notas",
+                    text = stringResource(R.string.notes_title),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             } else {
                 Text(
-                    text = "Cancelar",
+                    text = stringResource(R.string.action_cancel),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -314,13 +316,16 @@ private fun AuthorRow(
         Spacer(modifier = Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = authorName.ifBlank { "Anónimo" },
+                text = authorName.ifBlank { stringResource(R.string.anonymous_player) },
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = if (isEditMode) "editando ahora"
-                       else "publicando en ${sessionName.ifBlank { "esta sesión" }}",
+                text = if (isEditMode) stringResource(R.string.note_editor_editing_now)
+                       else stringResource(
+                           R.string.note_editor_publishing_in,
+                           sessionName.ifBlank { stringResource(R.string.note_editor_session_fallback) }
+                       ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -337,7 +342,7 @@ private fun TitleField(
     Box {
         if (value.isEmpty()) {
             Text(
-                text = "Título de la nota",
+                text = stringResource(R.string.note_editor_title_placeholder),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
             )
@@ -364,7 +369,7 @@ private fun BodyField(
     Box(modifier = Modifier.heightIn(min = 120.dp)) {
         if (value.isEmpty()) {
             Text(
-                text = "Escribe los detalles...",
+                text = stringResource(R.string.note_editor_body_placeholder),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
             )
@@ -413,7 +418,7 @@ private fun TagSelectChip(
             )
         }
         Text(
-            text = tag.label,
+            text = stringResource(tag.labelRes),
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
             color = textColor
         )

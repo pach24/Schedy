@@ -23,6 +23,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.SquircleShape
+import androidx.compose.ui.res.stringResource
+import com.schednd.R
 
 @Composable
 fun ComingSoonScreen(
@@ -68,7 +70,7 @@ fun ComingSoonScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Próximamente",
+                    text = stringResource(R.string.coming_soon),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary
                 )

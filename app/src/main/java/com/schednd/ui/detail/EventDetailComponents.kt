@@ -43,6 +43,9 @@ import com.schednd.ui.theme.pressScale
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.schednd.R
 
 /** Duración por defecto del evento de calendario cuando la sesión tiene hora. */
 internal const val SESSION_DEFAULT_DURATION_MS = 3L * 60 * 60 * 1000
@@ -92,7 +95,7 @@ internal fun SessionCountdown(
 
     Column(modifier = modifier) {
         Text(
-            text = if (isPast) "SESIÓN PASADA" else "PRÓXIMA SESIÓN",
+            text = stringResource(if (isPast) R.string.detail_past_session else R.string.detail_next_session),
             style = MaterialTheme.typography.labelSmall.copy(
                 letterSpacing = 2.sp,
                 fontWeight = FontWeight.Bold
@@ -102,7 +105,7 @@ internal fun SessionCountdown(
         Spacer(modifier = Modifier.height(2.dp))
         if (isPast) {
             val pastLabel = confirmedDate.format(
-                DateTimeFormatter.ofPattern("EEE d 'de' MMMM", Locale("es"))
+                DateTimeFormatter.ofPattern(stringResource(R.string.date_pattern_weekday_day_month), Locale.getDefault())
             ).replaceFirstChar { it.uppercaseChar() }
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
@@ -115,7 +118,7 @@ internal fun SessionCountdown(
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "hace $daysAgo día${if (daysAgo == 1L) "" else "s"}",
+                    text = pluralStringResource(R.plurals.days_ago, daysAgo.toInt(), daysAgo.toInt()),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 6.dp)
@@ -123,12 +126,12 @@ internal fun SessionCountdown(
             }
         } else {
             val dateLabel = confirmedDate.format(
-                DateTimeFormatter.ofPattern("EEE d", Locale("es"))
+                DateTimeFormatter.ofPattern(stringResource(R.string.date_pattern_weekday_day), Locale.getDefault())
             ).replaceFirstChar { it.uppercaseChar() }
             Row(verticalAlignment = Alignment.Bottom) {
                 if (daysLeft == 0L) {
                     Text(
-                        text = "HOY",
+                        text = stringResource(R.string.detail_countdown_today),
                         style = MaterialTheme.typography.displayLarge.copy(
                             fontWeight = FontWeight.Black,
                             fontSize = 72.sp,
@@ -138,7 +141,7 @@ internal fun SessionCountdown(
                     )
                 } else {
                     Text(
-                        text = String.format(Locale("es"), "%02d", daysLeft),
+                        text = String.format(Locale.getDefault(), "%02d", daysLeft),
                         style = MaterialTheme.typography.displayLarge.copy(
                             fontWeight = FontWeight.Black,
                             fontSize = 88.sp,
@@ -150,7 +153,7 @@ internal fun SessionCountdown(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.padding(bottom = 10.dp)) {
                     Text(
-                        text = if (daysLeft == 0L) "" else "días",
+                        text = if (daysLeft == 0L) "" else stringResource(R.string.detail_countdown_days),
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

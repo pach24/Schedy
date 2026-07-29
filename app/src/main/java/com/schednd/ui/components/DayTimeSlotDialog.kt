@@ -55,6 +55,8 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
+import com.schednd.R
 
 @Composable
 fun DayTimeSlotDialog(
@@ -113,21 +115,21 @@ fun DayTimeSlotDialog(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     SlotOptionRow(
-                        label = "Solo mañana",
+                        label = stringResource(R.string.slot_morning),
                         icon = Icons.Filled.LightMode,
                         selected = currentSlot == DayTimeSlot.MORNING,
                         onClick = { onSlotSelected(DayTimeSlot.MORNING) }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     SlotOptionRow(
-                        label = "Solo tarde",
+                        label = stringResource(R.string.slot_afternoon),
                         icon = Icons.Filled.DarkMode,
                         selected = currentSlot == DayTimeSlot.AFTERNOON,
                         onClick = { onSlotSelected(DayTimeSlot.AFTERNOON) }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     SlotOptionRow(
-                        label = "Todo el día",
+                        label = stringResource(R.string.slot_all_day),
                         icon = Icons.Filled.Schedule,
                         selected = currentSlot == DayTimeSlot.BOTH,
                         onClick = { onSlotSelected(DayTimeSlot.BOTH) }
@@ -145,7 +147,7 @@ fun DayTimeSlotDialog(
 
 @Composable
 private fun DialogHeader(date: LocalDate) {
-    val locale = Locale("es")
+    val locale = Locale.getDefault()
     val dayName = date.dayOfWeek
         .getDisplayName(TextStyle.FULL, locale)
         .replaceFirstChar { it.uppercase() }
@@ -275,7 +277,7 @@ private fun RemoveRow(onClick: () -> Unit) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "Quitar del día",
+            text = stringResource(R.string.slot_clear),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.error

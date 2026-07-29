@@ -56,6 +56,8 @@ import com.schednd.ui.components.frostedSurface
 import com.schednd.ui.theme.pressScale
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
+import com.schednd.R
 
 /** Selector de hora de inicio. Descartarlo confirma el día sin hora. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,15 +74,15 @@ internal fun StartTimePickerDialog(
     )
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("¿A qué hora empezáis?") },
+        title = { Text(stringResource(R.string.dialog_start_time_title)) },
         text = { TimePicker(state = state) },
         confirmButton = {
             TextButton(onClick = { onConfirm(LocalTime.of(state.hour, state.minute)) }) {
-                Text("Fijar hora")
+                Text(stringResource(R.string.dialog_start_time_confirm))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Solo el día") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_start_time_skip)) }
         }
     )
 }
@@ -131,13 +133,13 @@ internal fun DeleteSessionDialog(
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             Text(
-                text = "Borrar sesion",
+                text = stringResource(R.string.dialog_delete_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "Seguro que quieres borrar esta sesion? Esta accion no se puede deshacer.",
+                text = stringResource(R.string.dialog_delete_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -155,7 +157,7 @@ internal fun DeleteSessionDialog(
                     pressedElevation = 0.dp
                 )
             ) {
-                Text("Borrar sesion", fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.dialog_delete_confirm), fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -216,7 +218,7 @@ internal fun MoreOptionsDialog(
                     )
                     Spacer(modifier = Modifier.width(14.dp))
                     Text(
-                        text = "Solo el DM puede fijar la fecha",
+                        text = stringResource(R.string.dialog_options_dm_only),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -242,7 +244,7 @@ internal fun MoreOptionsDialog(
                 )
                 Spacer(modifier = Modifier.width(14.dp))
                 Text(
-                    text = "Fijar fecha y hora",
+                    text = stringResource(R.string.dialog_options_fix_date),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -270,7 +272,7 @@ internal fun MoreOptionsDialog(
                 )
                 Spacer(modifier = Modifier.width(14.dp))
                 Text(
-                    text = "Borrar sesión",
+                    text = stringResource(R.string.dialog_options_delete),
                     style = MaterialTheme.typography.bodyLarge,
                     color = Color(0xFFFD3744)
                 )
@@ -290,7 +292,7 @@ internal fun ConfirmDateDialog(
     onClearDate: () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
-    val dateFormat = DateTimeFormatter.ofPattern("EEEE d 'de' MMMM", Locale("es"))
+    val dateFormat = DateTimeFormatter.ofPattern(stringResource(R.string.date_pattern_full_weekday_day_month), Locale.getDefault())
     val sorted = remember(dateSummaries) { dateSummaries.sortedByDescending { it.count } }
     val dialogShape = RoundedCornerShape(28.dp)
     val tintColor = if (isDark) Color(0xFF1C1C1E).copy(alpha = 0.55f) else Color.White.copy(alpha = 0.55f)
@@ -337,7 +339,7 @@ internal fun ConfirmDateDialog(
             .padding(horizontal = 24.dp, vertical = 24.dp)
     ) {
         Text(
-            text = "Elige la fecha",
+            text = stringResource(R.string.dialog_pick_date_title),
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurface
         )

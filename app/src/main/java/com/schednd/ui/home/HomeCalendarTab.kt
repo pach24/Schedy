@@ -39,6 +39,8 @@ import com.schednd.ui.components.HomeScheduleCalendar
 import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.pressScale
 import java.time.LocalDate
+import androidx.compose.ui.res.stringResource
+import com.schednd.R
 
 @Composable
 internal fun HomeCalendarTab(
@@ -67,7 +69,7 @@ internal fun HomeCalendarTab(
                 .padding(start = 24.dp, end = 16.dp, top = 12.dp, bottom = 8.dp)
         ) {
             Text(
-                text = "Calendario",
+                text = stringResource(R.string.calendar_title),
                 style = MaterialTheme.typography.displaySmall.copy(
                     fontWeight = FontWeight.Black,
                     letterSpacing = (-1).sp
@@ -117,7 +119,7 @@ private fun HomeCalendarSessionList(
     onSessionClick: (LocalDate) -> Unit
 ) {
     SectionHeader(
-        title = "FECHAS CONFIRMADAS",
+        title = stringResource(R.string.calendar_confirmed_header),
         trailing = "${sessions.size}",
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
     )
@@ -164,7 +166,7 @@ private fun HomeCalendarSessionRow(
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = session.name.ifBlank { "Sesión" },
+                    text = session.name.ifBlank { stringResource(R.string.session_fallback_name) },
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1
@@ -185,7 +187,7 @@ private fun HomeCalendarSessionRow(
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "PRÓXIMA",
+                        text = stringResource(R.string.home_badge_next),
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
@@ -205,13 +207,13 @@ private fun EmptyCalendarHint(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Sin fechas confirmadas",
+            text = stringResource(R.string.calendar_no_confirmed_title),
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Cuando una sesión tenga fecha confirmada aparecerá aquí.",
+            text = stringResource(R.string.calendar_no_confirmed_body),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center

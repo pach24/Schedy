@@ -91,6 +91,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -233,7 +234,7 @@ fun EventDetailScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
-                                        text = "Aun no hay participantes. Comparte el codigo para que se unan.",
+                                        text = stringResource(R.string.detail_no_participants),
                                         modifier = Modifier.padding(16.dp),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -282,7 +283,7 @@ fun EventDetailScreen(
                                 ) {
                                     // Etiqueta principal
                                     Text(
-                                        text = "Disponibilidad:",
+                                        text = stringResource(R.string.detail_availability_legend),
                                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -291,7 +292,7 @@ fun EventDetailScreen(
 
                                     // Texto "Baja"
                                     Text(
-                                        text = "Baja",
+                                        text = stringResource(R.string.detail_availability_low),
                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -314,7 +315,7 @@ fun EventDetailScreen(
 
                                     // Texto "Alta"
                                     Text(
-                                        text = "Alta",
+                                        text = stringResource(R.string.detail_availability_high),
                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -322,7 +323,7 @@ fun EventDetailScreen(
                             }
 
                             if (recommended.isNotEmpty()) {
-                                val dateFormat = DateTimeFormatter.ofPattern("d 'de' MMMM", Locale("es"))
+                                val dateFormat = DateTimeFormatter.ofPattern(stringResource(R.string.date_pattern_day_month), Locale.getDefault())
                                 Spacer(modifier = Modifier.height(16.dp))
                                 FadeIn(delayMs = 300) {
                                     GenCard(
@@ -330,18 +331,27 @@ fun EventDetailScreen(
                                     ) {
                                         Column(modifier = Modifier.padding(16.dp)) {
                                             Text(
-                                                text = "Fechas recomendadas",
+                                                text = stringResource(R.string.detail_recommended_title),
                                                 style = MaterialTheme.typography.titleSmall,
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
                                             Spacer(modifier = Modifier.height(6.dp))
                                             recommended.forEach { s ->
                                                 val label = if (s.absentNames.isEmpty())
-                                                    "Asistencia completa · ${s.count}/${s.total}"
+                                                    stringResource(R.string.detail_recommended_full, s.count, s.total)
                                                 else
-                                                    "Asisten ${s.count}/${s.total} · Falta: ${s.absentNames.joinToString(", ")}"
+                                                    stringResource(
+                                                        R.string.detail_recommended_partial,
+                                                        s.count,
+                                                        s.total,
+                                                        s.absentNames.joinToString(", ")
+                                                    )
                                                 Text(
-                                                    text = "· ${dateFormat.format(s.date)}  –  $label",
+                                                    text = stringResource(
+                                                        R.string.detail_recommended_row,
+                                                        dateFormat.format(s.date),
+                                                        label
+                                                    ),
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
@@ -372,7 +382,7 @@ fun EventDetailScreen(
                             ) + fadeIn(tween(200)),
                             exit = scaleOut(tween(160), targetScale = 0.88f) + fadeOut(tween(160))
                         ) {
-                            val confirmedFormat = DateTimeFormatter.ofPattern("d 'de' MMMM", Locale("es"))
+                            val confirmedFormat = DateTimeFormatter.ofPattern(stringResource(R.string.date_pattern_day_month), Locale.getDefault())
                             val startTimeFormat = DateTimeFormatter.ofPattern("HH:mm")
                             Column {
                                 GenCard(modifier = Modifier.fillMaxWidth()) {
@@ -409,7 +419,7 @@ fun EventDetailScreen(
                                         Spacer(modifier = Modifier.width(14.dp))
                                         Column {
                                             Text(
-                                                text = "Fecha elegida",
+                                                text = stringResource(R.string.detail_chosen_date),
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -417,7 +427,13 @@ fun EventDetailScreen(
                                                 text = uiState.confirmedDate?.let { date ->
                                                     val day = confirmedFormat.format(date)
                                                     uiState.startTime
-                                                        ?.let { "$day · ${startTimeFormat.format(it)}" }
+                                                        ?.let {
+                                                            context.getString(
+                                                                R.string.detail_date_with_time,
+                                                                day,
+                                                                startTimeFormat.format(it)
+                                                            )
+                                                        }
                                                         ?: day
                                                 } ?: "",
                                                 style = MaterialTheme.typography.titleMedium,
@@ -447,7 +463,7 @@ fun EventDetailScreen(
                                                 data = CalendarContract.Events.CONTENT_URI
                                                 putExtra(
                                                     CalendarContract.Events.TITLE,
-                                                    uiState.event?.name ?: "Sesión de rol"
+                                                    uiState.event?.name?.ifBlank { null } ?: context.getString(R.string.detail_calendar_event_title)
                                                 )
                                                 putExtra(
                                                     CalendarContract.EXTRA_EVENT_ALL_DAY,
@@ -468,7 +484,7 @@ fun EventDetailScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        "Añadir a calendario",
+                                        stringResource(R.string.detail_add_to_calendar),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
@@ -488,7 +504,7 @@ fun EventDetailScreen(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = "Codigo de la sesión",
+                                            text = stringResource(R.string.detail_code_label),
                                             style = MaterialTheme.typography.labelMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -536,7 +552,7 @@ fun EventDetailScreen(
                                             type = "text/plain"
                                         }
                                         context.startActivity(
-                                            Intent.createChooser(sendIntent, "Compartir codigo")
+                                            Intent.createChooser(sendIntent, context.getString(R.string.chooser_share_code))
                                         )
                                     }) {
                                         Icon(
@@ -562,7 +578,7 @@ fun EventDetailScreen(
                             Icon(Icons.Filled.CalendarMonth, contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurface)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Editar mi disponibilidad",
+                            Text(stringResource(R.string.detail_edit_availability),
                                 color = MaterialTheme.colorScheme.onSurface)
                         }
 
@@ -581,7 +597,7 @@ fun EventDetailScreen(
                                     type = "text/plain"
                                 }
                                 context.startActivity(
-                                    Intent.createChooser(sendIntent, "Compartir codigo")
+                                    Intent.createChooser(sendIntent, context.getString(R.string.chooser_share_code))
                                 )
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -590,7 +606,7 @@ fun EventDetailScreen(
                             Icon(Icons.Filled.Share, contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurface)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Compartir con el grupo",
+                            Text(stringResource(R.string.detail_share_with_group),
                                 color = MaterialTheme.colorScheme.onSurface)
                         }
 
@@ -603,7 +619,7 @@ fun EventDetailScreen(
     }
 
     GenTopBar(
-        title = uiState.event?.name ?: "Sesion",
+        title = uiState.event?.name ?: stringResource(R.string.session_fallback_name),
         hazeState = hazeState,
         onBack = onBack,
         onTrailingClick = { showMoreDialog = true },

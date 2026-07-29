@@ -58,6 +58,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
 
 /**
  * Difuminado de la tarjeta, bastante por encima del resto de cristales de la app: aquí
@@ -146,7 +147,7 @@ fun ComingSoonDayDialog(
         )
     }
 
-    val locale = Locale("es")
+    val locale = Locale.getDefault()
     val dayName = date.dayOfWeek.getDisplayName(TextStyle.FULL, locale).replaceFirstChar { it.uppercase() }
     val monthName = date.month.getDisplayName(TextStyle.FULL, locale).replaceFirstChar { it.uppercase() }
 
@@ -287,7 +288,7 @@ fun ComingSoonDayDialog(
                     .padding(horizontal = 16.dp, vertical = 7.dp)
             ) {
                 Text(
-                    text = "Próximamente",
+                    text = stringResource(R.string.coming_soon),
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.SemiBold,
                         letterSpacing = 0.5.sp
@@ -299,7 +300,7 @@ fun ComingSoonDayDialog(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Pronto podrás ver el detalle de disponibilidad para cada día: quién puede y quién no.",
+                text = stringResource(R.string.calendar_day_soon_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -321,7 +322,7 @@ fun ComingSoonDayDialog(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Entendido",
+                    text = stringResource(R.string.calendar_day_soon_dismiss),
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface
                 )

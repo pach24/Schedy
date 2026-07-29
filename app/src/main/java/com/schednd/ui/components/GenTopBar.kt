@@ -32,6 +32,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
+import androidx.compose.ui.res.stringResource
+import com.schednd.R
 
 /**
  * @param glass si se pasa un estado con soporte, las tres piezas usan el cristal propio
@@ -45,7 +47,7 @@ fun GenTopBar(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     trailingIcon: ImageVector? = Icons.Filled.MoreHoriz,
-    trailingContentDescription: String? = "Más opciones",
+    trailingContentDescription: String? = stringResource(R.string.action_more_options),
     onTrailingClick: (() -> Unit)? = null,
     glass: LiquidGlassState? = null
 ) {
@@ -85,7 +87,7 @@ fun GenTopBar(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBackIos,
-                contentDescription = "Volver",
+                contentDescription = stringResource(R.string.action_back),
                 tint = iconTint,
                 modifier = Modifier
                     .size(16.dp)

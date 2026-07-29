@@ -1,4 +1,227 @@
 <resources>
-    <string name="app_name">Schedy</string>
+    <string name="app_name" translatable="false">Schedy</string>
+
+    <!-- Comunes -->
+    <string name="action_back">Volver</string>
+    <string name="action_share">Compartir</string>
+    <string name="action_more_options">Más opciones</string>
+    <string name="action_copy_code">Copiar código</string>
+    <string name="action_code_copied">Copiado</string>
+    <string name="action_continue">Continuar</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="chooser_share_code">Compartir código</string>
+    <string name="session_fallback_name">Sesión</string>
+    <string name="anonymous_player">Anónimo</string>
+    <string name="error_prefix">Error: %1$s</string>
+
+    <!-- Patrones de fecha -->
+    <string name="date_pattern_weekday">EEEE</string>
+    <string name="date_pattern_day_month">d \'de\' MMMM</string>
+    <string name="date_pattern_weekday_day">EEE d</string>
+    <string name="date_pattern_weekday_day_month">EEE d \'de\' MMMM</string>
+    <string name="date_pattern_full_weekday_day_month">EEEE d \'de\' MMMM</string>
+    <string name="date_pattern_full_date">d \'de\' MMMM \'de\' yyyy</string>
+    <string name="date_pattern_short">EEE d MMM</string>
+    <string name="date_pattern_today_full">\'HOY\' · EEEE d \'DE\' MMMM</string>
+
+    <!-- Navegación -->
+    <string name="tab_home">Inicio</string>
+    <string name="tab_sessions">Sesiones</string>
+    <string name="tab_calendar">Calendario</string>
+    <string name="tab_profile">Perfil</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome">Bienvenido a Schedy.\nEmpecemos por conocerte.</string>
+    <string name="onboarding_question">¿Cómo te llamas?</string>
+    <string name="onboarding_name_placeholder">Tu nombre de jugador</string>
+
+    <!-- Inicio -->
+    <string name="home_greeting">Hola</string>
+    <string name="home_title">Tus sesiones</string>
+    <string name="home_next_session">PRÓXIMA SESIÓN</string>
+    <string name="home_date_unconfirmed">Fecha por\nconfirmar</string>
+    <string name="home_no_upcoming_title">Sin sesiones\npróximas</string>
+    <string name="home_no_upcoming_body">Confirma una fecha o crea una sesión para ver la cuenta atrás.</string>
+    <string name="home_countdown_days">DÍAS</string>
+    <string name="home_countdown_hours">HORAS</string>
+    <string name="home_countdown_minutes">MINUTOS</string>
+    <string name="home_badge_next">PRÓXIMA</string>
+    <string name="home_session_code">· %1$s</string>
+    <string name="home_session_undated">Sin fecha · %1$s</string>
+    <string name="home_upcoming_header">PRÓXIMAS SESIONES</string>
+    <string name="home_upcoming_empty">No hay sesiones próximas.</string>
+    <string name="home_past_header">SESIONES PASADAS</string>
+    <string name="home_past_empty">Todavía no hay sesiones pasadas.</string>
+    <string name="home_see_all">Todas las sesiones</string>
+    <string name="home_empty_title">Aún no tienes mesas</string>
+    <string name="home_empty_body">Crea una sesión o únete con un código para empezar.</string>
+    <string name="home_create_session">Crear sesión</string>
+    <string name="home_join_session">Unirse con código</string>
+    <string name="home_open_calendar">Abrir calendario</string>
+
+    <!-- Calendario -->
+    <string name="calendar_title">Calendario</string>
+    <string name="calendar_previous_month">Mes anterior</string>
+    <string name="calendar_next_month">Mes siguiente</string>
+    <string name="calendar_confirmed_header">FECHAS CONFIRMADAS</string>
+    <string name="calendar_no_confirmed_title">Sin fechas confirmadas</string>
+    <string name="calendar_no_confirmed_body">Cuando una sesión tenga fecha confirmada aparecerá aquí.</string>
+    <string name="calendar_confirmed_date">Fecha confirmada</string>
+    <string name="calendar_legend_low">Poca</string>
+    <string name="calendar_legend_all">Todos</string>
+    <string name="calendar_day_soon_body">Pronto podrás ver el detalle de disponibilidad para cada día: quién puede y quién no.</string>
+    <string name="calendar_day_soon_dismiss">Entendido</string>
+
+    <!-- Crear sesión -->
+    <string name="create_title">Crear sesión</string>
+    <string name="create_dates_title">Tus fechas disponibles</string>
+    <string name="create_name_label">Nombre de la sesión</string>
+    <string name="create_name_placeholder">Ej: Sesión D&amp;D semanal</string>
+    <string name="create_player_label">Tu nombre</string>
+    <string name="create_player_placeholder">Ej: Pizpireto</string>
+    <string name="create_submit">Crear sesión</string>
+    <string name="create_code_label">Código de la sesión</string>
+    <string name="create_pick_days">Selecciona los días que puedes</string>
+    <string name="create_save_availability">Guardar mi disponibilidad</string>
+    <string name="create_skip">Saltar por ahora</string>
+
+    <!-- Unirse -->
+    <string name="join_title">Unirse a sesión</string>
+    <string name="join_code_label">Código de la sesión</string>
+    <string name="join_code_placeholder" translatable="false">ABC123</string>
+    <string name="join_search">Buscar sesión</string>
+    <string name="join_confirm">Confirmar disponibilidad</string>
+
+    <!-- Detalle de sesión -->
+    <string name="detail_no_participants">Aún no hay participantes. Comparte el código para que se unan.</string>
+    <string name="detail_availability_legend">Disponibilidad:</string>
+    <string name="detail_availability_low">Baja</string>
+    <string name="detail_availability_high">Alta</string>
+    <string name="detail_recommended_title">Fechas recomendadas</string>
+    <string name="detail_recommended_full">Asistencia completa · %1$d/%2$d</string>
+    <string name="detail_recommended_partial">Asisten %1$d/%2$d · Falta: %3$s</string>
+    <string name="detail_recommended_row">· %1$s  –  %2$s</string>
+    <string name="detail_chosen_date">Fecha elegida</string>
+    <string name="detail_date_with_time">%1$s · %2$s</string>
+    <string name="detail_add_to_calendar">Añadir a calendario</string>
+    <string name="detail_calendar_event_title">Sesión de rol</string>
+    <string name="detail_code_label">Código de la sesión</string>
+    <string name="detail_edit_availability">Editar mi disponibilidad</string>
+    <string name="detail_share_with_group">Compartir con el grupo</string>
+    <string name="detail_past_session">SESIÓN PASADA</string>
+    <string name="detail_next_session">PRÓXIMA SESIÓN</string>
+    <string name="detail_countdown_today">HOY</string>
+    <string name="detail_countdown_days">días</string>
+    <string name="detail_session_not_found">Sesión no encontrada</string>
+    <string name="detail_confirmed_at">%1$s a las %2$s</string>
+
+    <!-- Diálogos del detalle -->
+    <string name="dialog_start_time_title">¿A qué hora empezáis?</string>
+    <string name="dialog_start_time_confirm">Fijar hora</string>
+    <string name="dialog_start_time_skip">Solo el día</string>
+    <string name="dialog_delete_title">Borrar sesión</string>
+    <string name="dialog_delete_body">¿Seguro que quieres borrar esta sesión? Esta acción no se puede deshacer.</string>
+    <string name="dialog_delete_confirm">Borrar sesión</string>
+    <string name="dialog_options_fix_date">Fijar fecha y hora</string>
+    <string name="dialog_options_dm_only">Solo el DM puede fijar la fecha</string>
+    <string name="dialog_options_delete">Borrar sesión</string>
+    <string name="dialog_pick_date_title">Elige la fecha</string>
+    <string name="dialog_pick_date_clear">Quitar fecha elegida</string>
+
+    <!-- Editar disponibilidad -->
+    <string name="edit_availability_title">Mi disponibilidad</string>
+    <string name="edit_availability_pick_days">Marca los días en los que puedes</string>
+
+    <!-- Franjas del día -->
+    <string name="slot_morning">Solo mañana</string>
+    <string name="slot_afternoon">Solo tarde</string>
+    <string name="slot_all_day">Todo el día</string>
+    <string name="slot_clear">Quitar del día</string>
+
+    <!-- Notas -->
+    <string name="notes_title">Notas</string>
+    <string name="notes_search">Buscar</string>
+    <string name="notes_search_empty">Ninguna nota coincide con tu búsqueda</string>
+    <string name="notes_new">Nueva nota</string>
+    <string name="notes_empty_title">Aún no hay notas</string>
+    <string name="notes_empty_body">Apunta tramas, loot, NPCs y planes para que el grupo no se pierda nada entre sesiones.</string>
+    <string name="notes_empty_action">Crear primera nota</string>
+    <string name="notes_templates_header">PLANTILLAS</string>
+    <string name="notes_summary">%1$s · %2$s</string>
+    <string name="note_editor_tag_header">ETIQUETA</string>
+    <string name="note_editor_pin">Fijar arriba</string>
+    <string name="note_editor_notify">Notificar al grupo</string>
+    <string name="note_editor_title_placeholder">Título de la nota</string>
+    <string name="note_editor_body_placeholder">Escribe los detalles…</string>
+    <string name="note_editor_counter">%1$d / %2$d</string>
+    <string name="note_editor_editing_now">editando ahora</string>
+    <string name="note_editor_publishing_in">publicando en %1$s</string>
+    <string name="note_editor_share_body">%1$s\n\n%2$s</string>
+    <string name="note_editor_share_chooser">Compartir nota</string>
+    <string name="note_not_found">Nota no encontrada</string>
+    <string name="note_delete_title">¿Borrar esta nota?</string>
+    <string name="note_delete_body">«%1$s» se eliminará para todo el grupo. Esta acción no se puede deshacer.</string>
+    <string name="note_editor_session_fallback">esta sesión</string>
+    <string name="note_untitled">Sin título</string>
+    <string name="note_relative_today">Hoy %1$s</string>
+    <string name="note_relative_yesterday">Ayer</string>
+
+    <!-- Etiquetas de nota -->
+    <string name="tag_plot">Trama</string>
+    <string name="tag_loot">Loot</string>
+    <string name="tag_npc" translatable="false">NPC</string>
+    <string name="tag_character">Personaje</string>
+    <string name="tag_other">Otros</string>
+
+    <!-- Plantillas de nota -->
+    <string name="template_recap_title">Resumen de sesión</string>
+    <string name="template_recap_subtitle">Qué pasó, decisiones, cliffhanger</string>
+    <string name="template_recap_seed_title">Resumen de la sesión</string>
+    <string name="template_recap_seed_body">Qué pasó:\n- \n\nDecisiones:\n- \n\nCliffhanger:\n- </string>
+    <string name="template_loot_title">Loot pendiente</string>
+    <string name="template_loot_subtitle">Lista de objetos por repartir</string>
+    <string name="template_loot_seed_title">Loot pendiente</string>
+    <string name="template_loot_seed_body">Objetos por repartir:\n- \n- \n\nA quién:\n- </string>
+
+    <!-- Perfil -->
+    <string name="profile_title">Perfil</string>
+    <string name="profile_soon">Aquí podrás gestionar tu nombre, tu avatar y las sesiones a las que perteneces.</string>
+    <string name="profile_change_photo">Cambiar foto</string>
+    <string name="coming_soon">Próximamente</string>
+
+    <!-- Notificaciones -->
+    <string name="notification_channel_name">Actualizaciones de sesión</string>
+    <string name="notification_channel_description">Notificaciones cuando alguien actualiza su disponibilidad</string>
+    <string name="notification_default_body">Novedades en tu sesión</string>
+    <string name="notification_reminder_title">🎲 %1$s es mañana</string>
+    <string name="notification_reminder_at">Mañana a las %1$s</string>
+    <string name="notification_reminder_no_time">Mañana. Aún sin hora fijada</string>
+
+    <!-- Errores -->
+    <string name="error_image_open">No se pudo abrir la imagen seleccionada</string>
+
+    <!-- Compartir -->
     <string name="share_event">¡Únete a mi sesión de D&amp;D en Schedy!\n\nEntra directamente aquí y solo pon tu nombre:\nschedy://join?code=%1$s\n\nO usa el código: %1$s</string>
+
+    <plurals name="days_selected">
+        <item quantity="one">%1$d día seleccionado</item>
+        <item quantity="other">%1$d días seleccionados</item>
+    </plurals>
+    <plurals name="days_ago">
+        <item quantity="one">hace %1$d día</item>
+        <item quantity="other">hace %1$d días</item>
+    </plurals>
+    <plurals name="sessions_count">
+        <item quantity="one">%1$d sesión</item>
+        <item quantity="other">%1$d sesiones</item>
+    </plurals>
+    <plurals name="notes_count">
+        <item quantity="one">%1$d nota</item>
+        <item quantity="other">%1$d notas</item>
+    </plurals>
+    <plurals name="players_count">
+        <item quantity="one">%1$d jugador</item>
+        <item quantity="other">%1$d jugadores</item>
+    </plurals>
 </resources>

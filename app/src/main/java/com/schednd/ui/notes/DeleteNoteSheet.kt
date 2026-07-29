@@ -30,6 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.schednd.ui.theme.pressScale
+import androidx.compose.ui.res.stringResource
+import com.schednd.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,14 +84,17 @@ fun DeleteNoteSheet(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "¿Borrar esta nota?",
+                            text = stringResource(R.string.note_delete_title),
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                             color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "\"${noteTitle.ifBlank { "Esta nota" }}\" se eliminará para todo el grupo. Esta acción no se puede deshacer.",
+                            text = stringResource(
+                                R.string.note_delete_body,
+                                noteTitle.ifBlank { stringResource(R.string.note_untitled) }
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center

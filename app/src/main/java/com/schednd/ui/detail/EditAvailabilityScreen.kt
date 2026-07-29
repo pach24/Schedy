@@ -39,6 +39,9 @@ import com.schednd.ui.components.LoadingDots
 import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.pressScale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.schednd.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,10 +73,10 @@ fun EditAvailabilityContent(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Mi disponibilidad") },
+                title = { Text(stringResource(R.string.edit_availability_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBackIos, "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBackIos, stringResource(R.string.action_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -94,7 +97,7 @@ fun EditAvailabilityContent(
 
             FadeIn(delayMs = 0) {
                 Text(
-                    text = "Marca los dias en los que puedes",
+                    text = stringResource(R.string.edit_availability_pick_days),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -112,7 +115,11 @@ fun EditAvailabilityContent(
 
             FadeIn(delayMs = 150) {
                 Text(
-                    text = "${uiState.myDraftDates.size} dia(s) seleccionado(s)",
+                    text = pluralStringResource(
+                        R.plurals.days_selected,
+                        uiState.myDraftDates.size,
+                        uiState.myDraftDates.size
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -162,7 +169,7 @@ fun EditAvailabilityContent(
                             modifier = Modifier.padding(end = 10.dp)
                         )
                     }
-                    Text("Guardar")
+                    Text(stringResource(R.string.action_save))
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
@@ -171,7 +178,7 @@ fun EditAvailabilityContent(
                     onClick = onBack,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
 

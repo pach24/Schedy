@@ -8,6 +8,7 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -52,6 +53,7 @@ import com.schednd.ui.components.ComingSoonDayDialog
 import com.schednd.ui.components.DialogBlurRadius
 import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.MiniWeekCalendar
+import com.schednd.ui.components.rimHighlightBrush
 import com.schednd.ui.components.liquidGlassBackdrop
 import com.schednd.ui.components.rememberLiquidGlassState
 import com.schednd.ui.session.SessionBottomBar
@@ -65,6 +67,9 @@ import com.schednd.ui.theme.pressScale
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import java.time.LocalDate
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.schednd.R
 
 @Composable
 fun HomeScreen(
@@ -209,12 +214,12 @@ private fun HomeMainTab(
             bottom = innerPadding.calculateBottomPadding() + 24.dp
         )
     ) {
-        item { Header(title = "Tus sesiones", greeting = "Hola") }
+        item { Header(title = stringResource(R.string.home_title), greeting = stringResource(R.string.home_greeting)) }
 
         if (uiState.error != null) {
             item {
                 Text(
-                    text = "Error: ${uiState.error}",
+                    text = stringResource(R.string.error_prefix, uiState.error ?: ""),
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                 )
@@ -225,6 +230,7 @@ private fun HomeMainTab(
             FadeIn(delayMs = 50) {
                 val session = uiState.nextSession
                 val heroInteraction = remember { MutableInteractionSource() }
+                val heroShape = SquircleShape(24.dp)
                 // Sin próxima sesión la tarjeta es solo informativa: no hay adónde llevar.
                 val openHero = session?.let { { onOpenEvent(it.code) } }
                 Column(
@@ -234,7 +240,7 @@ private fun HomeMainTab(
                         .then(
                             if (openHero != null) Modifier.pressScale(heroInteraction) else Modifier
                         )
-                        .clip(SquircleShape(24.dp))
+                        .clip(heroShape)
                         .background(
                             if (isSystemInDarkTheme()) {
                                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
@@ -242,6 +248,10 @@ private fun HomeMainTab(
                                 LightHeroSurface
                             }
                         )
+                        // El cristal de verdad no cabe aquí: esta tarjeta va dentro del
+                        // contenido que el shader refracta y se refractaría a sí misma.
+                        // El filo sí, pintado, igual que en el resto de tarjetas.
+                        .border(1.dp, rimHighlightBrush(), heroShape)
                         .then(
                             if (openHero != null) {
                                 Modifier.clickable(
@@ -324,7 +334,7 @@ private fun HomeSessionsTab(
             bottom = innerPadding.calculateBottomPadding() + 24.dp
         )
     ) {
-        item { Header(title = "Sesiones") }
+        item { Header(title = stringResource(R.string.tab_sessions)) }
 
         if (uiState.allSessions.isEmpty()) {
             item {
@@ -333,7 +343,7 @@ private fun HomeSessionsTab(
         } else {
             item {
                 SectionHeader(
-                    title = "PRÓXIMAS SESIONES",
+                    title = stringResource(R.string.home_upcoming_header),
                     trailing = "${uiState.upcomingSessions.size}",
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
                 )
@@ -341,7 +351,7 @@ private fun HomeSessionsTab(
             if (uiState.upcomingSessions.isEmpty()) {
                 item {
                     SectionEmptyHint(
-                        text = "No hay sesiones próximas.",
+                        text = stringResource(R.string.home_upcoming_empty),
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
                     )
                 }
@@ -357,7 +367,7 @@ private fun HomeSessionsTab(
 
             item {
                 SectionHeader(
-                    title = "SESIONES PASADAS",
+                    title = stringResource(R.string.home_past_header),
                     trailing = "${uiState.pastSessions.size}",
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
                 )
@@ -365,7 +375,7 @@ private fun HomeSessionsTab(
             if (uiState.pastSessions.isEmpty()) {
                 item {
                     SectionEmptyHint(
-                        text = "Todavía no hay sesiones pasadas.",
+                        text = stringResource(R.string.home_past_empty),
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
                     )
                 }
@@ -431,12 +441,12 @@ private fun SeeAllSessionsRow(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Todas las sesiones",
+                    text = stringResource(R.string.home_see_all),
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = if (total == 1) "1 sesión" else "$total sesiones",
+                    text = pluralStringResource(R.plurals.sessions_count, total, total),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

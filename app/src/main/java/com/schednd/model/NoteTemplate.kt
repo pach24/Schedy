@@ -1,33 +1,40 @@
 package com.schednd.model
 
+import androidx.annotation.StringRes
+import com.schednd.R
+
+/**
+ * Los textos son referencias a recursos, no cadenas: la plantilla se define aqui pero se
+ * lee en el idioma del sistema, en el momento de pintarla.
+ */
 data class NoteTemplate(
     val id: String,
-    val title: String,
-    val subtitle: String,
+    @StringRes val titleRes: Int,
+    @StringRes val subtitleRes: Int,
     val emoji: String,
     val tag: NoteTag,
-    val titleSeed: String,
-    val bodySeed: String
+    @StringRes val titleSeedRes: Int,
+    @StringRes val bodySeedRes: Int
 ) {
     companion object {
         val DEFAULTS: List<NoteTemplate> = listOf(
             NoteTemplate(
                 id = "resumen",
-                title = "Resumen de sesión",
-                subtitle = "Qué pasó, decisiones, cliffhanger",
-                emoji = "📜",
+                titleRes = R.string.template_recap_title,
+                subtitleRes = R.string.template_recap_subtitle,
+                emoji = "\uD83D\uDCDC",
                 tag = NoteTag.TRAMA,
-                titleSeed = "Resumen de la sesión",
-                bodySeed = "Qué pasó:\n- \n\nDecisiones:\n- \n\nCliffhanger:\n- "
+                titleSeedRes = R.string.template_recap_seed_title,
+                bodySeedRes = R.string.template_recap_seed_body
             ),
             NoteTemplate(
                 id = "loot",
-                title = "Loot pendiente",
-                subtitle = "Lista de objetos por repartir",
-                emoji = "💰",
+                titleRes = R.string.template_loot_title,
+                subtitleRes = R.string.template_loot_subtitle,
+                emoji = "\uD83D\uDCB0",
                 tag = NoteTag.LOOT,
-                titleSeed = "Loot pendiente",
-                bodySeed = "Objetos por repartir:\n- \n- \n\nA quién:\n- "
+                titleSeedRes = R.string.template_loot_seed_title,
+                bodySeedRes = R.string.template_loot_seed_body
             )
         )
     }

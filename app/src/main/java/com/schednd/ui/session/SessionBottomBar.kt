@@ -55,12 +55,17 @@ import com.schednd.ui.theme.LightRaisedSurface
 import com.schednd.ui.theme.SchedyTheme
 import kotlin.math.PI
 import kotlin.math.sin
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
 
-enum class SessionTab(val label: String) {
-    HOME("Inicio"),
-    SESSIONS("Sesiones"),
-    CALENDAR("Calendario"),
-    PROFILE("Perfil");
+enum class SessionTab(@StringRes val labelRes: Int) {
+    HOME(R.string.tab_home),
+    SESSIONS(R.string.tab_sessions),
+    CALENDAR(R.string.tab_calendar),
+    PROFILE(R.string.tab_profile);
+
+    val label: String
+        @Composable get() = stringResource(labelRes)
 
     /** Las cuatro son dibujos propios, de la misma familia de trazo. */
     val icon: Painter
@@ -270,11 +275,13 @@ fun SessionBottomBar(
 
                     IconButton(
                         onClick = { onTabSelected(tab) },
-                        modifier = Modifier.graphicsLayer {
-                            translationY = elevationOffset
-                            scaleX = iconScale
-                            scaleY = iconScale
-                        }
+                        modifier = Modifier
+                            .size(TabTouchSize)
+                            .graphicsLayer {
+                                translationY = elevationOffset
+                                scaleX = iconScale
+                                scaleY = iconScale
+                            }
                     ) {
                         Icon(
                             painter = tab.icon,
@@ -306,8 +313,10 @@ private const val SelectedIconScale = 1.12f
 // La bolita es cristal, no relleno: si tapa el fondo no se ve su propia refracción.
 private const val GlassBallAlphaDark = .22f
 private const val GlassBallAlphaLight = .5f
-private const val GlassBarAlphaDark = .58f
-private const val GlassBarAlphaLight = .62f
+private const val GlassBarAlphaDark = .68f
+private const val GlassBarAlphaLight = .72f
+/** Área pulsable de cada pestaña. Por encima de los 48 dp mínimos de Material. */
+private val TabTouchSize = 64.dp
 private val BallSize = 52.dp
 private val BottomBarHeight = 72.dp
 private val BottomTonalElevation = 3.dp

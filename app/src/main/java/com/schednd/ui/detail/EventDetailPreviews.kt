@@ -341,8 +341,8 @@ private fun Session23MockContent(darkTheme: Boolean) {
         DateSummary(date = d4, count = 3, total = 5, absentNames = listOf("Aldric", "Sylwen"), tier = AttendanceTier.LIMITED),
     )
 
-    val dateFormat = DateTimeFormatter.ofPattern("d 'de' MMMM", Locale("es"))
-    val confirmedFormat = DateTimeFormatter.ofPattern("d 'de' MMMM", Locale("es"))
+    val dateFormat = DateTimeFormatter.ofPattern("d 'de' MMMM", Locale.getDefault())
+    val confirmedFormat = DateTimeFormatter.ofPattern("d 'de' MMMM", Locale.getDefault())
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(

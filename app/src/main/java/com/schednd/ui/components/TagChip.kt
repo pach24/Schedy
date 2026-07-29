@@ -26,6 +26,7 @@ import com.schednd.ui.theme.TagOtros
 import com.schednd.ui.theme.TagPersonaje
 import com.schednd.ui.theme.TagTrama
 import com.schednd.ui.theme.pressScale
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun NoteTag.color(): Color = when (this) {
@@ -49,7 +50,7 @@ fun TagChip(
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Text(
-            text = tag.label,
+            text = stringResource(tag.labelRes),
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
             color = color
         )

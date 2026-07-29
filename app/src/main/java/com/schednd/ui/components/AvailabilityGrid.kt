@@ -92,9 +92,9 @@ fun AvailabilityGrid(
     showBestStripe: Boolean = false
 ) {
     val total = participants.size
-    val dayNameFormatter = DateTimeFormatter.ofPattern("EEE", Locale("es"))
-    val dayNumFormatter = DateTimeFormatter.ofPattern("d", Locale("es"))
-    val monthFormatter = DateTimeFormatter.ofPattern("MMM", Locale("es"))
+    val dayNameFormatter = DateTimeFormatter.ofPattern("EEE", Locale.getDefault())
+    val dayNumFormatter = DateTimeFormatter.ofPattern("d", Locale.getDefault())
+    val monthFormatter = DateTimeFormatter.ofPattern("MMM", Locale.getDefault())
 
     val cellSize = 48.dp
     val nameWidth = 85.dp

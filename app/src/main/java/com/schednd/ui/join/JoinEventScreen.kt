@@ -50,6 +50,9 @@ import com.schednd.ui.theme.PhaseExitTransition
 import com.schednd.ui.theme.SchedyTheme
 import com.schednd.ui.theme.pressScale
 import java.time.LocalDate
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.schednd.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,10 +111,10 @@ fun JoinEventContent(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Unirse a sesion") },
+                title = { Text(stringResource(R.string.join_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBackIos, "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBackIos, stringResource(R.string.action_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -135,8 +138,8 @@ fun JoinEventContent(
                 GenTextField(
                     value = uiState.code,
                     onValueChange = onCodeChanged,
-                    label = "Codigo de la sesión",
-                    placeholder = "ABC123",
+                    label = stringResource(R.string.join_code_label),
+                    placeholder = stringResource(R.string.join_code_placeholder),
                     textStyle = MaterialTheme.typography.headlineSmall.copy(
                         fontFamily = FontFamily.Monospace
                     ),
@@ -150,8 +153,8 @@ fun JoinEventContent(
                 GenTextField(
                     value = uiState.participantName,
                     onValueChange = onNameChanged,
-                    label = "Tu nombre",
-                    placeholder = "Ej: Pizpireto",
+                    label = stringResource(R.string.create_player_label),
+                    placeholder = stringResource(R.string.create_player_placeholder),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -187,7 +190,7 @@ fun JoinEventContent(
                                     modifier = Modifier.padding(end = 10.dp)
                                 )
                             }
-                            Text("Buscar sesion", modifier = Modifier.padding(vertical = 4.dp))
+                            Text(stringResource(R.string.join_search), modifier = Modifier.padding(vertical = 4.dp))
                         }
                     }
                 } else {
@@ -201,12 +204,16 @@ fun JoinEventContent(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Selecciona los dias que puedes",
+                                    text = stringResource(R.string.create_pick_days),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = "${uiState.selectedDates.size} dia(s) seleccionado(s)",
+                                    text = pluralStringResource(
+                                        R.plurals.days_selected,
+                                        uiState.selectedDates.size,
+                                        uiState.selectedDates.size
+                                    ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -246,7 +253,7 @@ fun JoinEventContent(
                                         modifier = Modifier.padding(end = 10.dp)
                                     )
                                 }
-                                Text("Confirmar disponibilidad", modifier = Modifier.padding(vertical = 4.dp))
+                                Text(stringResource(R.string.join_confirm), modifier = Modifier.padding(vertical = 4.dp))
                             }
                         }
                     }

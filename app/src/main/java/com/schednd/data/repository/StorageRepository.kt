@@ -7,6 +7,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.schednd.R
 
 @Singleton
 class StorageRepository @Inject constructor(
@@ -16,7 +17,7 @@ class StorageRepository @Inject constructor(
     suspend fun uploadProfilePhoto(userId: String, uri: Uri): String {
         val ref = storage.reference.child("profiles/$userId.jpg")
         val stream = context.contentResolver.openInputStream(uri)
-            ?: error("No se pudo abrir la imagen seleccionada")
+            ?: error(context.getString(R.string.error_image_open))
         stream.use { ref.putStream(it).await() }
         return ref.downloadUrl.await().toString()
     }

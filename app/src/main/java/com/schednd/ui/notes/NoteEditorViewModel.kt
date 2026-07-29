@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import android.content.Context
+import com.schednd.R
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 data class NoteEditorUiState(
     val noteId: String? = null,
@@ -39,6 +42,7 @@ data class NoteEditorUiState(
 
 @HiltViewModel
 class NoteEditorViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     savedStateHandle: SavedStateHandle,
     private val noteRepository: NoteRepository,
     private val eventRepository: EventRepository,
@@ -131,7 +135,7 @@ class NoteEditorViewModel @Inject constructor(
                     noteRepository.createNote(
                         code = code,
                         authorId = userId,
-                        authorName = state.authorName.ifBlank { "Anónimo" },
+                        authorName = state.authorName.ifBlank { appContext.getString(R.string.anonymous_player) },
                         title = title,
                         body = body,
                         tag = state.tag,
@@ -145,7 +149,7 @@ class NoteEditorViewModel @Inject constructor(
                             senderId = userId,
                             noteId = resultId,
                             title = title,
-                            authorName = state.authorName.ifBlank { "Anónimo" }
+                            authorName = state.authorName.ifBlank { appContext.getString(R.string.anonymous_player) }
                         )
                     }
                 }

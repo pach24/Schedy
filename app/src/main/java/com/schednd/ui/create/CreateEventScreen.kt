@@ -75,6 +75,8 @@ import com.schednd.ui.theme.SchedyTheme
 import com.schednd.ui.theme.pressScale
 import java.time.LocalDate
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -153,7 +155,7 @@ fun CreateEventContent(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBackIos, "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBackIos, stringResource(R.string.action_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -184,8 +186,8 @@ fun CreateEventContent(
                         GenTextField(
                             value = uiState.eventName,
                             onValueChange = onNameChanged,
-                            label = "Nombre de la sesion",
-                            placeholder = "Ej: Sesion D&D semanal",
+                            label = stringResource(R.string.create_name_label),
+                            placeholder = stringResource(R.string.create_name_placeholder),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -196,8 +198,8 @@ fun CreateEventContent(
                         GenTextField(
                             value = uiState.creatorName,
                             onValueChange = onCreatorNameChanged,
-                            label = "Tu nombre",
-                            placeholder = "Ej: Pizpireto",
+                            label = stringResource(R.string.create_player_label),
+                            placeholder = stringResource(R.string.create_player_placeholder),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -227,7 +229,7 @@ fun CreateEventContent(
                                     modifier = Modifier.padding(end = 10.dp)
                                 )
                             }
-                            Text("Crear sesion", modifier = Modifier.padding(vertical = 4.dp))
+                            Text(stringResource(R.string.create_submit), modifier = Modifier.padding(vertical = 4.dp))
                         }
                     }
                 } else {
@@ -251,7 +253,7 @@ fun CreateEventContent(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Codigo de la sesion",
+                                        text = stringResource(R.string.create_code_label),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -295,7 +297,7 @@ fun CreateEventContent(
                                         )
                                         type = "text/plain"
                                     }
-                                    context.startActivity(Intent.createChooser(sendIntent, "Compartir codigo"))
+                                    context.startActivity(Intent.createChooser(sendIntent, context.getString(R.string.chooser_share_code)))
                                 }) {
                                     Icon(
                                         Icons.Filled.Share,
@@ -312,11 +314,15 @@ fun CreateEventContent(
                     FadeIn(delayMs = 150) {
                         Column {
                             Text(
-                                text = "Selecciona los dias que puedes",
+                                text = stringResource(R.string.create_pick_days),
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "${uiState.selectedDates.size} dia(s) seleccionado(s)",
+                                text = pluralStringResource(
+                                    R.plurals.days_selected,
+                                    uiState.selectedDates.size,
+                                    uiState.selectedDates.size
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -357,7 +363,7 @@ fun CreateEventContent(
                                         modifier = Modifier.padding(end = 10.dp)
                                     )
                                 }
-                                Text("Guardar mi disponibilidad", modifier = Modifier.padding(vertical = 4.dp))
+                                Text(stringResource(R.string.create_save_availability), modifier = Modifier.padding(vertical = 4.dp))
                             }
 
                             Spacer(modifier = Modifier.height(8.dp))
@@ -371,7 +377,7 @@ fun CreateEventContent(
                                 shape = FullRoundShape,
                                 interactionSource = skipInteraction
                             ) {
-                                Text("Saltar por ahora", modifier = Modifier.padding(vertical = 4.dp))
+                                Text(stringResource(R.string.create_skip), modifier = Modifier.padding(vertical = 4.dp))
                             }
                         }
                     }

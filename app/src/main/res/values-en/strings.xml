@@ -1,0 +1,222 @@
+<resources>
+    <!-- Common -->
+    <string name="action_back">Back</string>
+    <string name="action_share">Share</string>
+    <string name="action_more_options">More options</string>
+    <string name="action_copy_code">Copy code</string>
+    <string name="action_code_copied">Copied</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="chooser_share_code">Share code</string>
+    <string name="session_fallback_name">Session</string>
+    <string name="anonymous_player">Anonymous</string>
+    <string name="error_prefix">Error: %1$s</string>
+
+    <!-- Navigation -->
+    <string name="date_pattern_weekday">EEEE</string>
+    <string name="date_pattern_day_month">MMMM d</string>
+    <string name="date_pattern_weekday_day">EEE d</string>
+    <string name="date_pattern_weekday_day_month">EEE, MMMM d</string>
+    <string name="date_pattern_full_weekday_day_month">EEEE, MMMM d</string>
+    <string name="date_pattern_full_date">MMMM d, yyyy</string>
+    <string name="date_pattern_short">EEE, MMM d</string>
+    <string name="date_pattern_today_full">\'TODAY\' · EEEE, MMMM d</string>
+
+    <string name="tab_home">Home</string>
+    <string name="tab_sessions">Sessions</string>
+    <string name="tab_calendar">Calendar</string>
+    <string name="tab_profile">Profile</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome">Welcome to Schedy.\nLet\'s start with your name.</string>
+    <string name="onboarding_question">What should we call you?</string>
+    <string name="onboarding_name_placeholder">Your player name</string>
+
+    <!-- Home -->
+    <string name="home_greeting">Hi</string>
+    <string name="home_title">Your sessions</string>
+    <string name="home_next_session">NEXT SESSION</string>
+    <string name="home_date_unconfirmed">Date to be\nconfirmed</string>
+    <string name="home_no_upcoming_title">No upcoming\nsessions</string>
+    <string name="home_no_upcoming_body">Confirm a date or create a session to see the countdown.</string>
+    <string name="home_countdown_days">DAYS</string>
+    <string name="home_countdown_hours">HOURS</string>
+    <string name="home_countdown_minutes">MINUTES</string>
+    <string name="home_badge_next">NEXT</string>
+    <string name="home_session_code">· %1$s</string>
+    <string name="home_session_undated">No date · %1$s</string>
+    <string name="home_upcoming_header">UPCOMING SESSIONS</string>
+    <string name="home_upcoming_empty">No upcoming sessions.</string>
+    <string name="home_past_header">PAST SESSIONS</string>
+    <string name="home_past_empty">No past sessions yet.</string>
+    <string name="home_see_all">All sessions</string>
+    <string name="home_empty_title">No tables yet</string>
+    <string name="home_empty_body">Create a session or join one with a code to get started.</string>
+    <string name="home_create_session">Create session</string>
+    <string name="home_join_session">Join with a code</string>
+    <string name="home_open_calendar">Open calendar</string>
+
+    <!-- Calendar -->
+    <string name="calendar_title">Calendar</string>
+    <string name="calendar_previous_month">Previous month</string>
+    <string name="calendar_next_month">Next month</string>
+    <string name="calendar_confirmed_header">CONFIRMED DATES</string>
+    <string name="calendar_no_confirmed_title">No confirmed dates</string>
+    <string name="calendar_no_confirmed_body">Once a session has a confirmed date, it will show up here.</string>
+    <string name="calendar_confirmed_date">Confirmed date</string>
+    <string name="calendar_legend_low">Few</string>
+    <string name="calendar_legend_all">Everyone</string>
+    <string name="calendar_day_soon_body">Soon you will be able to see who can and who cannot make each day.</string>
+    <string name="calendar_day_soon_dismiss">Got it</string>
+
+    <!-- Create session -->
+    <string name="create_title">Create session</string>
+    <string name="create_dates_title">Your available dates</string>
+    <string name="create_name_label">Session name</string>
+    <string name="create_name_placeholder">E.g. Weekly D&amp;D session</string>
+    <string name="create_player_label">Your name</string>
+    <string name="create_player_placeholder">E.g. Pipsqueak</string>
+    <string name="create_submit">Create session</string>
+    <string name="create_code_label">Session code</string>
+    <string name="create_pick_days">Pick the days you can make</string>
+    <string name="create_save_availability">Save my availability</string>
+    <string name="create_skip">Skip for now</string>
+
+    <!-- Join -->
+    <string name="join_title">Join a session</string>
+    <string name="join_code_label">Session code</string>
+    <string name="join_search">Find session</string>
+    <string name="join_confirm">Confirm availability</string>
+
+    <!-- Session detail -->
+    <string name="detail_no_participants">No one has joined yet. Share the code so they can.</string>
+    <string name="detail_availability_legend">Availability:</string>
+    <string name="detail_availability_low">Low</string>
+    <string name="detail_availability_high">High</string>
+    <string name="detail_recommended_title">Recommended dates</string>
+    <string name="detail_recommended_full">Everyone can make it · %1$d/%2$d</string>
+    <string name="detail_recommended_partial">%1$d/%2$d can make it · Missing: %3$s</string>
+    <string name="detail_recommended_row">· %1$s  –  %2$s</string>
+    <string name="detail_chosen_date">Chosen date</string>
+    <string name="detail_date_with_time">%1$s · %2$s</string>
+    <string name="detail_add_to_calendar">Add to calendar</string>
+    <string name="detail_calendar_event_title">Tabletop session</string>
+    <string name="detail_code_label">Session code</string>
+    <string name="detail_edit_availability">Edit my availability</string>
+    <string name="detail_share_with_group">Share with the group</string>
+    <string name="detail_past_session">PAST SESSION</string>
+    <string name="detail_next_session">NEXT SESSION</string>
+    <string name="detail_countdown_today">TODAY</string>
+    <string name="detail_countdown_days">days</string>
+    <string name="detail_session_not_found">Session not found</string>
+    <string name="detail_confirmed_at">%1$s at %2$s</string>
+
+    <!-- Detail dialogs -->
+    <string name="dialog_start_time_title">What time do you start?</string>
+    <string name="dialog_start_time_confirm">Set time</string>
+    <string name="dialog_start_time_skip">Day only</string>
+    <string name="dialog_delete_title">Delete session</string>
+    <string name="dialog_delete_body">Delete this session for good? This cannot be undone.</string>
+    <string name="dialog_delete_confirm">Delete session</string>
+    <string name="dialog_options_fix_date">Set date and time</string>
+    <string name="dialog_options_dm_only">Only the DM can set the date</string>
+    <string name="dialog_options_delete">Delete session</string>
+    <string name="dialog_pick_date_title">Pick the date</string>
+    <string name="dialog_pick_date_clear">Clear chosen date</string>
+
+    <!-- Edit availability -->
+    <string name="edit_availability_title">My availability</string>
+    <string name="edit_availability_pick_days">Mark the days you can make</string>
+
+    <!-- Day slots -->
+    <string name="slot_morning">Morning only</string>
+    <string name="slot_afternoon">Afternoon only</string>
+    <string name="slot_all_day">All day</string>
+    <string name="slot_clear">Clear the day</string>
+
+    <!-- Notes -->
+    <string name="notes_title">Notes</string>
+    <string name="notes_search">Search</string>
+    <string name="notes_search_empty">No note matches your search</string>
+    <string name="notes_new">New note</string>
+    <string name="notes_empty_title">No notes yet</string>
+    <string name="notes_empty_body">Jot down plots, loot, NPCs and plans so the group does not lose the thread between sessions.</string>
+    <string name="notes_empty_action">Write the first note</string>
+    <string name="notes_templates_header">TEMPLATES</string>
+    <string name="notes_summary">%1$s · %2$s</string>
+    <string name="note_editor_tag_header">TAG</string>
+    <string name="note_editor_pin">Pin to top</string>
+    <string name="note_editor_notify">Notify the group</string>
+    <string name="note_editor_title_placeholder">Note title</string>
+    <string name="note_editor_body_placeholder">Write the details…</string>
+    <string name="note_editor_counter">%1$d / %2$d</string>
+    <string name="note_editor_editing_now">editing now</string>
+    <string name="note_editor_publishing_in">publishing in %1$s</string>
+    <string name="note_editor_share_body">%1$s\n\n%2$s</string>
+    <string name="note_editor_share_chooser">Share note</string>
+    <string name="note_not_found">Note not found</string>
+    <string name="note_delete_title">Delete this note?</string>
+    <string name="note_delete_body">“%1$s” will be removed for the whole group. This cannot be undone.</string>
+    <string name="note_editor_session_fallback">this session</string>
+    <string name="note_untitled">Untitled</string>
+    <string name="note_relative_today">Today %1$s</string>
+    <string name="note_relative_yesterday">Yesterday</string>
+
+    <!-- Note tags -->
+    <string name="tag_plot">Plot</string>
+    <string name="tag_loot">Loot</string>
+    <string name="tag_character">Character</string>
+    <string name="tag_other">Other</string>
+
+    <!-- Note templates -->
+    <string name="template_recap_title">Session recap</string>
+    <string name="template_recap_subtitle">What happened, decisions, cliffhanger</string>
+    <string name="template_recap_seed_title">Session recap</string>
+    <string name="template_recap_seed_body">What happened:\n- \n\nDecisions:\n- \n\nCliffhanger:\n- </string>
+    <string name="template_loot_title">Loot to split</string>
+    <string name="template_loot_subtitle">List of items still unassigned</string>
+    <string name="template_loot_seed_title">Loot to split</string>
+    <string name="template_loot_seed_body">Items to split:\n- \n- \n\nTo whom:\n- </string>
+
+    <!-- Profile -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_soon">Here you will manage your name, your avatar and the sessions you belong to.</string>
+    <string name="profile_change_photo">Change photo</string>
+    <string name="coming_soon">Coming soon</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_name">Session updates</string>
+    <string name="notification_channel_description">Notifications when someone updates their availability</string>
+    <string name="notification_default_body">News in your session</string>
+    <string name="notification_reminder_title">🎲 %1$s is tomorrow</string>
+    <string name="notification_reminder_at">Tomorrow at %1$s</string>
+    <string name="notification_reminder_no_time">Tomorrow. No time set yet</string>
+
+    <!-- Errors -->
+    <string name="error_image_open">Could not open the selected image</string>
+
+    <!-- Share -->
+    <string name="share_event">Join my D&amp;D session on Schedy!\n\nTap here and just enter your name:\nschedy://join?code=%1$s\n\nOr use the code: %1$s</string>
+
+    <plurals name="days_selected">
+        <item quantity="one">%1$d day selected</item>
+        <item quantity="other">%1$d days selected</item>
+    </plurals>
+    <plurals name="days_ago">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+    <plurals name="sessions_count">
+        <item quantity="one">%1$d session</item>
+        <item quantity="other">%1$d sessions</item>
+    </plurals>
+    <plurals name="notes_count">
+        <item quantity="one">%1$d note</item>
+        <item quantity="other">%1$d notes</item>
+    </plurals>
+    <plurals name="players_count">
+        <item quantity="one">%1$d player</item>
+        <item quantity="other">%1$d players</item>
+    </plurals>
+</resources>
