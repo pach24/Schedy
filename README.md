@@ -1,89 +1,148 @@
 # 🎲 Schedy — Schedule and Role
 
 <p align="center">
-  <img src= "https://github.com/user-attachments/assets/3b2e68e8-c741-4dfd-9485-27186a50398c" alt="Schedy Hero Banner" width="80%" />
+  <img src="https://github.com/user-attachments/assets/3b2e68e8-c741-4dfd-9485-27186a50398c" alt="Schedy Hero Banner" width="80%" />
 </p>
 
 <p align="center">
-  <strong>Effortless scheduling for tabletop RPG groups.</strong><br/>
-  Coordinate sessions, compare availability, and find the best dates — fast.
+  <strong>Getting five adults in the same room on the same evening, without the group chat.</strong>
+</p>
+
+<p align="center">
+  <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Kotlin-2.1-7F52FF?logo=kotlin&logoColor=white" alt="Kotlin 2.1" /></a>
+  <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack_Compose-Material_3-4285F4?logo=android&logoColor=white" alt="Jetpack Compose" /></a>
+  <a href="https://firebase.google.com/"><img src="https://img.shields.io/badge/Firebase-Firestore_|_Auth_|_FCM-FFCA28?logo=firebase&logoColor=black" alt="Firebase" /></a>
+  <img src="https://img.shields.io/badge/Architecture-Clean_+_MVVM-2DC653" alt="Clean Architecture + MVVM" />
+  <img src="https://img.shields.io/badge/minSdk-29-3DDC84?logo=android&logoColor=white" alt="minSdk 29" />
 </p>
 
 ---
 
-## ✨ Overview
+## The problem
 
-**Schedy — Schedule and Role** is a modern Android application designed to solve the "scheduling boss fight" for tabletop RPG groups. It allows players to sync their availability in real-time, providing group leaders with data-driven insights to pick the perfect session date.
+Scheduling a tabletop session is the real boss fight. Somebody asks "who can on Friday?",
+four people answer at different times, two of them change their mind, and a week later the
+group still has no date.
 
-Instead of endless group chats and polls, participants submit their availability, and Schedy automatically highlights the best dates based on group attendance.
+Schedy replaces that thread. Everyone marks the days they can make it, the app ranks the
+dates by how much of the group shows up, and the DM picks one. Everybody gets a push, and a
+reminder the evening before.
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
-[![Compose](https://img.shields.io/badge/Jetpack_Compose-Material_3-4285F4?logo=android&logoColor=white)](https://developer.android.com/jetpack/compose)
-[![Firebase](https://img.shields.io/badge/Firebase-Auth_|_Firestore_|_Cloud_Messaging-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
+## How it works
 
- 
+1. **Create a session.** You get a six-character code and a shareable link.
+2. **Share it.** The link is a verified Android App Link: tapping it opens Schedy straight
+   on the join screen with the code already filled in. No app? A fallback page shows the
+   code to type by hand.
+3. **Everyone marks their days.** The availability grid updates live, for everyone, as
+   people tap.
+4. **The DM sets date and time.** Recommended dates come sorted by attendance; the time is
+   picked on a digital clock. The group gets notified, and each phone schedules its own
+   reminder for the night before.
 
----
+No sign-up anywhere in that flow: players come in through anonymous auth, and the only
+identity is the name they type once.
 
-## 🚀 Key Features
+## Features
 
-* **Real-time Synchronization:** Instant updates across all participants using Firebase Cloud Firestore.
-* **Smart Attendance Tiers:** Algorithms that automatically categorize dates (Full, Viable, Limited, or Insufficient) based on group participation percentages.
-* **Deep Linking:** Join events instantly via shared links or unique 6-character codes.
-* **Push Notifications:** Built-in messaging service to notify users when group availability changes via Firebase Cloud Messaging.
-* **Privacy-First:** Secure anonymous authentication, allowing users to participate without tedious sign-up flows.
+- **Live availability grid** — Firestore snapshots, not polling. Another player's tap moves
+  your screen.
+- **Attendance tiers** — every date is scored against the group: *full* (≥86%), *viable*
+  (≥71%), *limited* (≥57%) or *insufficient*, with the names of who is missing.
+- **Session codes and App Links** — six characters, or an `https://getschedy.web.app/join`
+  link verified against the app's signing certificate.
+- **Shared notes** — plot, loot, NPCs, characters. Tagged, pinnable, with templates, and the
+  group gets a push when someone writes one.
+- **Countdown hero** — days left, start time, the wait as a progress bar, and a live
+  breakdown down to seconds.
+- **Reminders** — a local WorkManager notification the evening before, rescheduled whenever
+  the date changes, plus one-tap *add to calendar*.
+- **Spanish and English**, following the system language, with per-app language support.
+- **Light and dark**, with a custom design system: Golos Text, superellipse ("squircle")
+  corners, and glass surfaces built on a refraction shader with a blur fallback.
 
----
+## Architecture
 
-## 🛠 Technical Stack & Architecture
-
-Clean Architecture in three layers, with MVVM on top. Dependencies point inwards:
+Clean architecture in three layers with MVVM on top. Dependencies point inwards:
 `presentation` and `data` both know `domain`; `domain` knows nobody.
 
 ```
-presentation/   Compose screens + ViewModels (one immutable UiState per screen)
+presentation/   Compose screens + ViewModels — one immutable UiState per screen
       │ use cases
-domain/         models · repository interfaces · 32 use cases   ← pure Kotlin
+domain/         models · repository interfaces · 32 use cases      ← pure Kotlin
       ▲ implements
 data/           Firestore · Auth · FCM · SharedPreferences · WorkManager
 ```
 
-* **UI:** 100% Jetpack Compose with Material 3, a custom squircle shape system and
-  glass surfaces (haze + a refraction shader).
-* **DI:** Hilt. `RepositoryModule` is the single place where a domain interface meets its
-  Firebase implementation.
-* **Async:** Coroutines and Flow — screens listen to Firestore snapshots, they never poll.
-* **Backend:** Cloud Firestore, anonymous Firebase Auth, FCM push published by a Cloud
-  Function, and Firebase Hosting for the verified Android App Links.
-* **Builds:** Gradle version catalogs; release signing read from `~/.gradle/gradle.properties`.
+The practical upshot: **no ViewModel knows a repository**, and Firebase is confined to
+`data/`. `RepositoryModule` is the single file where a domain interface meets its Firebase
+implementation — the seam you would cut to swap the backend.
 
----
+| Concern | Choice |
+|---|---|
+| UI | Jetpack Compose, Material 3, custom shape and glass system |
+| Presentation | MVVM, one `StateFlow<XxxUiState>` per screen |
+| Domain | Plain Kotlin: models, repository interfaces, one use case per operation |
+| Data | Cloud Firestore, anonymous Firebase Auth, FCM, SharedPreferences, WorkManager |
+| DI | Hilt — `AppModule` for third-party SDKs, `RepositoryModule` for `@Binds` |
+| Async | Coroutines and Flow, `callbackFlow` over Firestore listeners |
+| Backend | Firestore security rules + one Cloud Function that publishes pushes |
+| Build | Gradle version catalogs; release signing read from `~/.gradle/gradle.properties` |
 
-## 📖 Documentation
+```
+app/src/main/java/com/schednd/
+├── data/          repository impls · FCM service · WorkManager
+├── domain/        model · repository (interfaces) · usecase · util
+├── di/            AppModule · RepositoryModule
+├── presentation/  onboarding · home · create · join · detail · notes · session · navigation
+└── ui/            components · theme
+```
 
-In-depth docs live in [`docs/`](docs/):
+## Documentation
+
+The deep dives live in [`docs/`](docs/):
 
 | | |
 |---|---|
-| [architecture.md](docs/architecture.md) | Layers, MVVM, use cases and the reasoning behind them |
-| [structure.md](docs/structure.md) | Package map: where everything lives |
-| [data.md](docs/data.md) | Firestore model, security rules, notification queue |
-| [environment.md](docs/environment.md) | Setup, everyday commands, release signing |
-| [links.md](docs/links.md) | App Links: why the shared link opens the app |
-| [ui.md](docs/ui.md) | Design system: type, squircles, glass, animations |
+| [architecture.md](docs/architecture.md) | The layers, MVVM as applied here, DI, navigation, conventions |
+| [structure.md](docs/structure.md) | Package map and the files you will open most |
+| [data.md](docs/data.md) | Firestore model, security rules, how a notification travels |
+| [environment.md](docs/environment.md) | Setup, everyday commands, release signing, emulator gotchas |
+| [links.md](docs/links.md) | App Links: the signing-fingerprint rule and how to verify it |
+| [ui.md](docs/ui.md) | Design system: type, squircles, glass, animation patterns |
 
----
+## Getting started
 
-## ⚙️ Requirements & Setup
+**Requirements:** Android Studio (recent), JDK 17 to build, `minSdk 29` / `targetSdk 35`.
+Node 18+ only if you touch the Cloud Functions or the hosting site.
 
-* **Min SDK:** 29 · **Target SDK:** 35 · **Java:** 11+ (JDK 17 to build)
+```bash
+git clone https://github.com/pach24/Schedule-and-Role.git
+# drop your google-services.json into app/  (Firebase console → Android app com.schednd)
+./gradlew :app:assembleDebug
+```
 
-1. Clone the repository.
-2. Add your `google-services.json` to the `app/` directory.
-3. Build the project using the included Gradle wrapper: `./gradlew :app:assembleDebug`.
-
-Release signing, Firebase deploys and the App Links setup are covered in
+The release build is signed from properties in `~/.gradle/gradle.properties`; without them
+it still builds, just unsigned. Signing, deploys and App Link verification are covered in
 [docs/environment.md](docs/environment.md) and [docs/links.md](docs/links.md).
 
----
+## Backend
 
+Everything runs on one Firebase project:
+
+- **Firestore** — sessions keyed by their own code, with participants, notes and an
+  ephemeral notification queue as subcollections. Rules in [`firestore.rules`](firestore.rules).
+- **Cloud Function** (`functions/`) — watches the queue and publishes each item to the
+  session's FCM topic as a data-only message, so the client can drop the notification it
+  triggered itself.
+- **Hosting** (`public/`) — serves the shared link's fallback page and the
+  `assetlinks.json` that makes App Link verification pass.
+
+## Status
+
+Working end to end: create, join, availability, dates, times, notes, notifications and
+reminders. The profile tab is still a placeholder, and file storage is wired but unused —
+both are waiting on the profile screen. [`PLAN_MEJORAS.md`](PLAN_MEJORAS.md) tracks where the
+app is heading (in Spanish).
+
+Code comments and commit messages are in Spanish; documentation is in English.
