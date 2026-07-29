@@ -67,7 +67,13 @@ fun SchedyNavGraph(
                 type = NavType.StringType
                 defaultValue = ""
             }),
-            deepLinks = listOf(navDeepLink { uriPattern = "schedy://join?code={code}" })
+            // El enlace https es el que se comparte; el esquema propio sigue vivo para el
+            // botón de la página de respaldo y para lo que ya estuviera circulando.
+            deepLinks = listOf(
+                navDeepLink { uriPattern = "https://getschedy.web.app/join?code={code}" },
+                navDeepLink { uriPattern = "https://getschedy.firebaseapp.com/join?code={code}" },
+                navDeepLink { uriPattern = "schedy://join?code={code}" }
+            )
         ) { backStackEntry ->
             val prefilledCode = backStackEntry.arguments?.getString("code").orEmpty()
             JoinEventScreen(
@@ -87,8 +93,12 @@ fun SchedyNavGraph(
         ) {
             composable(
                 route = "event/{code}/home",
-                // Entrada desde el push del grupo y desde el recordatorio local.
-                deepLinks = listOf(navDeepLink { uriPattern = "schedy://event/{code}" })
+                // Entrada desde el push del grupo, el recordatorio local y el enlace compartido.
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "https://getschedy.web.app/event/{code}" },
+                    navDeepLink { uriPattern = "https://getschedy.firebaseapp.com/event/{code}" },
+                    navDeepLink { uriPattern = "schedy://event/{code}" }
+                )
             ) { backStackEntry ->
                 val code = backStackEntry.arguments?.getString("code").orEmpty()
                 val parentEntry = remember(backStackEntry) {

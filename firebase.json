@@ -3,6 +3,28 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+  "hosting": {
+    "_comment_site": "El project id (schednd) es inmutable, pero el site sí se elige: los enlaces salen de getschedy.web.app.",
+    "site": "getschedy",
+    "public": "public",
+    "_comment": "Sin el ignore de ocultos por defecto: .well-known debe subir para que se verifique el App Link.",
+    "ignore": ["firebase.json", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "/.well-known/assetlinks.json",
+        "headers": [
+          { "key": "Content-Type", "value": "application/json" }
+        ]
+      }
+    ],
+    "appAssociation": "NONE"
+  },
   "functions": [
     {
       "source": "functions",

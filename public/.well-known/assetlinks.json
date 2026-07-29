@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.schednd",
+      "sha256_cert_fingerprints": [
+        "03:13:C2:F5:DB:4B:B3:A6:11:03:D4:98:EF:28:01:72:DF:4A:6A:BB:14:D2:0D:8D:97:E1:6E:8C:A4:60:47:A6"
+      ]
+    }
+  }
+]

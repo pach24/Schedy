@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Schedy</title>
+  <meta property="og:title" content="Únete a mi sesión en Schedy">
+  <meta property="og:description" content="Marca los días que puedes y cuadramos la partida.">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #F2F2F7;
+      --surface: #FFFFFF;
+      --on-surface: #111111;
+      --on-surface-variant: #6E6E73;
+      --accent: #0082F3;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0D0D0D;
+        --surface: #1A1A1A;
+        --on-surface: #F5F5F5;
+        --on-surface-variant: #8A8A8E;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--on-surface);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    main {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border-radius: 28px;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    h1 { margin: 0 0 8px; font-size: 26px; letter-spacing: -0.5px; }
+    p { margin: 0; color: var(--on-surface-variant); line-height: 1.5; }
+    .code {
+      margin: 24px 0;
+      font-size: 40px;
+      font-weight: 800;
+      letter-spacing: 6px;
+      word-break: break-all;
+    }
+    .code[hidden] { display: none; }
+    a.button {
+      display: block;
+      margin-top: 8px;
+      padding: 16px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #FFFFFF;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .hint { margin-top: 20px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1 id="title">Únete a mi sesión</h1>
+    <p id="lead">Abre Schedy, marca los días que puedes y cuadramos la partida.</p>
+    <div class="code" id="code" hidden></div>
+    <a class="button" id="open" href="#">Abrir en Schedy</a>
+    <p class="hint" id="hint">Si no tienes la app instalada, ábrela e introduce el código a mano.</p>
+  </main>
+  <script>
+    // La página solo se ve si el enlace no lo ha capturado la app: móvil sin instalarla,
+    // escritorio o navegador que aún no ha verificado el App Link.
+    var code = (new URLSearchParams(location.search).get('code') || '').trim().toUpperCase();
+    var english = !(navigator.language || '').toLowerCase().startsWith('es');
+
+    if (english) {
+      document.documentElement.lang = 'en';
+      document.getElementById('title').textContent = 'Join my session';
+      document.getElementById('lead').textContent =
+        'Open Schedy, mark the days you can make it and we will settle on one.';
+      document.getElementById('open').textContent = 'Open in Schedy';
+      document.getElementById('hint').textContent =
+        "If you don't have the app installed, open it and enter the code by hand.";
+    }
+
+    if (code) {
+      var el = document.getElementById('code');
+      el.textContent = code;
+      el.hidden = false;
+    }
+    document.getElementById('open').href =
+      code ? 'schedy://join?code=' + encodeURIComponent(code) : 'schedy://join';
+  </script>
+</body>
+</html>

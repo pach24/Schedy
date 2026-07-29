@@ -208,7 +208,7 @@
     <string name="error_image_open">Could not open the selected image</string>
 
     <!-- Share -->
-    <string name="share_event">Join my D&amp;D session on Schedy!\n\nTap here and just enter your name:\nschedy://join?code=%1$s\n\nOr use the code: %1$s</string>
+    <string name="share_event">Join my D&amp;D session on Schedy!\n\nTap here and just enter your name:\nhttps://getschedy.web.app/join?code=%1$s\n\nOr use the code: %1$s</string>
 
     <plurals name="days_selected">
         <item quantity="one">%1$d day selected</item>
