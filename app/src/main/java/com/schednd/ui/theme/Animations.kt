@@ -22,6 +22,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.launch
@@ -112,10 +114,20 @@ fun FadeIn(
     offsetY: Float = 30f,
     content: @Composable () -> Unit
 ) {
-    val alpha = remember { Animatable(0f) }
-    val translationY = remember { Animatable(offsetY) }
+    // La entrada escalonada es para la primera vez que se ve el hueco, no para cada ida y
+    // vuelta: dentro de un host de pestañas la anterior se descarta al cambiar, y sin esta
+    // marca el contenido volvería a aparecer desde cero —con su retardo— en cada toque de
+    // la barra. `rememberSaveable` es lo que la hace sobrevivir a ese descarte, siempre que
+    // el hueco esté bajo un `SaveableStateHolder`.
+    val played = rememberSaveable { mutableStateOf(false) }
+    val skipEntrance = remember { played.value }
+
+    val alpha = remember { Animatable(if (skipEntrance) 1f else 0f) }
+    val translationY = remember { Animatable(if (skipEntrance) 0f else offsetY) }
 
     LaunchedEffect(Unit) {
+        if (skipEntrance) return@LaunchedEffect
+        played.value = true
         kotlinx.coroutines.delay(delayMs.toLong())
         launch { alpha.animateTo(1f, tween(durationMs)) }
         translationY.animateTo(

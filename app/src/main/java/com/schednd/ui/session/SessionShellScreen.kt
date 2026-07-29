@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +45,7 @@ fun SessionShellScreen(
     onEditAvailability: () -> Unit
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(SessionTab.HOME) }
+    val tabStateHolder = rememberSaveableStateHolder()
     val eventState by eventDetailViewModel.uiState.collectAsState()
 
     // Igual que en Home: la barra vive fuera del Scaffold porque el shader refracta lo
@@ -85,27 +87,32 @@ fun SessionShellScreen(
                 animationSpec = tween(durationMillis = 130),
                 label = "shellCrossfade"
             ) { tab ->
-                Box(modifier = Modifier.fillMaxSize()) {
-                    when (tab) {
-                        SessionTab.HOME, SessionTab.SESSIONS -> EventDetailScreen(
-                            viewModel = eventDetailViewModel,
-                            bottomPadding = innerPadding,
-                            onBack = onLeaveSession,
-                            onEditAvailability = onEditAvailability
-                        )
-                        SessionTab.CALENDAR -> CalendarTabScreen(
-                            bottomPadding = innerPadding,
-                            sessionName = eventState.event?.name.orEmpty(),
-                            dateSummaries = eventState.dateSummaries,
-                            totalParticipants = eventState.participants.size,
-                            confirmedDate = eventState.confirmedDate,
-                            onDayTap = { date -> tappedDate = date },
-                            onBack = onLeaveSession
-                        )
-                        SessionTab.PROFILE -> ProfileTabScreen(
-                            bottomPadding = innerPadding,
-                            onBack = onLeaveSession
-                        )
+                // Cada pestaña guarda su estado al descartarse y lo recupera al volver. Sin
+                // esto, el revelado escalonado de `FadeIn` se reproduce entero en cada
+                // cambio y el contenido tarda medio segundo en estar puesto.
+                tabStateHolder.SaveableStateProvider(tab.name) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        when (tab) {
+                            SessionTab.HOME, SessionTab.SESSIONS -> EventDetailScreen(
+                                viewModel = eventDetailViewModel,
+                                bottomPadding = innerPadding,
+                                onBack = onLeaveSession,
+                                onEditAvailability = onEditAvailability
+                            )
+                            SessionTab.CALENDAR -> CalendarTabScreen(
+                                bottomPadding = innerPadding,
+                                sessionName = eventState.event?.name.orEmpty(),
+                                dateSummaries = eventState.dateSummaries,
+                                totalParticipants = eventState.participants.size,
+                                confirmedDate = eventState.confirmedDate,
+                                onDayTap = { date -> tappedDate = date },
+                                onBack = onLeaveSession
+                            )
+                            SessionTab.PROFILE -> ProfileTabScreen(
+                                bottomPadding = innerPadding,
+                                onBack = onLeaveSession
+                            )
+                        }
                     }
                 }
             }

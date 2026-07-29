@@ -1,67 +1,50 @@
 package com.schednd.ui.components
 
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.LayoutDirection
 
 /**
- * Rectángulo con un único "hueco" curvo que viaja con la bolita de la barra inferior:
- * la deformación sigue su posición horizontal y su profundidad, en vez de saltar
- * entre posiciones fijas. Adaptado de path_power (enmanuel52).
+ * Traza en [path] el contorno de la barra inferior: un rectángulo cuyo borde superior lleva
+ * un único "hueco" curvo que viaja con la bolita, en vez de saltar entre posiciones fijas.
+ * Adaptado de path_power (enmanuel52).
+ *
+ * Recibe el path y lo rebobina en lugar de devolver uno nuevo: esto se redibuja en cada
+ * frame del salto, y crear un `Path` por frame es basura que no hace falta generar.
  *
  * @param holeSizePx diámetro del hueco
- * @param holeCenterX centro del hueco en px, puede quedar fuera de la barra
- * @param holeDepth 0 = borde recto, 1 = hueco completo (>1 lo exagera al aterrizar)
+ * @param centerX centro del hueco en px, puede quedar fuera de la barra
+ * @param deepProgress 0 = borde recto, 1 = hueco completo
  */
-class TravelingHoleShape(
-    private val holeSizePx: Float,
-    private val holeCenterX: Float,
-    private val holeDepth: Float,
-) : Shape {
-    override fun createOutline(
-        size: Size,
-        layoutDirection: LayoutDirection,
-        density: Density,
-    ) = Outline.Generic(
-        getTravelingHolePath(
-            size = size,
-            holeSizePx = holeSizePx,
-            centerX = holeCenterX,
-            deepProgress = holeDepth
-        )
-    )
-}
-
-internal fun getTravelingHolePath(
+internal fun buildTravelingHolePath(
+    path: Path,
     size: Size,
     holeSizePx: Float,
     centerX: Float,
     deepProgress: Float,
-): Path = Path().apply {
+) {
+    path.rewind()
+
     val paddingPx = holeSizePx.times(.2f)
     val holeStart = centerX - (holeSizePx + paddingPx)
     val holeEnd = centerX + holeSizePx + paddingPx
 
-    moveTo(0f, 0f)
+    path.moveTo(0f, 0f)
 
     // Solo se dibuja la curva si el hueco tiene fondo y cae dentro de la barra.
     if (deepProgress > 0.001f && holeEnd > 0f && holeStart < size.width) {
-        lineTo(holeStart.coerceIn(0f, size.width), 0f)
-        holeCurve(
+        path.lineTo(holeStart.coerceIn(0f, size.width), 0f)
+        path.holeCurve(
             holeSizePx = holeSizePx,
             centerX = centerX,
             deepProgress = deepProgress
         )
-        lineTo(holeEnd.coerceIn(0f, size.width), 0f)
+        path.lineTo(holeEnd.coerceIn(0f, size.width), 0f)
     }
 
-    lineTo(size.width, 0f)
-    lineTo(size.width, size.height)
-    lineTo(0f, size.height)
-    close()
+    path.lineTo(size.width, 0f)
+    path.lineTo(size.width, size.height)
+    path.lineTo(0f, size.height)
+    path.close()
 }
 
 /** Traza la curva del hueco continuando el contorno actual (no abre subpath). */
@@ -105,33 +88,58 @@ internal const val TravelingHoleSpanFactor = 1.2f
  * Rellena [out] con la profundidad de la muesca en tantos puntos como quepan, repartidos
  * uniformemente entre sus dos extremos: `centerX ± holeSizePx * TravelingHoleSpanFactor`.
  *
- * Es la misma curva que traza [getTravelingHolePath], con los mismos puntos de control,
+ * Es la misma curva que traza [buildTravelingHolePath], con los mismos puntos de control,
  * pero evaluada como función de x en vez de dibujada. El shader del cristal necesita saber
  * a qué altura queda el borde en cada columna de píxeles, y no sabe recorrer un path.
  *
- * Invertir x(t) es legítimo porque los tres tramos avanzan en x sin retroceder, aunque sus
- * puntos de control vayan cruzados.
+ * Los cuatro puntos de control de cada tramo son proporcionales a `deepProgress`, luego la
+ * curva entera lo es: se resuelve una vez a profundidad 1 y después basta con escalarla.
+ * Así las 24 bisecciones por muestra salen del frame y solo se pagan al medir la barra.
  */
 internal fun sampleTravelingHoleTop(
     out: FloatArray,
     holeSizePx: Float,
     deepProgress: Float,
 ) {
+    val unit = unitHoleProfile(holeSizePx, out.size)
+    for (index in out.indices) {
+        out[index] = unit[index] * deepProgress
+    }
+}
+
+// Solo se toca desde el hilo principal, al medir la barra o al mover la bolita.
+private var cachedProfileHoleSize = Float.NaN
+private var cachedProfile: FloatArray? = null
+
+private fun unitHoleProfile(holeSizePx: Float, samples: Int): FloatArray {
+    val cached = cachedProfile
+    if (cached != null && cached.size == samples && cachedProfileHoleSize == holeSizePx) {
+        return cached
+    }
+    val profile = FloatArray(samples)
+    fillUnitHoleProfile(profile, holeSizePx)
+    cachedProfile = profile
+    cachedProfileHoleSize = holeSizePx
+    return profile
+}
+
+/** El perfil de la muesca a profundidad 1, del que sale cualquier otro escalándolo. */
+private fun fillUnitHoleProfile(out: FloatArray, holeSizePx: Float) {
     val pad = holeSizePx * .2f
     val half = holeSizePx + pad
-    val yEdge = (holeSizePx / 2 + pad * .8f) * deepProgress
-    val yPeak = (holeSizePx / 2 + pad) * deepProgress
+    val yEdge = holeSizePx / 2 + pad * .8f
+    val yPeak = holeSizePx / 2 + pad
 
     for (index in out.indices) {
         val x = -half + 2f * half * index / (out.size - 1).toFloat()
         out[index] = when {
             x <= -pad -> {
                 val t = solveForX(x, -half, -(holeSizePx * .33f + pad), -(holeSizePx * .66f + pad), -pad)
-                cubicAt(0f, holeSizePx * .1f * deepProgress, holeSizePx / 2 * deepProgress, yEdge, t)
+                cubicAt(0f, holeSizePx * .1f, holeSizePx / 2, yEdge, t)
             }
             x >= pad -> {
                 val t = solveForX(x, pad, holeSizePx * .66f + pad, holeSizePx * .33f + pad, half)
-                cubicAt(yEdge, holeSizePx / 2 * deepProgress, holeSizePx * .1f * deepProgress, 0f, t)
+                cubicAt(yEdge, holeSizePx / 2, holeSizePx * .1f, 0f, t)
             }
             else -> {
                 // El tramo central es simétrico, así que x avanza lineal con t.

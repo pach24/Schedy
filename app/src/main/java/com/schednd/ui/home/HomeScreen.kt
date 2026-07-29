@@ -42,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -107,6 +108,7 @@ fun HomeContent(
     onOpenEvent: (String) -> Unit
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(SessionTab.HOME) }
+    val tabStateHolder = rememberSaveableStateHolder()
 
     // La barra se dibuja fuera del Scaffold: el shader del cristal refracta lo que hay
     // dentro del Scaffold, así que la barra no puede formar parte de esa capa.
@@ -143,32 +145,37 @@ fun HomeContent(
                 animationSpec = tween(durationMillis = 130),
                 label = "homeTabCrossfade"
             ) { tab ->
-                when (tab) {
-                    SessionTab.CALENDAR -> HomeCalendarTab(
-                        uiState = uiState,
-                        innerPadding = innerPadding,
-                        onDayTap = { date -> tappedDate = date }
-                    )
-                    SessionTab.PROFILE -> ProfileTabScreen(
-                        bottomPadding = innerPadding,
-                        onBack = { selectedTab = SessionTab.HOME }
-                    )
-                    SessionTab.SESSIONS -> HomeSessionsTab(
-                        uiState = uiState,
-                        innerPadding = innerPadding,
-                        onCreateEvent = onCreateEvent,
-                        onJoinEvent = onJoinEvent,
-                        onOpenEvent = onOpenEvent
-                    )
-                    SessionTab.HOME -> HomeMainTab(
-                        uiState = uiState,
-                        innerPadding = innerPadding,
-                        onCreateEvent = onCreateEvent,
-                        onJoinEvent = onJoinEvent,
-                        onSeeAllSessions = { selectedTab = SessionTab.SESSIONS },
-                        onOpenCalendar = { selectedTab = SessionTab.CALENDAR },
-                        onOpenEvent = onOpenEvent
-                    )
+                // Cada pestaña guarda su estado al descartarse y lo recupera al volver. Sin
+                // esto, el revelado escalonado de `FadeIn` se reproduce entero en cada
+                // cambio y el contenido tarda medio segundo en estar puesto.
+                tabStateHolder.SaveableStateProvider(tab.name) {
+                    when (tab) {
+                        SessionTab.CALENDAR -> HomeCalendarTab(
+                            uiState = uiState,
+                            innerPadding = innerPadding,
+                            onDayTap = { date -> tappedDate = date }
+                        )
+                        SessionTab.PROFILE -> ProfileTabScreen(
+                            bottomPadding = innerPadding,
+                            onBack = { selectedTab = SessionTab.HOME }
+                        )
+                        SessionTab.SESSIONS -> HomeSessionsTab(
+                            uiState = uiState,
+                            innerPadding = innerPadding,
+                            onCreateEvent = onCreateEvent,
+                            onJoinEvent = onJoinEvent,
+                            onOpenEvent = onOpenEvent
+                        )
+                        SessionTab.HOME -> HomeMainTab(
+                            uiState = uiState,
+                            innerPadding = innerPadding,
+                            onCreateEvent = onCreateEvent,
+                            onJoinEvent = onJoinEvent,
+                            onSeeAllSessions = { selectedTab = SessionTab.SESSIONS },
+                            onOpenCalendar = { selectedTab = SessionTab.CALENDAR },
+                            onOpenEvent = onOpenEvent
+                        )
+                    }
                 }
             }
         }

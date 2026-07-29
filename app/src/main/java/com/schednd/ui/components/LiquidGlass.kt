@@ -119,9 +119,9 @@ class LiquidGlassState internal constructor(val isSupported: Boolean) {
     }
 
     /**
-     * Coloca la muesca de la barra inferior, con la misma curva que [TravelingHoleShape]
-     * traza: se muestrea su borde superior y el shader interpola entre esas alturas. No es
-     * una aproximación de la curva, es la curva.
+     * Coloca la muesca de la barra inferior, con la misma curva que
+     * [buildTravelingHolePath] traza: se muestrea su borde superior y el shader interpola
+     * entre esas alturas. No es una aproximación de la curva, es la curva.
      *
      * Va aparte de [updateShape] porque se mueve en cada frame, mientras que el rectángulo
      * de la barra solo cambia cuando se mide.
