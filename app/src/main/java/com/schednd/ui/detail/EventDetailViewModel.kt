@@ -24,7 +24,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -42,6 +44,8 @@ data class EventDetailUiState(
     val dateSummaries: List<DateSummary> = emptyList(),
     val confirmedDate: LocalDate? = null,
     val startTime: LocalTime? = null,
+    /** Cuándo se creó la sesión: es el punto de partida de la barra de espera del hero. */
+    val createdAt: LocalDateTime? = null,
     val isCreator: Boolean = false,
     val isDeleted: Boolean = false,
     val isLoading: Boolean = true,
@@ -134,6 +138,7 @@ class EventDetailViewModel @Inject constructor(
                                     dateSummaries = dateSummaries,
                                     confirmedDate = confirmedDate,
                                     startTime = event.startLocalTime,
+                                    createdAt = event.createdAt.toLocalDateTime(),
                                     isCreator = isCreator,
                                     isLoading = false,
                                     mySavedDates = mySavedDates,
@@ -262,6 +267,15 @@ class EventDetailViewModel @Inject constructor(
     private fun Timestamp.toLocalDate(): LocalDate {
         return Instant.ofEpochSecond(seconds).atZone(ZoneOffset.UTC).toLocalDate()
     }
+
+    /**
+     * La fecha elegida se guarda a mediodía UTC y se lee como día suelto, pero la creación
+     * es un instante real: va a la zona del móvil para poder restarla del reloj local.
+     */
+    private fun Timestamp.toLocalDateTime(): LocalDateTime =
+        Instant.ofEpochSecond(seconds, nanoseconds.toLong())
+            .atZone(ZoneId.systemDefault())
+            .toLocalDateTime()
 
     private companion object {
         val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")

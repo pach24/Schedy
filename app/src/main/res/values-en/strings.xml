@@ -17,6 +17,7 @@
     <string name="date_pattern_weekday">EEEE</string>
     <string name="date_pattern_day_month">MMMM d</string>
     <string name="date_pattern_weekday_day">EEE d</string>
+    <string name="date_pattern_weekday_day_padded">EEE dd</string>
     <string name="date_pattern_weekday_day_month">EEE, MMMM d</string>
     <string name="date_pattern_full_weekday_day_month">EEEE, MMMM d</string>
     <string name="date_pattern_full_date">MMMM d, yyyy</string>
@@ -109,6 +110,10 @@
     <string name="detail_next_session">NEXT SESSION</string>
     <string name="detail_countdown_today">TODAY</string>
     <string name="detail_countdown_days">days</string>
+    <string name="countdown_unit_days">DAYS</string>
+    <string name="countdown_unit_hours">HRS</string>
+    <string name="countdown_unit_minutes">MIN</string>
+    <string name="countdown_unit_seconds">SEC</string>
     <string name="detail_session_not_found">Session not found</string>
     <string name="detail_confirmed_at">%1$s at %2$s</string>
 
@@ -116,6 +121,11 @@
     <string name="dialog_start_time_title">What time do you start?</string>
     <string name="dialog_start_time_confirm">Set time</string>
     <string name="dialog_start_time_skip">Day only</string>
+    <string name="time_picker_hint">Drag the digits or use the arrows</string>
+    <string name="time_picker_hour_up">Increase hour</string>
+    <string name="time_picker_hour_down">Decrease hour</string>
+    <string name="time_picker_minute_up">Increase minutes</string>
+    <string name="time_picker_minute_down">Decrease minutes</string>
     <string name="dialog_delete_title">Delete session</string>
     <string name="dialog_delete_body">Delete this session for good? This cannot be undone.</string>
     <string name="dialog_delete_confirm">Delete session</string>

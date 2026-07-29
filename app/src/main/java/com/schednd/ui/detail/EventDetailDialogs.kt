@@ -27,20 +27,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import dev.chrisbanes.haze.HazeState
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberTimePickerState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -51,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import com.schednd.domain.model.DateSummary
 import java.time.LocalDate
 import java.time.LocalTime
+import com.schednd.ui.components.DigitalTimePicker
 import com.schednd.ui.components.LiquidGlassState
 import com.schednd.ui.components.frostedSurface
 import com.schednd.ui.theme.pressScale
@@ -59,32 +56,113 @@ import java.util.Locale
 import androidx.compose.ui.res.stringResource
 import com.schednd.R
 
-/** Selector de hora de inicio. Descartarlo confirma el día sin hora. */
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Selector de hora de inicio, con reloj digital. Descartarlo confirma el día sin hora.
+ */
 @Composable
 internal fun StartTimePickerDialog(
     initialTime: LocalTime,
-    onDismiss: () -> Unit,
+    hazeState: HazeState,
+    glass: LiquidGlassState?,
+    onSkip: () -> Unit,
     onConfirm: (LocalTime) -> Unit
 ) {
-    val state = rememberTimePickerState(
-        initialHour = initialTime.hour,
-        initialMinute = initialTime.minute,
-        is24Hour = true
-    )
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.dialog_start_time_title)) },
-        text = { TimePicker(state = state) },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(LocalTime.of(state.hour, state.minute)) }) {
-                Text(stringResource(R.string.dialog_start_time_confirm))
+    val isDark = isSystemInDarkTheme()
+    val dialogShape = RoundedCornerShape(28.dp)
+    val tintColor = if (isDark) Color(0xFF1C1C1E).copy(alpha = 0.82f) else Color.White.copy(alpha = 0.82f)
+    // Más velo que en la top bar: aquí hay texto que leer sobre el cristal.
+    val glassTint = if (isDark)
+        Color(0xFF1C1C1E).copy(alpha = 0.62f)
+    else
+        Color.White.copy(alpha = 0.68f)
+    val borderBrush = if (isDark)
+        Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.25f), Color.Transparent))
+    else
+        Brush.verticalGradient(listOf(Color.White, Color.Transparent))
+
+    var hour by remember { mutableIntStateOf(initialTime.hour) }
+    var minute by remember { mutableIntStateOf(initialTime.minute) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth(0.85f)
+            .wrapContentHeight()
+            .clip(dialogShape)
+            .frostedSurface(
+                glass = glass,
+                hazeState = hazeState,
+                cornerRadius = 28.dp,
+                hazeBackground = if (isDark) Color(0xFF1C1C1E) else Color.White,
+                hazeTint = tintColor,
+                glassTint = glassTint,
+            )
+            .border(1.dp, borderBrush, dialogShape)
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text(
+                text = stringResource(R.string.dialog_start_time_title),
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.time_picker_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+
+            DigitalTimePicker(
+                hour = hour,
+                minute = minute,
+                onHourChange = { hour = it },
+                onMinuteChange = { minute = it },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(22.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(
+                    onClick = onSkip,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 0.dp
+                    )
+                ) {
+                    Text(
+                        text = stringResource(R.string.dialog_start_time_skip),
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                }
+                Button(
+                    onClick = { onConfirm(LocalTime.of(hour, minute)) },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF0082F3),
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 0.dp
+                    )
+                ) {
+                    Text(
+                        text = stringResource(R.string.dialog_start_time_confirm),
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_start_time_skip)) }
         }
-    )
+    }
 }
 
 @Composable

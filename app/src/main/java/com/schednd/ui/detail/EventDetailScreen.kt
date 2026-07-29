@@ -249,6 +249,8 @@ fun EventDetailScreen(
                                 FadeIn(delayMs = 100) {
                                     SessionCountdown(
                                         confirmedDate = confirmedDateLocal,
+                                        startTime = uiState.startTime,
+                                        createdAt = uiState.createdAt,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(top = 8.dp, bottom = 20.dp)
@@ -681,20 +683,27 @@ fun EventDetailScreen(
         )
     }
 
-    pendingConfirmDate?.let { date ->
+    // El reloj se cierra fijando la fecha pendiente, con hora o sin ella: sin hora la
+    // sesión sigue siendo útil. La fecha se lee al cerrar y no dentro del contenido,
+    // para que el diálogo siga teniendo qué animar mientras se va.
+    val closeTimePicker: (LocalTime?) -> Unit = { time ->
+        pendingConfirmDate?.let { date ->
+            pendingConfirmDate = null
+            viewModel.confirmDate(date, time)
+            scrollToConfirmed = true
+        }
+    }
+
+    ScrimDialogOverlay(
+        visible = pendingConfirmDate != null,
+        onDismiss = { closeTimePicker(null) }
+    ) {
         StartTimePickerDialog(
             initialTime = uiState.startTime ?: LocalTime.of(18, 0),
-            onDismiss = {
-                // Sin hora la sesión sigue siendo útil: fijamos solo el día.
-                pendingConfirmDate = null
-                viewModel.confirmDate(date, null)
-                scrollToConfirmed = true
-            },
-            onConfirm = { time ->
-                pendingConfirmDate = null
-                viewModel.confirmDate(date, time)
-                scrollToConfirmed = true
-            }
+            hazeState = hazeState,
+            glass = overlayGlass,
+            onSkip = { closeTimePicker(null) },
+            onConfirm = { time -> closeTimePicker(time) }
         )
     }
 

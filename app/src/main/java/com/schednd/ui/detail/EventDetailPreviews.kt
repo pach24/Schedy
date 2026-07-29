@@ -119,6 +119,7 @@ private fun SessionCountdownPreviewLight() {
         ) {
             SessionCountdown(
                 confirmedDate = LocalDate.now().plusDays(12),
+                startTime = java.time.LocalTime.of(20, 30),
                 modifier = Modifier.fillMaxWidth()
             )
         }

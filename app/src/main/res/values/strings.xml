@@ -19,6 +19,7 @@
     <string name="date_pattern_weekday">EEEE</string>
     <string name="date_pattern_day_month">d \'de\' MMMM</string>
     <string name="date_pattern_weekday_day">EEE d</string>
+    <string name="date_pattern_weekday_day_padded">EEE dd</string>
     <string name="date_pattern_weekday_day_month">EEE d \'de\' MMMM</string>
     <string name="date_pattern_full_weekday_day_month">EEEE d \'de\' MMMM</string>
     <string name="date_pattern_full_date">d \'de\' MMMM \'de\' yyyy</string>
@@ -113,6 +114,10 @@
     <string name="detail_next_session">PRÓXIMA SESIÓN</string>
     <string name="detail_countdown_today">HOY</string>
     <string name="detail_countdown_days">días</string>
+    <string name="countdown_unit_days">DÍAS</string>
+    <string name="countdown_unit_hours">HRS</string>
+    <string name="countdown_unit_minutes">MIN</string>
+    <string name="countdown_unit_seconds">SEG</string>
     <string name="detail_session_not_found">Sesión no encontrada</string>
     <string name="detail_confirmed_at">%1$s a las %2$s</string>
 
@@ -120,6 +125,11 @@
     <string name="dialog_start_time_title">¿A qué hora empezáis?</string>
     <string name="dialog_start_time_confirm">Fijar hora</string>
     <string name="dialog_start_time_skip">Solo el día</string>
+    <string name="time_picker_hint">Arrastra las cifras o usa las flechas</string>
+    <string name="time_picker_hour_up">Subir la hora</string>
+    <string name="time_picker_hour_down">Bajar la hora</string>
+    <string name="time_picker_minute_up">Subir los minutos</string>
+    <string name="time_picker_minute_down">Bajar los minutos</string>
     <string name="dialog_delete_title">Borrar sesión</string>
     <string name="dialog_delete_body">¿Seguro que quieres borrar esta sesión? Esta acción no se puede deshacer.</string>
     <string name="dialog_delete_confirm">Borrar sesión</string>
