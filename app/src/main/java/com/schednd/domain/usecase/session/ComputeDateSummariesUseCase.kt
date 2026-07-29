@@ -1,4 +1,4 @@
-package com.schednd.domain.usecase
+package com.schednd.domain.usecase.session
 
 import com.schednd.domain.model.DateSummary
 import com.schednd.domain.model.computeAttendanceTier

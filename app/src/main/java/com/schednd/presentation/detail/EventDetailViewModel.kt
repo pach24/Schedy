@@ -12,7 +12,7 @@ import com.schednd.domain.repository.RecentEventsRepository
 import com.schednd.domain.repository.SessionReminderScheduler
 import com.schednd.domain.model.AttendanceTier
 import com.schednd.domain.model.DateSummary
-import com.schednd.domain.usecase.ComputeDateSummariesUseCase
+import com.schednd.domain.usecase.session.ComputeDateSummariesUseCase
 import com.schednd.domain.model.Event
 import com.schednd.domain.model.Participant
 import dagger.hilt.android.lifecycle.HiltViewModel

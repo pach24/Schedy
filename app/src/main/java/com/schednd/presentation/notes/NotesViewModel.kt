@@ -3,9 +3,11 @@ package com.schednd.presentation.notes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.schednd.domain.repository.NoteRepository
 import com.schednd.domain.model.Note
 import com.schednd.domain.model.NoteTag
+import com.schednd.domain.usecase.note.DeleteNoteUseCase
+import com.schednd.domain.usecase.note.ObserveNotesUseCase
+import com.schednd.domain.usecase.note.ToggleNotePinUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +28,9 @@ data class NotesUiState(
 @HiltViewModel
 class NotesViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val noteRepository: NoteRepository
+    private val observeNotes: ObserveNotesUseCase,
+    private val toggleNotePin: ToggleNotePinUseCase,
+    private val deleteNoteUseCase: DeleteNoteUseCase
 ) : ViewModel() {
 
     private val code: String = savedStateHandle.get<String>("code")!!
@@ -36,7 +40,7 @@ class NotesViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            noteRepository.observeNotes(code)
+            observeNotes(code)
                 .catch { e ->
                     _uiState.update { it.copy(isLoading = false, error = e.message) }
                 }
@@ -61,7 +65,7 @@ class NotesViewModel @Inject constructor(
     fun togglePin(noteId: String, currentlyPinned: Boolean) {
         viewModelScope.launch {
             try {
-                noteRepository.togglePin(code, noteId, !currentlyPinned)
+                toggleNotePin(code, noteId, !currentlyPinned)
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             }
@@ -71,7 +75,7 @@ class NotesViewModel @Inject constructor(
     fun deleteNote(noteId: String) {
         viewModelScope.launch {
             try {
-                noteRepository.deleteNote(code, noteId)
+                deleteNoteUseCase(code, noteId)
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             }
