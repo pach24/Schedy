@@ -1,17 +1,18 @@
 package com.schednd.data.repository
 
+import com.schednd.domain.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AuthRepository @Inject constructor(
+class AuthRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth
-) {
-    fun getCurrentUserId(): String? = auth.currentUser?.uid
+) : AuthRepository {
+    override fun getCurrentUserId(): String? = auth.currentUser?.uid
 
-    suspend fun ensureSignedIn(): String {
+    override suspend fun ensureSignedIn(): String {
         val currentUser = auth.currentUser
         if (currentUser != null) return currentUser.uid
 

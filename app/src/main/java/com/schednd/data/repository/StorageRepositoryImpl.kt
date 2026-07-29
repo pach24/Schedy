@@ -1,5 +1,6 @@
 package com.schednd.data.repository
 
+import com.schednd.domain.repository.StorageRepository
 import android.content.Context
 import android.net.Uri
 import com.google.firebase.storage.FirebaseStorage
@@ -10,11 +11,11 @@ import javax.inject.Singleton
 import com.schednd.R
 
 @Singleton
-class StorageRepository @Inject constructor(
+class StorageRepositoryImpl @Inject constructor(
     private val storage: FirebaseStorage,
     @ApplicationContext private val context: Context
-) {
-    suspend fun uploadProfilePhoto(userId: String, uri: Uri): String {
+) : StorageRepository {
+    override suspend fun uploadProfilePhoto(userId: String, uri: Uri): String {
         val ref = storage.reference.child("profiles/$userId.jpg")
         val stream = context.contentResolver.openInputStream(uri)
             ?: error(context.getString(R.string.error_image_open))

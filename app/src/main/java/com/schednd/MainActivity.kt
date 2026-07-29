@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.navigation.compose.rememberNavController
-import com.schednd.data.repository.PlayerRepository
+import com.schednd.domain.repository.PlayerRepository
 import com.schednd.presentation.navigation.SchedyNavGraph
 import com.schednd.ui.theme.SchedyTheme
 import dagger.hilt.android.AndroidEntryPoint

@@ -1,5 +1,7 @@
 package com.schednd.data.work
 
+import dagger.hilt.android.qualifiers.ApplicationContext
+import com.schednd.domain.repository.SessionReminderScheduler
 import android.content.Context
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
@@ -20,15 +22,15 @@ import com.schednd.R
  * reprograma en vez de acumular avisos.
  */
 @Singleton
-class SessionReminderScheduler @Inject constructor(
-    private val context: Context
-) {
-    fun schedule(
+class SessionReminderSchedulerImpl @Inject constructor(
+    @ApplicationContext private val context: Context
+) : SessionReminderScheduler {
+    override fun schedule(
         code: String,
         sessionName: String,
         date: LocalDate,
         startTime: LocalTime?,
-        now: LocalDateTime = LocalDateTime.now()
+        now: LocalDateTime
     ) {
         // Sin hora fijada avisamos a una hora civilizada de la tarde anterior.
         val remindAt = date.minusDays(1).atTime(startTime ?: DEFAULT_REMINDER_TIME)
@@ -62,7 +64,7 @@ class SessionReminderScheduler @Inject constructor(
             .enqueueUniqueWork(workName(code), ExistingWorkPolicy.REPLACE, request)
     }
 
-    fun cancel(code: String) {
+    override fun cancel(code: String) {
         WorkManager.getInstance(context).cancelUniqueWork(workName(code))
     }
 

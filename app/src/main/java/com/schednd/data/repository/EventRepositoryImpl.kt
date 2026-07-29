@@ -1,5 +1,6 @@
 package com.schednd.data.repository
 
+import com.schednd.domain.repository.EventRepository
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.schednd.domain.util.EventCodeGenerator
@@ -18,12 +19,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class EventRepository @Inject constructor(
+class EventRepositoryImpl @Inject constructor(
     private val firestore: FirebaseFirestore
-) {
+) : EventRepository {
     private val eventsCollection = firestore.collection("events")
 
-    suspend fun createEvent(name: String, creatorId: String): String {
+    override suspend fun createEvent(name: String, creatorId: String): String {
         var code: String
         do {
             code = EventCodeGenerator.generate()
@@ -40,13 +41,13 @@ class EventRepository @Inject constructor(
         return code
     }
 
-    suspend fun getEvent(code: String): Event? {
+    override suspend fun getEvent(code: String): Event? {
         val doc = eventsCollection.document(code).get().await()
         if (!doc.exists()) return null
         return doc.toEvent(code)
     }
 
-    fun observeEvent(code: String): Flow<Event?> = callbackFlow {
+    override fun observeEvent(code: String): Flow<Event?> = callbackFlow {
         val listener = eventsCollection.document(code)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
@@ -59,7 +60,7 @@ class EventRepository @Inject constructor(
         awaitClose { listener.remove() }
     }
 
-    fun observeParticipants(code: String): Flow<List<Participant>> = callbackFlow {
+    override fun observeParticipants(code: String): Flow<List<Participant>> = callbackFlow {
         val listener = eventsCollection.document(code)
             .collection("participants")
             .addSnapshotListener { snapshot, error ->
@@ -83,12 +84,12 @@ class EventRepository @Inject constructor(
         awaitClose { listener.remove() }
     }
 
-    suspend fun addOrUpdateAvailability(
+    override suspend fun addOrUpdateAvailability(
         code: String,
         userId: String,
         name: String,
         dates: List<LocalDate>,
-        notes: List<String> = emptyList()
+        notes: List<String>
     ) {
         val today = LocalDate.now()
         val data = hashMapOf(
@@ -103,11 +104,11 @@ class EventRepository @Inject constructor(
             .await()
     }
 
-    suspend fun getEvents(codes: Collection<String>): List<Event> {
+    override suspend fun getEvents(codes: Collection<String>): List<Event> {
         return codes.mapNotNull { getEvent(it) }
     }
 
-    suspend fun deleteEvent(code: String) {
+    override suspend fun deleteEvent(code: String) {
         val eventRef = eventsCollection.document(code)
         // Delete all participants first
         val participants = eventRef.collection("participants").get().await()
@@ -115,7 +116,7 @@ class EventRepository @Inject constructor(
         eventRef.delete().await()
     }
 
-    suspend fun doesEventExist(code: String): Boolean {
+    override suspend fun doesEventExist(code: String): Boolean {
         val doc = eventsCollection.document(code).get().await()
         return doc.exists()
     }
@@ -129,19 +130,19 @@ class EventRepository @Inject constructor(
      * Fija el día de la sesión y, opcionalmente, la hora de inicio.
      * Pasar `startTime = null` deja la hora sin tocar (p. ej. al cambiar solo el día).
      */
-    suspend fun confirmDate(code: String, date: LocalDate, startTime: LocalTime? = null) {
+    override suspend fun confirmDate(code: String, date: LocalDate, startTime: LocalTime?) {
         val updates = mutableMapOf<String, Any?>("confirmedDate" to date.toTimestamp())
         if (startTime != null) updates["startTime"] = startTime.format(TIME_FORMAT)
         eventsCollection.document(code).update(updates).await()
     }
 
-    suspend fun setStartTime(code: String, startTime: LocalTime?) {
+    override suspend fun setStartTime(code: String, startTime: LocalTime?) {
         eventsCollection.document(code)
             .update("startTime", startTime?.format(TIME_FORMAT))
             .await()
     }
 
-    suspend fun clearConfirmedDate(code: String) {
+    override suspend fun clearConfirmedDate(code: String) {
         eventsCollection.document(code)
             .update(mapOf("confirmedDate" to null, "startTime" to null))
             .await()

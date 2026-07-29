@@ -1,5 +1,6 @@
 package com.schednd.data.repository
 
+import com.schednd.domain.repository.NoteRepository
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -14,15 +15,15 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NoteRepository @Inject constructor(
+class NoteRepositoryImpl @Inject constructor(
     private val firestore: FirebaseFirestore
-) {
+) : NoteRepository {
     private val eventsCollection = firestore.collection("events")
 
     private fun notesRef(code: String) =
         eventsCollection.document(code).collection("notes")
 
-    fun observeNotes(code: String): Flow<List<Note>> = callbackFlow {
+    override fun observeNotes(code: String): Flow<List<Note>> = callbackFlow {
         val listener = notesRef(code)
             .orderBy("pinned", Query.Direction.DESCENDING)
             .orderBy("updatedAt", Query.Direction.DESCENDING)
@@ -49,7 +50,7 @@ class NoteRepository @Inject constructor(
         awaitClose { listener.remove() }
     }
 
-    suspend fun createNote(
+    override suspend fun createNote(
         code: String,
         authorId: String,
         authorName: String,
@@ -72,7 +73,7 @@ class NoteRepository @Inject constructor(
         return ref.id
     }
 
-    suspend fun updateNote(
+    override suspend fun updateNote(
         code: String,
         noteId: String,
         title: String,
@@ -90,11 +91,11 @@ class NoteRepository @Inject constructor(
         notesRef(code).document(noteId).update(data).await()
     }
 
-    suspend fun deleteNote(code: String, noteId: String) {
+    override suspend fun deleteNote(code: String, noteId: String) {
         notesRef(code).document(noteId).delete().await()
     }
 
-    suspend fun togglePin(code: String, noteId: String, pinned: Boolean) {
+    override suspend fun togglePin(code: String, noteId: String, pinned: Boolean) {
         notesRef(code).document(noteId).update(
             mapOf(
                 "pinned" to pinned,

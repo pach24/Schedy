@@ -1,5 +1,6 @@
 package com.schednd.data.repository
 
+import com.schednd.domain.repository.NotificationRepository
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import javax.inject.Inject
@@ -14,9 +15,9 @@ import javax.inject.Singleton
  * escribe, y el cliente lo usa para no auto-notificarse.
  */
 @Singleton
-class NotificationRepository @Inject constructor(
+class NotificationRepositoryImpl @Inject constructor(
     private val firestore: FirebaseFirestore
-) {
+) : NotificationRepository {
     private fun queueRef(code: String) =
         firestore.collection("events").document(code).collection("pendingNotifications")
 
@@ -26,7 +27,7 @@ class NotificationRepository @Inject constructor(
         queueRef(code).add(data)
     }
 
-    suspend fun notifyNewNote(
+    override suspend fun notifyNewNote(
         code: String,
         senderId: String,
         noteId: String,
@@ -43,7 +44,7 @@ class NotificationRepository @Inject constructor(
         )
     )
 
-    suspend fun notifyAvailabilityUpdated(
+    override suspend fun notifyAvailabilityUpdated(
         code: String,
         senderId: String,
         senderName: String
@@ -56,7 +57,7 @@ class NotificationRepository @Inject constructor(
         )
     )
 
-    suspend fun notifyDateConfirmed(
+    override suspend fun notifyDateConfirmed(
         code: String,
         senderId: String,
         body: String
@@ -69,7 +70,7 @@ class NotificationRepository @Inject constructor(
         )
     )
 
-    suspend fun notifyDateCleared(
+    override suspend fun notifyDateCleared(
         code: String,
         senderId: String
     ) = enqueue(

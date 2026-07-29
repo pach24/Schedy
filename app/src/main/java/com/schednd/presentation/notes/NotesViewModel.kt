@@ -3,7 +3,7 @@ package com.schednd.presentation.notes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.schednd.data.repository.NoteRepository
+import com.schednd.domain.repository.NoteRepository
 import com.schednd.domain.model.Note
 import com.schednd.domain.model.NoteTag
 import dagger.hilt.android.lifecycle.HiltViewModel

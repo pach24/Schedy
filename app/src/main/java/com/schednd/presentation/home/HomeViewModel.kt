@@ -3,11 +3,11 @@ package com.schednd.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
-import com.schednd.data.repository.AuthRepository
-import com.schednd.data.repository.EventRepository
-import com.schednd.data.repository.NoteRepository
-import com.schednd.data.repository.PlayerRepository
-import com.schednd.data.repository.RecentEventsRepository
+import com.schednd.domain.repository.AuthRepository
+import com.schednd.domain.repository.EventRepository
+import com.schednd.domain.repository.NoteRepository
+import com.schednd.domain.repository.PlayerRepository
+import com.schednd.domain.repository.RecentEventsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
