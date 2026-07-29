@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.schednd",
       "sha256_cert_fingerprints": [
-        "03:13:C2:F5:DB:4B:B3:A6:11:03:D4:98:EF:28:01:72:DF:4A:6A:BB:14:D2:0D:8D:97:E1:6E:8C:A4:60:47:A6"
+        "03:13:C2:F5:DB:4B:B3:A6:11:03:D4:98:EF:28:01:72:DF:4A:6A:BB:14:D2:0D:8D:97:E1:6E:8C:A4:60:47:A6",
+        "57:E5:AA:AE:06:D8:12:92:5D:BB:E7:20:1D:82:83:4C:17:31:49:55:01:D7:4F:18:3C:BF:66:EF:0E:8F:88:4F"
       ]
     }
   }
