@@ -2,11 +2,14 @@ package com.schednd.presentation.join
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.schednd.domain.repository.AuthRepository
-import com.schednd.domain.repository.EventRepository
-import com.schednd.domain.repository.MessagingRepository
-import com.schednd.domain.repository.PlayerRepository
 import com.schednd.domain.model.Event
+import com.schednd.domain.usecase.auth.EnsureSignedInUseCase
+import com.schednd.domain.usecase.player.GetPlayerNameUseCase
+import com.schednd.domain.usecase.player.SavePlayerNameUseCase
+import com.schednd.domain.usecase.session.GetSessionUseCase
+import com.schednd.domain.usecase.session.ObserveParticipantsUseCase
+import com.schednd.domain.usecase.session.SaveAvailabilityUseCase
+import com.schednd.domain.usecase.session.SubscribeToSessionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,10 +38,13 @@ data class JoinEventUiState(
 @HiltViewModel
 class JoinEventViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
-    private val eventRepository: EventRepository,
-    private val authRepository: AuthRepository,
-    private val messagingRepository: MessagingRepository,
-    private val playerRepository: PlayerRepository
+    private val ensureSignedIn: EnsureSignedInUseCase,
+    private val getSession: GetSessionUseCase,
+    private val observeParticipantsUseCase: ObserveParticipantsUseCase,
+    private val saveAvailability: SaveAvailabilityUseCase,
+    private val subscribeToSession: SubscribeToSessionUseCase,
+    private val getPlayerName: GetPlayerNameUseCase,
+    private val savePlayerName: SavePlayerNameUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(JoinEventUiState())
@@ -46,7 +52,7 @@ class JoinEventViewModel @Inject constructor(
 
     init {
         // Prefill con el nombre guardado en el onboarding para no re-teclearlo
-        playerRepository.getPlayerName()?.let { saved ->
+        getPlayerName()?.let { saved ->
             _uiState.update { it.copy(participantName = saved) }
         }
     }
@@ -67,7 +73,7 @@ class JoinEventViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val event = eventRepository.getEvent(code)
+                val event = getSession(code)
                 if (event == null) {
                     _uiState.update { it.copy(isLoading = false, error = appContext.getString(R.string.detail_session_not_found)) }
                 } else {
@@ -93,19 +99,19 @@ class JoinEventViewModel @Inject constructor(
         if (state.participantName.isBlank() || state.selectedDates.isEmpty()) return
 
         // Recordar el nombre para futuras sesiones
-        playerRepository.savePlayerName(state.participantName.trim())
+        savePlayerName(state.participantName.trim())
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val userId = authRepository.ensureSignedIn()
-                eventRepository.addOrUpdateAvailability(
+                val userId = ensureSignedIn()
+                saveAvailability(
                     code = state.code,
                     userId = userId,
                     name = state.participantName.trim(),
                     dates = state.selectedDates.sorted()
                 )
-                messagingRepository.subscribeToEvent(state.code)
+                subscribeToSession(state.code)
                 _uiState.update { it.copy(isLoading = false, isSubmitted = true) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
@@ -115,7 +121,7 @@ class JoinEventViewModel @Inject constructor(
 
     private fun observeParticipants(code: String) {
         viewModelScope.launch {
-            eventRepository.observeParticipants(code).collect { participants ->
+            observeParticipantsUseCase(code).collect { participants ->
                 val today = LocalDate.now()
                 val counts = mutableMapOf<LocalDate, Int>()
                 participants.forEach { p ->

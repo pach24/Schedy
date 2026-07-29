@@ -3,11 +3,12 @@ package com.schednd.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
-import com.schednd.domain.repository.AuthRepository
-import com.schednd.domain.repository.EventRepository
-import com.schednd.domain.repository.NoteRepository
-import com.schednd.domain.repository.PlayerRepository
-import com.schednd.domain.repository.RecentEventsRepository
+import com.schednd.domain.usecase.auth.EnsureSignedInUseCase
+import com.schednd.domain.usecase.note.ObserveNotesUseCase
+import com.schednd.domain.usecase.player.GetPlayerNameUseCase
+import com.schednd.domain.usecase.session.GetSavedSessionCodesUseCase
+import com.schednd.domain.usecase.session.GetSessionsUseCase
+import com.schednd.domain.usecase.session.ObserveParticipantsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -64,11 +65,12 @@ data class HomeUiState(
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val authRepository: AuthRepository,
-    private val eventRepository: EventRepository,
-    private val noteRepository: NoteRepository,
-    private val recentEventsRepository: RecentEventsRepository,
-    private val playerRepository: PlayerRepository
+    private val ensureSignedIn: EnsureSignedInUseCase,
+    private val getSavedSessionCodes: GetSavedSessionCodesUseCase,
+    private val getSessions: GetSessionsUseCase,
+    private val observeParticipants: ObserveParticipantsUseCase,
+    private val observeNotes: ObserveNotesUseCase,
+    private val getPlayerName: GetPlayerNameUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -77,10 +79,10 @@ class HomeViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             try {
-                authRepository.ensureSignedIn()
+                ensureSignedIn()
                 _uiState.value = _uiState.value.copy(
                     isAuthReady = true,
-                    playerName = playerRepository.getPlayerName()
+                    playerName = getPlayerName()
                 )
                 loadRecentEvents()
             } catch (e: Exception) {
@@ -93,13 +95,13 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             // El nombre se relee al volver a home: si algún día se puede cambiar, el
             // saludo no se queda con el viejo hasta reiniciar la app.
-            _uiState.value = _uiState.value.copy(playerName = playerRepository.getPlayerName())
+            _uiState.value = _uiState.value.copy(playerName = getPlayerName())
             loadRecentEvents()
         }
     }
 
     private suspend fun loadRecentEvents() {
-        val codes = recentEventsRepository.getSavedCodes()
+        val codes = getSavedSessionCodes()
         if (codes.isEmpty()) {
             _uiState.value = _uiState.value.copy(
                 allSessions = emptyList(),
@@ -109,15 +111,15 @@ class HomeViewModel @Inject constructor(
             )
             return
         }
-        val events = eventRepository.getEvents(codes)
+        val events = getSessions(codes)
         val cards = coroutineScope {
             events.map { event ->
                 async {
                     val participants = runCatching {
-                        eventRepository.observeParticipants(event.code).first()
+                        observeParticipants(event.code).first()
                     }.getOrDefault(emptyList())
                     val allNotes = runCatching {
-                        noteRepository.observeNotes(event.code).first()
+                        observeNotes(event.code).first()
                     }.getOrDefault(emptyList())
                     val latest = allNotes.firstOrNull()?.let { n ->
                         LatestNotePreview(
