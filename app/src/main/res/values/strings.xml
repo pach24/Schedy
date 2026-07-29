@@ -39,6 +39,7 @@
 
     <!-- Inicio -->
     <string name="home_greeting">Hola</string>
+    <string name="home_greeting_named">Hola, %1$s</string>
     <string name="home_title">Tus sesiones</string>
     <string name="home_next_session">PRÓXIMA SESIÓN</string>
     <string name="home_date_unconfirmed">Fecha por\nconfirmar</string>

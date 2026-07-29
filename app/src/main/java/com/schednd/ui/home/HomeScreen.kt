@@ -226,7 +226,18 @@ private fun HomeMainTab(
             bottom = innerPadding.calculateBottomPadding() + 24.dp
         )
     ) {
-        item { Header(title = stringResource(R.string.home_title), greeting = stringResource(R.string.home_greeting)) }
+        item {
+            val name = uiState.playerName
+            Header(
+                title = stringResource(R.string.home_title),
+                // Sin nombre guardado el saludo se queda a secas, que es como estaba.
+                greeting = if (name.isNullOrBlank()) {
+                    stringResource(R.string.home_greeting)
+                } else {
+                    stringResource(R.string.home_greeting_named, name)
+                }
+            )
+        }
 
         if (uiState.error != null) {
             item {
