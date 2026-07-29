@@ -1,7 +1,7 @@
-package com.schednd.domain.usecase
+package com.schednd.domain.usecase.session
 
 import com.schednd.domain.model.AttendanceTier
-import com.schednd.model.Participant
+import com.schednd.domain.model.Participant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
