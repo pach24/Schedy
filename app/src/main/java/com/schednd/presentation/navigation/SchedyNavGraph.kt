@@ -1,0 +1,126 @@
+package com.schednd.presentation.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
+import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
+import com.schednd.presentation.create.CreateEventScreen
+import com.schednd.presentation.detail.EditAvailabilityScreen
+import com.schednd.presentation.detail.EventDetailViewModel
+import com.schednd.presentation.home.HomeScreen
+import com.schednd.presentation.join.JoinEventScreen
+import com.schednd.presentation.onboarding.OnboardingScreen
+import com.schednd.presentation.session.SessionShellScreen
+import com.schednd.ui.theme.NavEnterTransition
+import com.schednd.ui.theme.NavExitTransition
+import com.schednd.ui.theme.NavPopEnterTransition
+import com.schednd.ui.theme.NavPopExitTransition
+
+@Composable
+fun SchedyNavGraph(
+    navController: NavHostController,
+    startDestination: String = "home"
+) {
+    NavHost(
+        navController = navController,
+        startDestination = startDestination,
+        enterTransition = { NavEnterTransition },
+        exitTransition = { NavExitTransition },
+        popEnterTransition = { NavPopEnterTransition },
+        popExitTransition = { NavPopExitTransition }
+    ) {
+        composable("onboarding") {
+            OnboardingScreen(
+                onComplete = {
+                    navController.navigate("home") {
+                        popUpTo("onboarding") { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable("home") {
+            HomeScreen(
+                onCreateEvent = { navController.navigate("create") },
+                onJoinEvent = { navController.navigate("join") },
+                onOpenEvent = { code -> navController.navigate("event/$code") }
+            )
+        }
+        composable("create") {
+            CreateEventScreen(
+                onEventCreated = { code ->
+                    navController.navigate("event/$code") {
+                        popUpTo("home")
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(
+            route = "join?code={code}",
+            arguments = listOf(navArgument("code") {
+                type = NavType.StringType
+                defaultValue = ""
+            }),
+            // El enlace https es el que se comparte; el esquema propio sigue vivo para el
+            // botón de la página de respaldo y para lo que ya estuviera circulando.
+            deepLinks = listOf(
+                navDeepLink { uriPattern = "https://getschedy.web.app/join?code={code}" },
+                navDeepLink { uriPattern = "https://getschedy.firebaseapp.com/join?code={code}" },
+                navDeepLink { uriPattern = "schedy://join?code={code}" }
+            )
+        ) { backStackEntry ->
+            val prefilledCode = backStackEntry.arguments?.getString("code").orEmpty()
+            JoinEventScreen(
+                prefilledCode = prefilledCode,
+                onJoined = { code ->
+                    navController.navigate("event/$code") {
+                        popUpTo("home")
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        navigation(
+            startDestination = "event/{code}/home",
+            route = "event/{code}",
+            arguments = listOf(navArgument("code") { type = NavType.StringType })
+        ) {
+            composable(
+                route = "event/{code}/home",
+                // Entrada desde el push del grupo, el recordatorio local y el enlace compartido.
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "https://getschedy.web.app/event/{code}" },
+                    navDeepLink { uriPattern = "https://getschedy.firebaseapp.com/event/{code}" },
+                    navDeepLink { uriPattern = "schedy://event/{code}" }
+                )
+            ) { backStackEntry ->
+                val code = backStackEntry.arguments?.getString("code").orEmpty()
+                val parentEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry("event/{code}")
+                }
+                val eventDetailViewModel: EventDetailViewModel = hiltViewModel(parentEntry)
+                SessionShellScreen(
+                    eventDetailViewModel = eventDetailViewModel,
+                    onLeaveSession = { navController.popBackStack("home", inclusive = false) },
+                    onEditAvailability = { navController.navigate("event/$code/edit") }
+                )
+            }
+            composable("event/{code}/edit") { backStackEntry ->
+                val parentEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry("event/{code}")
+                }
+                val viewModel: EventDetailViewModel = hiltViewModel(parentEntry)
+                EditAvailabilityScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+        }
+    }
+}

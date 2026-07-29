@@ -3,8 +3,8 @@ package com.schednd.data.repository
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.schednd.domain.util.EventCodeGenerator
-import com.schednd.model.Event
-import com.schednd.model.Participant
+import com.schednd.domain.model.Event
+import com.schednd.domain.model.Participant
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow

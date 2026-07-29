@@ -4,8 +4,8 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.schednd.model.Note
-import com.schednd.model.NoteTag
+import com.schednd.domain.model.Note
+import com.schednd.domain.model.NoteTag
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow

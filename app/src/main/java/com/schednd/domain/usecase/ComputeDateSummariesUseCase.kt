@@ -2,7 +2,7 @@ package com.schednd.domain.usecase
 
 import com.schednd.domain.model.DateSummary
 import com.schednd.domain.model.computeAttendanceTier
-import com.schednd.model.Participant
+import com.schednd.domain.model.Participant
 import java.time.LocalDate
 import javax.inject.Inject
 

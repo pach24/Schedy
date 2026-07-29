@@ -41,7 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.schednd.model.Participant
+import com.schednd.domain.model.Participant
 import com.schednd.ui.theme.CalendarCellShape
 import com.schednd.ui.theme.LightEmptyCell
 import com.schednd.ui.theme.LightRaisedSurface
