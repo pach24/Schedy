@@ -19,7 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.schednd.model.NoteTag
+import com.schednd.domain.model.NoteTag
 import com.schednd.ui.theme.TagLoot
 import com.schednd.ui.theme.TagNpc
 import com.schednd.ui.theme.TagOtros

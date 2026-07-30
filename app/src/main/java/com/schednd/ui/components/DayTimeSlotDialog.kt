@@ -48,7 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.schednd.model.DayTimeSlot
+import com.schednd.domain.model.DayTimeSlot
 import com.schednd.ui.theme.SquircleShape
 import com.schednd.ui.theme.pressScale
 import kotlinx.coroutines.launch

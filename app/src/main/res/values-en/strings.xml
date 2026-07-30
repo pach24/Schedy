@@ -169,6 +169,8 @@
     <string name="note_not_found">Note not found</string>
     <string name="note_delete_title">Delete this note?</string>
     <string name="note_delete_body">“%1$s” will be removed for the whole group. This cannot be undone.</string>
+    <string name="note_delete_confirm">Delete note</string>
+    <string name="note_archive">Archive</string>
     <string name="note_editor_session_fallback">this session</string>
     <string name="note_untitled">Untitled</string>
     <string name="note_relative_today">Today %1$s</string>
@@ -208,7 +210,7 @@
     <string name="error_image_open">Could not open the selected image</string>
 
     <!-- Share -->
-    <string name="share_event">Join my D&amp;D session on Schedy!\n\nTap here and just enter your name:\nschedy://join?code=%1$s\n\nOr use the code: %1$s</string>
+    <string name="share_event">Join my D&amp;D session on Schedy!\n\nTap here and just enter your name:\nhttps://getschedy.web.app/join?code=%1$s\n\nOr use the code: %1$s</string>
 
     <plurals name="days_selected">
         <item quantity="one">%1$d day selected</item>

@@ -8,16 +8,13 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.storage.FirebaseStorage
-import com.schednd.data.repository.PlayerRepository
-import com.schednd.data.repository.RecentEventsRepository
-import com.schednd.data.work.SessionReminderScheduler
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+/** Solo los SDK de fuera; las implementaciones propias se atan en [RepositoryModule]. */
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
@@ -37,19 +34,4 @@ object AppModule {
     @Provides
     @Singleton
     fun provideStorage(): FirebaseStorage = FirebaseStorage.getInstance()
-
-    @Provides
-    @Singleton
-    fun provideRecentEventsRepository(@ApplicationContext context: Context): RecentEventsRepository =
-        RecentEventsRepository(context)
-
-    @Provides
-    @Singleton
-    fun providePlayerRepository(@ApplicationContext context: Context): PlayerRepository =
-        PlayerRepository(context)
-
-    @Provides
-    @Singleton
-    fun provideSessionReminderScheduler(@ApplicationContext context: Context): SessionReminderScheduler =
-        SessionReminderScheduler(context)
 }

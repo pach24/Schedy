@@ -173,6 +173,8 @@
     <string name="note_not_found">Nota no encontrada</string>
     <string name="note_delete_title">¿Borrar esta nota?</string>
     <string name="note_delete_body">«%1$s» se eliminará para todo el grupo. Esta acción no se puede deshacer.</string>
+    <string name="note_delete_confirm">Borrar nota</string>
+    <string name="note_archive">Archivar</string>
     <string name="note_editor_session_fallback">esta sesión</string>
     <string name="note_untitled">Sin título</string>
     <string name="note_relative_today">Hoy %1$s</string>
@@ -213,7 +215,7 @@
     <string name="error_image_open">No se pudo abrir la imagen seleccionada</string>
 
     <!-- Compartir -->
-    <string name="share_event">¡Únete a mi sesión de D&amp;D en Schedy!\n\nEntra directamente aquí y solo pon tu nombre:\nschedy://join?code=%1$s\n\nO usa el código: %1$s</string>
+    <string name="share_event">¡Únete a mi sesión de D&amp;D en Schedy!\n\nEntra directamente aquí y solo pon tu nombre:\nhttps://getschedy.web.app/join?code=%1$s\n\nO usa el código: %1$s</string>
 
     <plurals name="days_selected">
         <item quantity="one">%1$d día seleccionado</item>

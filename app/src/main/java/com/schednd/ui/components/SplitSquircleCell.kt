@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.schednd.model.DayTimeSlot
+import com.schednd.domain.model.DayTimeSlot
 import com.schednd.ui.theme.CalendarCellShape
 import com.schednd.ui.theme.SquircleShape
 

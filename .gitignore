@@ -16,6 +16,11 @@ local.properties
 /app/release
 /app/build
 
+# Claves de firma: nunca en el repo. Las credenciales van en ~/.gradle/gradle.properties
+*.jks
+*.keystore
+keystore.properties
+
 # Firebase Cloud Functions
 /functions/node_modules
 /functions/lib

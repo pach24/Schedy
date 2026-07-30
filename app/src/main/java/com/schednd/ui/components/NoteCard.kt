@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.schednd.model.Note
+import com.schednd.domain.model.Note
 import com.schednd.ui.theme.AvatarColors
 import com.schednd.ui.theme.pressScale
 import java.time.Instant

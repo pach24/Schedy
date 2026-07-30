@@ -25,6 +25,22 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!--
+                Enlace real para compartir: los mensajeros solo convierten en enlace lo que
+                empieza por http(s), así que el esquema propio se queda en texto plano.
+                Con autoVerify Android comprueba /.well-known/assetlinks.json del dominio y,
+                si cuadra la firma, abre la app sin pasar por el navegador.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="getschedy.web.app" android:pathPrefix="/join" />
+                <data android:scheme="https" android:host="getschedy.web.app" android:pathPrefix="/event" />
+                <data android:scheme="https" android:host="getschedy.firebaseapp.com" android:pathPrefix="/join" />
+                <data android:scheme="https" android:host="getschedy.firebaseapp.com" android:pathPrefix="/event" />
+            </intent-filter>
+            <!-- Esquema propio: lo usan el push, el recordatorio local y la página de respaldo. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
