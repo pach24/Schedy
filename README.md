@@ -18,6 +18,22 @@
 
 ---
 
+## Live Demo
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/a70c71ea-0505-45e0-9cb3-4bcc2872b059" width="30%" alt="Schedy screenshot 1" />
+  &nbsp;
+  <img src="https://github.com/user-attachments/assets/e173d831-9950-44ea-93d6-3b92a38f089f" width="30%" alt="Schedy screenshot 2" />
+  &nbsp;
+  <img src="https://github.com/user-attachments/assets/88137bbb-4a8f-4a58-9515-89124a2e2710" width="30%" alt="Schedy screenshot 3" />
+</p>
+
+<!--
+  Nota: ajustá los alt="" de arriba con lo que muestra cada pantalla
+  (ej. "Countdown", "Grilla de disponibilidad", "Notas de sesión")
+  para que quede accesible y quede mejor documentado.
+-->
+
 ## The problem
 
 Scheduling a tabletop session is the real boss fight. Somebody asks "who can on Friday?",
@@ -143,6 +159,6 @@ Everything runs on one Firebase project:
 Working end to end: create, join, availability, dates, times, notes, notifications and
 reminders. The profile tab is still a placeholder, and file storage is wired but unused —
 both are waiting on the profile screen. [`PLAN_MEJORAS.md`](PLAN_MEJORAS.md) tracks where the
-app is heading.
+app is heading (in Spanish).
 
 Code comments and commit messages are in Spanish; documentation is in English.
