@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -11,6 +12,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -24,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.launch
@@ -59,6 +62,35 @@ val NavPopExitTransition: ExitTransition =
             stiffness = Spring.StiffnessLow
         )
     ) { it } + fadeOut(tween(280))
+
+// ── Salida de una fila que se quita de un listado ────────────────────
+
+/**
+ * Cuánto tarda [RowRemovalExit] de principio a fin. Lo necesita quien dispare el borrado
+ * de verdad: si los datos cambian antes, la fila desaparece a media caída.
+ */
+const val RowRemovalDurationMs = 300
+
+/**
+ * La fila se cae y se desvanece, y el hueco se cierra tras ella.
+ *
+ * La caída acelera —`FastOutLinearInEasing`, que sale lento y termina rápido— para que
+ * parezca que se suelta, no que se desliza. El encogido entra algo más tarde: si el hueco
+ * se cerrara a la vez, la caída no se llegaría a ver.
+ */
+val RowRemovalExit: ExitTransition =
+    slideOutVertically(
+        animationSpec = tween(RowRemovalDurationMs, easing = FastOutLinearInEasing)
+    ) { it } +
+        scaleOut(
+            targetScale = 0.92f,
+            animationSpec = tween(RowRemovalDurationMs)
+        ) +
+        fadeOut(tween(RowRemovalDurationMs - 80)) +
+        shrinkVertically(
+            animationSpec = tween(RowRemovalDurationMs - 60, delayMillis = 60),
+            shrinkTowards = Alignment.Top
+        )
 
 // ── Phase transition specs (internal screen transitions) ─────────────
 // Slide up from bottom + fade, para presentaciones tipo hoja
