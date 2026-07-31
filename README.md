@@ -82,13 +82,16 @@ identity is the name they type once.
 Clean architecture in three layers with MVVM on top. Dependencies point inwards:
 `presentation` and `data` both know `domain`; `domain` knows nobody.
 
-```
-presentation/   Compose screens + ViewModels — one immutable UiState per screen
-      │ use cases
-domain/         models · repository interfaces · 32 use cases      ← pure Kotlin
-      ▲ implements
-data/           Firestore · Auth · FCM · SharedPreferences · WorkManager
-```
+<div align="center">
+  <img
+    src="https://github.com/user-attachments/assets/27805bba-46a1-4a61-8d60-2403004400b4"
+    alt="Application architecture"
+    width="800">
+</div>
+
+<p align="center">
+<i>Figure 1. Clean Architecture with MVVM used in the application.</i>
+</p>
 
 The practical upshot: **no ViewModel knows a repository**, and Firebase is confined to
 `data/`. `RepositoryModule` is the single file where a domain interface meets its Firebase
@@ -105,7 +108,7 @@ implementation — the seam you would cut to swap the backend.
 | Backend | Firestore security rules + one Cloud Function that publishes pushes |
 | Build | Gradle version catalogs; release signing read from `~/.gradle/gradle.properties` |
 
-```
+```text
 app/src/main/java/com/schednd/
 ├── data/          repository impls · FCM service · WorkManager
 ├── domain/        model · repository (interfaces) · usecase · util
@@ -113,7 +116,6 @@ app/src/main/java/com/schednd/
 ├── presentation/  onboarding · home · create · join · detail · notes · session · navigation
 └── ui/            components · theme
 ```
-
 ## Documentation
 
 The deep dives live in [`docs/`](docs/):
