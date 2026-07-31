@@ -109,6 +109,12 @@ fun EventDetailScreen(
     var showMoreDialog by remember { mutableStateOf(false) }
     var showConfirmDateDialog by remember { mutableStateOf(false) }
     var pendingConfirmDate by remember { mutableStateOf<LocalDate?>(null) }
+    var showDateConfirmedDialog by remember { mutableStateOf(false) }
+    var confirmedWhenText by remember { mutableStateOf("") }
+    val confirmedShareFormat = DateTimeFormatter.ofPattern(
+        stringResource(R.string.date_pattern_full_weekday_day_month), Locale.getDefault()
+    )
+    val timeShareFormat = DateTimeFormatter.ofPattern("HH:mm")
     var copiedCode by remember { mutableStateOf(false) }
     var copyBounceScale by remember { mutableStateOf(1f) }
     val copyIconScale by animateFloatAsState(
@@ -695,6 +701,11 @@ fun EventDetailScreen(
             pendingConfirmDate = null
             viewModel.confirmDate(date, time)
             scrollToConfirmed = true
+            val dayText = confirmedShareFormat.format(date)
+            confirmedWhenText = time
+                ?.let { context.getString(R.string.detail_date_with_time, dayText, timeShareFormat.format(it)) }
+                ?: dayText
+            showDateConfirmedDialog = true
         }
     }
 
@@ -708,6 +719,42 @@ fun EventDetailScreen(
             glass = overlayGlass,
             onSkip = { closeTimePicker(null) },
             onConfirm = { time -> closeTimePicker(time) }
+        )
+    }
+
+    // Sin push, el aviso lo lleva el DM al chat del grupo. El texto se guarda aparte de
+    // la visibilidad, igual que en el reloj: si se leyera del flag, el diálogo se quedaría
+    // sin nada que animar en cuanto se pide cerrar.
+    ScrimDialogOverlay(
+        visible = showDateConfirmedDialog,
+        onDismiss = { showDateConfirmedDialog = false }
+    ) {
+        DateConfirmedDialog(
+            whenText = confirmedWhenText,
+            hazeState = hazeState,
+            glass = overlayGlass,
+            onShare = {
+                showDateConfirmedDialog = false
+                val event = uiState.event
+                if (event != null) {
+                    val sendIntent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        putExtra(
+                            Intent.EXTRA_TEXT,
+                            context.getString(
+                                R.string.share_date_confirmed,
+                                event.name.ifBlank { context.getString(R.string.session_fallback_name) },
+                                confirmedWhenText
+                            )
+                        )
+                        type = "text/plain"
+                    }
+                    context.startActivity(
+                        Intent.createChooser(sendIntent, context.getString(R.string.chooser_share_code))
+                    )
+                }
+            },
+            onDismiss = { showDateConfirmedDialog = false }
         )
     }
 

@@ -4,7 +4,6 @@ import com.schednd.data.repository.AuthRepositoryImpl
 import com.schednd.data.repository.EventRepositoryImpl
 import com.schednd.data.repository.MessagingRepositoryImpl
 import com.schednd.data.repository.NoteRepositoryImpl
-import com.schednd.data.repository.NotificationRepositoryImpl
 import com.schednd.data.repository.PlayerRepositoryImpl
 import com.schednd.data.repository.RecentEventsRepositoryImpl
 import com.schednd.data.repository.StorageRepositoryImpl
@@ -13,7 +12,6 @@ import com.schednd.domain.repository.AuthRepository
 import com.schednd.domain.repository.EventRepository
 import com.schednd.domain.repository.MessagingRepository
 import com.schednd.domain.repository.NoteRepository
-import com.schednd.domain.repository.NotificationRepository
 import com.schednd.domain.repository.PlayerRepository
 import com.schednd.domain.repository.RecentEventsRepository
 import com.schednd.domain.repository.SessionReminderScheduler
@@ -47,10 +45,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindNoteRepository(impl: NoteRepositoryImpl): NoteRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindNotificationRepository(impl: NotificationRepositoryImpl): NotificationRepository
 
     @Binds
     @Singleton

@@ -9,7 +9,6 @@ import com.schednd.domain.usecase.note.CreateNoteUseCase
 import com.schednd.domain.usecase.note.DeleteNoteUseCase
 import com.schednd.domain.usecase.note.ObserveNotesUseCase
 import com.schednd.domain.usecase.note.UpdateNoteUseCase
-import com.schednd.domain.usecase.notification.NotifyNewNoteUseCase
 import com.schednd.domain.usecase.session.GetSessionUseCase
 import com.schednd.domain.usecase.session.ObserveParticipantsUseCase
 import com.schednd.domain.model.Note
@@ -31,7 +30,6 @@ data class NoteEditorUiState(
     val body: String = "",
     val tag: NoteTag = NoteTag.TRAMA,
     val pinned: Boolean = false,
-    val notifyGroup: Boolean = true,
     val authorName: String = "",
     val sessionName: String = "",
     val isLoading: Boolean = false,
@@ -56,8 +54,7 @@ class NoteEditorViewModel @Inject constructor(
     private val observeNotes: ObserveNotesUseCase,
     private val createNote: CreateNoteUseCase,
     private val updateNote: UpdateNoteUseCase,
-    private val deleteNoteUseCase: DeleteNoteUseCase,
-    private val notifyNewNote: NotifyNewNoteUseCase
+    private val deleteNoteUseCase: DeleteNoteUseCase
 ) : ViewModel() {
 
     private val code: String = savedStateHandle.get<String>("code")!!
@@ -93,7 +90,6 @@ class NoteEditorViewModel @Inject constructor(
                                 body = existing.body,
                                 tag = existing.tag,
                                 pinned = existing.pinned,
-                                notifyGroup = false,
                                 authorName = existing.authorName,
                                 sessionName = sessionName,
                                 isLoading = false
@@ -127,7 +123,6 @@ class NoteEditorViewModel @Inject constructor(
     }
     fun onTagChange(t: NoteTag) = _uiState.update { it.copy(tag = t) }
     fun onTogglePinned() = _uiState.update { it.copy(pinned = !it.pinned) }
-    fun onToggleNotify() = _uiState.update { it.copy(notifyGroup = !it.notifyGroup) }
 
     fun save() {
         val state = _uiState.value
@@ -138,9 +133,8 @@ class NoteEditorViewModel @Inject constructor(
                 val userId = ensureSignedIn()
                 val title = state.title.trim()
                 val body = state.body.trim()
-                val resultId = if (state.noteId != null) {
+                if (state.noteId != null) {
                     updateNote(code, state.noteId, title, body, state.tag, state.pinned)
-                    state.noteId
                 } else {
                     createNote(
                         code = code,
@@ -151,17 +145,6 @@ class NoteEditorViewModel @Inject constructor(
                         tag = state.tag,
                         pinned = state.pinned
                     )
-                }
-                if (state.notifyGroup) {
-                    runCatching {
-                        notifyNewNote(
-                            code = code,
-                            senderId = userId,
-                            noteId = resultId,
-                            title = title,
-                            authorName = state.authorName.ifBlank { appContext.getString(R.string.anonymous_player) }
-                        )
-                    }
                 }
                 _uiState.update { it.copy(isSaving = false, isDone = true) }
             } catch (e: Exception) {
