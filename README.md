@@ -1,7 +1,7 @@
-# 🎲 Schedy — Schedule and Role
+# Schedy — Schedule and Role
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/3b2e68e8-c741-4dfd-9485-27186a50398c" alt="Schedy Hero Banner" width="80%" />
+  <img src="https://github.com/user-attachments/assets/87742d9e-67c5-483a-9d7e-1a7cd0eb3bdd" alt="Schedy Hero Banner" width="80%" />
 </p>
 
 <p align="center">
