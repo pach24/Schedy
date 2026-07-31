@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
 import com.schednd.domain.usecase.auth.EnsureSignedInUseCase
+import com.schednd.domain.usecase.auth.GetCurrentUserIdUseCase
 import com.schednd.domain.usecase.note.ObserveNotesUseCase
 import com.schednd.domain.usecase.player.GetPlayerNameUseCase
+import com.schednd.domain.usecase.session.DeleteSessionUseCase
 import com.schednd.domain.usecase.session.GetSavedSessionCodesUseCase
 import com.schednd.domain.usecase.session.GetSessionsUseCase
+import com.schednd.domain.usecase.session.LeaveSessionUseCase
 import com.schednd.domain.usecase.session.ObserveParticipantsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -39,7 +42,9 @@ data class HomeSessionCard(
     val totalParticipants: Int,
     val participantInitials: List<String>,
     val startTime: LocalTime? = null,
-    val latestNote: LatestNotePreview? = null
+    val latestNote: LatestNotePreview? = null,
+    /** La mesa es mía: al mantener pulsado se ofrece borrarla en vez de salirse. */
+    val isCreator: Boolean = false
 ) {
     /** Momento de inicio; si no hay hora fijada se cuenta desde el inicio del día. */
     val startDateTime: LocalDateTime?
@@ -66,11 +71,14 @@ data class HomeUiState(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val ensureSignedIn: EnsureSignedInUseCase,
+    private val getCurrentUserId: GetCurrentUserIdUseCase,
     private val getSavedSessionCodes: GetSavedSessionCodesUseCase,
     private val getSessions: GetSessionsUseCase,
     private val observeParticipants: ObserveParticipantsUseCase,
     private val observeNotes: ObserveNotesUseCase,
-    private val getPlayerName: GetPlayerNameUseCase
+    private val getPlayerName: GetPlayerNameUseCase,
+    private val deleteSession: DeleteSessionUseCase,
+    private val leaveSession: LeaveSessionUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -97,6 +105,27 @@ class HomeViewModel @Inject constructor(
             // saludo no se queda con el viejo hasta reiniciar la app.
             _uiState.value = _uiState.value.copy(playerName = getPlayerName())
             loadRecentEvents()
+        }
+    }
+
+    /**
+     * Quitarse una sesión de encima desde el listado. Borrarla es cosa del DM y se la lleva
+     * para todos; el resto solo puede salirse. La lista se recarga al terminar, que es lo
+     * que hace desaparecer la fila.
+     */
+    fun removeSession(session: HomeSessionCard) {
+        viewModelScope.launch {
+            try {
+                if (session.isCreator) {
+                    deleteSession(session.code)
+                } else {
+                    val userId = getCurrentUserId() ?: ensureSignedIn()
+                    leaveSession(session.code, userId)
+                }
+                loadRecentEvents()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message)
+            }
         }
     }
 
@@ -139,7 +168,8 @@ class HomeViewModel @Inject constructor(
                             it.name.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
                         },
                         startTime = event.startLocalTime,
-                        latestNote = latest
+                        latestNote = latest,
+                        isCreator = event.creatorId == getCurrentUserId()
                     )
                 }
             }.awaitAll()

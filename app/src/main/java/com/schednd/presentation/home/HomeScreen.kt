@@ -23,7 +23,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -37,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,8 +65,11 @@ import com.schednd.presentation.session.SessionBottomBarHeight
 import com.schednd.presentation.session.SessionTab
 import com.schednd.presentation.session.tabs.ProfileTabScreen
 import com.schednd.ui.theme.FadeIn
+import com.schednd.ui.theme.RowRemovalDurationMs
+import com.schednd.ui.theme.RowRemovalExit
 import com.schednd.ui.theme.SquircleShape
 import com.schednd.ui.theme.pressScale
+import kotlinx.coroutines.delay
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import java.time.LocalDate
@@ -95,7 +101,8 @@ fun HomeScreen(
         uiState = uiState,
         onCreateEvent = onCreateEvent,
         onJoinEvent = onJoinEvent,
-        onOpenEvent = onOpenEvent
+        onOpenEvent = onOpenEvent,
+        onRemoveSession = viewModel::removeSession
     )
 }
 
@@ -104,7 +111,8 @@ fun HomeContent(
     uiState: HomeUiState,
     onCreateEvent: () -> Unit,
     onJoinEvent: () -> Unit,
-    onOpenEvent: (String) -> Unit
+    onOpenEvent: (String) -> Unit,
+    onRemoveSession: (HomeSessionCard) -> Unit = {}
 ) {
     // El pager manda sobre la pestaña actual, tanto al deslizar como al tocar la barra.
     // La bolita la mueve el navigator: pegada al pager con el dedo, por su cuenta al tocar.
@@ -129,6 +137,47 @@ fun HomeContent(
         .asPaddingValues()
         .calculateBottomPadding()
 
+    // Sesión que se mantuvo pulsada: mientras haya una, su hoja de acciones está abierta.
+    var sessionUnderAction by remember { mutableStateOf<HomeSessionCard?>(null) }
+    // Sesión cayéndose del listado. La fila se va antes de tocar nada: borrar o salirse
+    // tarda lo que tarde Firestore, y esperar la respuesta para animar deja un tirón.
+    //
+    // Ambas viven aquí y no en la pestaña porque el pager descarta las páginas que no se
+    // ven: dentro, deslizar a otra pestaña a media caída se llevaría por delante la espera
+    // y la sesión se quedaría sin borrar.
+    var leavingSession by remember { mutableStateOf<HomeSessionCard?>(null) }
+
+    // Cuánto está ampliado el calendario. Vive aquí porque con el mes abierto el deslizar
+    // horizontal deja de ser cosa del pager: pasa a cambiar de mes.
+    val calendarExpansion = rememberCalendarExpansion()
+
+    // Se lee en composición, así que se saca de `progress` un booleano que solo cambia al
+    // cruzar el umbral: si no, el pager se recompondría en cada frame de la ampliación.
+    val calendarOpen by remember {
+        derivedStateOf { calendarExpansion.isOpen }
+    }
+
+    // Cambiar de pestaña recoge el mes, venga de la barra o de donde venga: la pestaña de
+    // al lado no tiene por qué heredar un calendario abierto. `targetPage` y no
+    // `currentPage` porque el destino se sabe al soltar, y esperar a que asiente llega tarde.
+    LaunchedEffect(pagerState.targetPage) {
+        if (tabs[pagerState.targetPage] != SessionTab.CALENDAR) calendarExpansion.collapse()
+    }
+
+    LaunchedEffect(leavingSession) {
+        val leaving = leavingSession ?: return@LaunchedEffect
+        delay(RowRemovalDurationMs.toLong())
+        onRemoveSession(leaving)
+    }
+
+    // La fila se queda fuera hasta que el listado deje de traerla; soltarla antes la haría
+    // reaparecer durante el viaje de ida y vuelta. Si la cosa falló y ahí sigue, vuelve.
+    LaunchedEffect(uiState) {
+        val leaving = leavingSession ?: return@LaunchedEffect
+        val gone = uiState.allSessions.none { it.code == leaving.code }
+        if (gone || uiState.error != null) leavingSession = null
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier
@@ -150,13 +199,18 @@ fun HomeContent(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                key = { tabs[it].name }
+                key = { tabs[it].name },
+                // Con el mes abierto, deslizar de lado es pasar de mes. Para cambiar de
+                // pestaña hay que recogerlo antes; la barra sigue ahí para quien prefiera
+                // el atajo, y tocarla lo recoge sola.
+                userScrollEnabled = !calendarOpen
             ) { page ->
                 when (tabs[page]) {
                     SessionTab.CALENDAR -> HomeCalendarTab(
                         uiState = uiState,
                         innerPadding = innerPadding,
-                        onDayTap = { date -> tappedDate = date }
+                        onDayTap = { date -> tappedDate = date },
+                        expansion = calendarExpansion
                     )
                     SessionTab.PROFILE -> ProfileTabScreen(
                         bottomPadding = innerPadding,
@@ -167,7 +221,9 @@ fun HomeContent(
                         innerPadding = innerPadding,
                         onCreateEvent = onCreateEvent,
                         onJoinEvent = onJoinEvent,
-                        onOpenEvent = onOpenEvent
+                        onOpenEvent = onOpenEvent,
+                        leavingCode = leavingSession?.code,
+                        onLongPressSession = { sessionUnderAction = it }
                     )
                     SessionTab.HOME -> HomeMainTab(
                         uiState = uiState,
@@ -190,6 +246,17 @@ fun HomeContent(
             modifier = Modifier.align(Alignment.BottomCenter),
             glass = glass
         )
+
+        sessionUnderAction?.let { session ->
+            SessionActionsSheet(
+                session = session,
+                onConfirm = {
+                    sessionUnderAction = null
+                    leavingSession = session
+                },
+                onDismiss = { sessionUnderAction = null }
+            )
+        }
 
         // La rejilla solo deja tocar días con sesión, así que la lista nunca debería venir
         // vacía; si viniera, no hay diálogo que enseñar.
@@ -350,7 +417,9 @@ private fun HomeSessionsTab(
     innerPadding: PaddingValues,
     onCreateEvent: () -> Unit,
     onJoinEvent: () -> Unit,
-    onOpenEvent: (String) -> Unit
+    onOpenEvent: (String) -> Unit,
+    leavingCode: String?,
+    onLongPressSession: (HomeSessionCard) -> Unit
 ) {
     if (!uiState.isAuthReady && uiState.error == null) {
         LoadingTab(innerPadding = innerPadding)
@@ -386,14 +455,14 @@ private fun HomeSessionsTab(
                     )
                 }
             }
-            items(uiState.upcomingSessions, key = { "upcoming-${it.code}" }) { session ->
-                SessionRow(
-                    session = session,
-                    isNext = session.code == uiState.nextSession?.code,
-                    onClick = { onOpenEvent(session.code) },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-                )
-            }
+            removableSessionRows(
+                sessions = uiState.upcomingSessions,
+                keyPrefix = "upcoming",
+                nextCode = uiState.nextSession?.code,
+                leavingCode = leavingCode,
+                onOpenEvent = onOpenEvent,
+                onLongPress = onLongPressSession
+            )
 
             item {
                 SectionHeader(
@@ -410,14 +479,15 @@ private fun HomeSessionsTab(
                     )
                 }
             }
-            items(uiState.pastSessions, key = { "past-${it.code}" }) { session ->
-                SessionRow(
-                    session = session,
-                    isNext = false,
-                    onClick = { onOpenEvent(session.code) },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-                )
-            }
+            removableSessionRows(
+                sessions = uiState.pastSessions,
+                keyPrefix = "past",
+                // Ninguna sesión pasada puede ser la próxima, así que nunca lleva la chapa.
+                nextCode = null,
+                leavingCode = leavingCode,
+                onOpenEvent = onOpenEvent,
+                onLongPress = onLongPressSession
+            )
         }
 
         item { Spacer(modifier = Modifier.height(28.dp)) }
@@ -426,6 +496,37 @@ private fun HomeSessionsTab(
                 onCreateEvent = onCreateEvent,
                 onJoinEvent = onJoinEvent,
                 modifier = Modifier.padding(horizontal = 20.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Filas de sesión que pueden irse del listado. La que esté en [leavingCode] se cae en vez
+ * de esfumarse; sigue en la lista mientras dura la caída, porque lo que se anima tiene que
+ * estar compuesto para poder animarse.
+ */
+private fun LazyListScope.removableSessionRows(
+    sessions: List<HomeSessionCard>,
+    keyPrefix: String,
+    nextCode: String?,
+    leavingCode: String?,
+    onOpenEvent: (String) -> Unit,
+    onLongPress: (HomeSessionCard) -> Unit
+) {
+    items(sessions, key = { "$keyPrefix-${it.code}" }) { session ->
+        AnimatedVisibility(
+            visible = session.code != leavingCode,
+            exit = RowRemovalExit,
+            // Las de debajo suben a ocupar el hueco en vez de dar el salto.
+            modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
+        ) {
+            SessionRow(
+                session = session,
+                isNext = session.code == nextCode,
+                onClick = { onOpenEvent(session.code) },
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                onLongClick = { onLongPress(session) }
             )
         }
     }
@@ -456,12 +557,9 @@ private fun SeeAllSessionsRow(
     GenCard(
         modifier = modifier
             .fillMaxWidth()
-            .pressScale(interaction)
-            .clickable(
-                indication = LocalIndication.current,
-                interactionSource = interaction,
-                onClick = onClick
-            )
+            .pressScale(interaction),
+        onClick = onClick,
+        interactionSource = interaction
     ) {
         Row(
             modifier = Modifier

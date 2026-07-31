@@ -4,6 +4,10 @@ import com.schednd.domain.repository.AuthRepository
 import com.schednd.domain.repository.MessagingRepository
 import com.schednd.domain.repository.PlayerRepository
 import com.schednd.domain.repository.RecentEventsRepository
+import com.schednd.domain.repository.SessionReminderScheduler
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 
 /** Sesión anónima siempre resuelta, con un uid fijo para poder afirmarlo. */
 class FakeAuthRepository(private val uid: String? = "uid-1") : AuthRepository {
@@ -44,5 +48,25 @@ class FakeMessagingRepository : MessagingRepository {
     }
     override suspend fun unsubscribeFromEvent(code: String) {
         subscribed -= code
+    }
+}
+
+class FakeSessionReminderScheduler : SessionReminderScheduler {
+    val scheduled: MutableList<String> = mutableListOf()
+    val cancelled: MutableList<String> = mutableListOf()
+
+    override fun schedule(
+        code: String,
+        sessionName: String,
+        date: LocalDate,
+        startTime: LocalTime?,
+        now: LocalDateTime
+    ) {
+        scheduled += code
+    }
+
+    override fun cancel(code: String) {
+        cancelled += code
+        scheduled -= code
     }
 }

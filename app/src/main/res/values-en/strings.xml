@@ -139,6 +139,12 @@
     <string name="dialog_date_confirmed_dismiss">Not now</string>
     <string name="dialog_options_dm_only">Only the DM can set the date</string>
     <string name="dialog_options_delete">Delete session</string>
+    <string name="dialog_options_leave">Leave session</string>
+    <string name="dialog_leave_title">Leave session</string>
+    <string name="dialog_leave_body">You will drop off the group and lose the availability you marked. You can rejoin with the code.</string>
+    <string name="dialog_leave_confirm">Leave session</string>
+    <string name="sheet_session_delete_body">It will be gone for the whole group. This cannot be undone.</string>
+    <string name="sheet_session_leave_body">You will drop off the group and lose your availability. You can rejoin with the code.</string>
     <string name="dialog_pick_date_title">Pick the date</string>
     <string name="dialog_pick_date_clear">Clear chosen date</string>
 

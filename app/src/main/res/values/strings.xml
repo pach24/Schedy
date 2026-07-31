@@ -143,6 +143,12 @@
     <string name="dialog_date_confirmed_dismiss">Ahora no</string>
     <string name="dialog_options_dm_only">Solo el DM puede fijar la fecha</string>
     <string name="dialog_options_delete">Borrar sesión</string>
+    <string name="dialog_options_leave">Salir de la sesión</string>
+    <string name="dialog_leave_title">Salir de la sesión</string>
+    <string name="dialog_leave_body">Dejarás de aparecer en el grupo y se perderá la disponibilidad que hayas marcado. Puedes volver a entrar con el código.</string>
+    <string name="dialog_leave_confirm">Salir de la sesión</string>
+    <string name="sheet_session_delete_body">Desaparecerá para todo el grupo. Esta acción no se puede deshacer.</string>
+    <string name="sheet_session_leave_body">Dejarás de aparecer en el grupo y se perderá tu disponibilidad. Puedes volver a entrar con el código.</string>
     <string name="dialog_pick_date_title">Elige la fecha</string>
     <string name="dialog_pick_date_clear">Quitar fecha elegida</string>
 

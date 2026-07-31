@@ -27,6 +27,9 @@ interface EventRepository {
 
     suspend fun getEvents(codes: Collection<String>): List<Event>
 
+    /** Saca a alguien de la sesión: su disponibilidad deja de contar para el resto. */
+    suspend fun removeParticipant(code: String, userId: String)
+
     suspend fun deleteEvent(code: String)
 
     suspend fun doesEventExist(code: String): Boolean

@@ -1,7 +1,11 @@
 package com.schednd.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
@@ -10,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.schednd.ui.theme.CardShape
 import com.schednd.ui.theme.LightHeroSurface
@@ -44,18 +50,49 @@ fun heroSurfaceColor(): Color =
         LightHeroSurface
     }
 
+/**
+ * @param onClick si se pasa, la tarjeta responde al toque. Conviene dárselo a ella en vez
+ *   de encadenar un `clickable` en el `modifier`: el toque tiene que ir por dentro del
+ *   recorte, o el ripple se pinta sobre el rectángulo completo y asoma por las esquinas.
+ * @param interactionSource compártelo con `pressScale` para que el hundido y el ripple
+ *   respondan a la misma pulsación.
+ */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GenCard(
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
+    interactionSource: MutableInteractionSource? = null,
     content: @Composable () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
     val fillColor = if (isDark) Color(0xFF27272A).copy(alpha = 0.72f) else Color(0xFFFFFFFF)
+    // Sin vibración, la pulsación larga no se distingue de una pulsación que no ha hecho
+    // nada: el aviso llega cuando ya se ha cumplido el tiempo, no al levantar el dedo.
+    val haptics = LocalHapticFeedback.current
     Box(
         modifier = modifier
             .clip(CardShape)
             .background(fillColor)
             .border(1.dp, rimHighlightBrush(), CardShape)
+            .then(
+                if (onClick != null) {
+                    Modifier.combinedClickable(
+                        interactionSource = interactionSource,
+                        indication = LocalIndication.current,
+                        onLongClick = onLongClick?.let { longClick ->
+                            {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                longClick()
+                            }
+                        },
+                        onClick = onClick
+                    )
+                } else {
+                    Modifier
+                }
+            )
     ) {
         content()
     }

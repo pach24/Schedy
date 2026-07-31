@@ -1,9 +1,7 @@
 package com.schednd.ui.components
 
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +35,7 @@ import com.schednd.ui.theme.SchedyTheme
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 import androidx.compose.ui.res.stringResource
@@ -60,17 +59,9 @@ fun MiniWeekCalendar(
 
     val interaction = remember { MutableInteractionSource() }
     GenCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(
-                if (onClick != null) {
-                    Modifier.clickable(
-                        indication = LocalIndication.current,
-                        interactionSource = interaction,
-                        onClick = onClick
-                    )
-                } else Modifier
-            )
+        modifier = modifier.fillMaxWidth(),
+        onClick = onClick,
+        interactionSource = interaction
     ) {
         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp)) {
             Row(
@@ -167,15 +158,11 @@ private fun todayLabel(today: LocalDate, pattern: String): String =
         .format(today)
         .uppercase(Locale.getDefault())
 
-private fun weekDayInitial(date: LocalDate): String = when (date.dayOfWeek) {
-    DayOfWeek.MONDAY -> "L"
-    DayOfWeek.TUESDAY -> "M"
-    DayOfWeek.WEDNESDAY -> "X"
-    DayOfWeek.THURSDAY -> "J"
-    DayOfWeek.FRIDAY -> "V"
-    DayOfWeek.SATURDAY -> "S"
-    DayOfWeek.SUNDAY -> "D"
-}
+/** La inicial del día en el idioma del móvil; la lista entera vive en [weekDayInitials]. */
+private fun weekDayInitial(date: LocalDate): String =
+    Locale.getDefault().let { locale ->
+        date.dayOfWeek.getDisplayName(TextStyle.NARROW, locale).uppercase(locale)
+    }
 
 @Preview(showBackground = true)
 @Composable

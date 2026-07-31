@@ -5,16 +5,21 @@ import com.schednd.MainDispatcherRule
 import com.schednd.domain.model.Event
 import com.schednd.domain.model.Participant
 import com.schednd.domain.usecase.auth.EnsureSignedInUseCase
+import com.schednd.domain.usecase.auth.GetCurrentUserIdUseCase
 import com.schednd.domain.usecase.note.ObserveNotesUseCase
 import com.schednd.domain.usecase.player.GetPlayerNameUseCase
+import com.schednd.domain.usecase.session.DeleteSessionUseCase
 import com.schednd.domain.usecase.session.GetSavedSessionCodesUseCase
 import com.schednd.domain.usecase.session.GetSessionsUseCase
+import com.schednd.domain.usecase.session.LeaveSessionUseCase
 import com.schednd.domain.usecase.session.ObserveParticipantsUseCase
 import com.schednd.fakes.FakeAuthRepository
 import com.schednd.fakes.FakeEventRepository
+import com.schednd.fakes.FakeMessagingRepository
 import com.schednd.fakes.FakeNoteRepository
 import com.schednd.fakes.FakePlayerRepository
 import com.schednd.fakes.FakeRecentEventsRepository
+import com.schednd.fakes.FakeSessionReminderScheduler
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -48,16 +53,23 @@ class HomeViewModelTest {
     private fun viewModel(
         eventRepo: FakeEventRepository,
         codes: List<String>,
-        nombre: String? = "Francisco"
+        nombre: String? = "Francisco",
+        recientes: FakeRecentEventsRepository = FakeRecentEventsRepository(codes),
+        avisos: FakeMessagingRepository = FakeMessagingRepository(),
+        recordatorios: FakeSessionReminderScheduler = FakeSessionReminderScheduler()
     ): HomeViewModel {
         val noteRepo = FakeNoteRepository()
+        val auth = FakeAuthRepository()
         return HomeViewModel(
-            ensureSignedIn = EnsureSignedInUseCase(FakeAuthRepository()),
-            getSavedSessionCodes = GetSavedSessionCodesUseCase(FakeRecentEventsRepository(codes)),
+            ensureSignedIn = EnsureSignedInUseCase(auth),
+            getCurrentUserId = GetCurrentUserIdUseCase(auth),
+            getSavedSessionCodes = GetSavedSessionCodesUseCase(recientes),
             getSessions = GetSessionsUseCase(eventRepo),
             observeParticipants = ObserveParticipantsUseCase(eventRepo),
             observeNotes = ObserveNotesUseCase(noteRepo),
-            getPlayerName = GetPlayerNameUseCase(FakePlayerRepository(nombre))
+            getPlayerName = GetPlayerNameUseCase(FakePlayerRepository(nombre)),
+            deleteSession = DeleteSessionUseCase(eventRepo, recientes, avisos, recordatorios),
+            leaveSession = LeaveSessionUseCase(eventRepo, recientes, avisos, recordatorios)
         )
     }
 
@@ -168,13 +180,20 @@ class HomeViewModelTest {
     fun `refrescar relee el nombre por si cambio`() = runTest {
         val repo = FakeEventRepository()
         val jugador = FakePlayerRepository("Francisco")
+        val auth = FakeAuthRepository()
+        val recientes = FakeRecentEventsRepository()
+        val avisos = FakeMessagingRepository()
+        val recordatorios = FakeSessionReminderScheduler()
         val vm = HomeViewModel(
-            ensureSignedIn = EnsureSignedInUseCase(FakeAuthRepository()),
-            getSavedSessionCodes = GetSavedSessionCodesUseCase(FakeRecentEventsRepository()),
+            ensureSignedIn = EnsureSignedInUseCase(auth),
+            getCurrentUserId = GetCurrentUserIdUseCase(auth),
+            getSavedSessionCodes = GetSavedSessionCodesUseCase(recientes),
             getSessions = GetSessionsUseCase(repo),
             observeParticipants = ObserveParticipantsUseCase(repo),
             observeNotes = ObserveNotesUseCase(FakeNoteRepository()),
-            getPlayerName = GetPlayerNameUseCase(jugador)
+            getPlayerName = GetPlayerNameUseCase(jugador),
+            deleteSession = DeleteSessionUseCase(repo, recientes, avisos, recordatorios),
+            leaveSession = LeaveSessionUseCase(repo, recientes, avisos, recordatorios)
         )
         advanceUntilIdle()
 
@@ -183,5 +202,47 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         assertEquals("Pizpireto", vm.uiState.value.playerName)
+    }
+
+    @Test
+    fun `el DM borra la sesion desde el listado y no queda rastro en el movil`() = runTest {
+        val repo = FakeEventRepository(listOf(sesion("ABC234", dias = 3)))
+        val recientes = FakeRecentEventsRepository(listOf("ABC234"))
+        val recordatorios = FakeSessionReminderScheduler()
+        val vm = viewModel(
+            repo,
+            codes = listOf("ABC234"),
+            recientes = recientes,
+            recordatorios = recordatorios
+        )
+        advanceUntilIdle()
+
+        vm.removeSession(vm.uiState.value.allSessions.single())
+        advanceUntilIdle()
+
+        assertEquals(listOf("ABC234"), repo.deletedCodes)
+        assertTrue(recientes.getSavedCodes().isEmpty())
+        assertEquals(listOf("ABC234"), recordatorios.cancelled)
+        assertTrue(vm.uiState.value.allSessions.isEmpty())
+    }
+
+    @Test
+    fun `quien no es el DM se sale sin llevarse la sesion por delante`() = runTest {
+        val ajena = sesion("ABC234", dias = 3).copy(creatorId = "otro-dm")
+        val repo = FakeEventRepository(
+            events = listOf(ajena),
+            participants = mapOf("ABC234" to listOf(Participant(userId = "uid-1", name = "Francisco")))
+        )
+        val recientes = FakeRecentEventsRepository(listOf("ABC234"))
+        val vm = viewModel(repo, codes = listOf("ABC234"), recientes = recientes)
+        advanceUntilIdle()
+
+        vm.removeSession(vm.uiState.value.allSessions.single())
+        advanceUntilIdle()
+
+        assertEquals(listOf("ABC234" to "uid-1"), repo.removedParticipants)
+        assertTrue(repo.deletedCodes.isEmpty())
+        assertTrue(recientes.getSavedCodes().isEmpty())
+        assertTrue(vm.uiState.value.allSessions.isEmpty())
     }
 }

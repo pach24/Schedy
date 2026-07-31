@@ -26,6 +26,8 @@ class FakeEventRepository(
         private set
     var deletedCodes: MutableList<String> = mutableListOf()
         private set
+    var removedParticipants: MutableList<Pair<String, String>> = mutableListOf()
+        private set
 
     override suspend fun createEvent(name: String, creatorId: String): String {
         val code = "CODE${createdEvents.size + 1}"
@@ -55,6 +57,12 @@ class FakeEventRepository(
 
     override suspend fun getEvents(codes: Collection<String>): List<Event> =
         codes.mapNotNull { events.value[it] }
+
+    override suspend fun removeParticipant(code: String, userId: String) {
+        removedParticipants += code to userId
+        val rest = participants.value[code].orEmpty().filterNot { it.userId == userId }
+        participants.value = participants.value + (code to rest)
+    }
 
     override suspend fun deleteEvent(code: String) {
         deletedCodes += code

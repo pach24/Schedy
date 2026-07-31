@@ -106,6 +106,7 @@ fun EventDetailScreen(
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showLeaveDialog by remember { mutableStateOf(false) }
     var showMoreDialog by remember { mutableStateOf(false) }
     var showConfirmDateDialog by remember { mutableStateOf(false) }
     var pendingConfirmDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -139,8 +140,9 @@ fun EventDetailScreen(
     val scrollState = rememberScrollState()
     var confirmedCardY by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(uiState.isDeleted) {
-        if (uiState.isDeleted) onBack()
+    // Borrada o abandonada, la sesión ya no es mía: en ambos casos toca volver al listado.
+    LaunchedEffect(uiState.isDeleted, uiState.hasLeft) {
+        if (uiState.isDeleted || uiState.hasLeft) onBack()
     }
 
     var scrollToConfirmed by remember { mutableStateOf(false) }
@@ -152,7 +154,7 @@ fun EventDetailScreen(
         }
     }
 
-    val anyDialogOpen = showDeleteDialog || showMoreDialog || showConfirmDateDialog
+    val anyDialogOpen = showDeleteDialog || showLeaveDialog || showMoreDialog || showConfirmDateDialog
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
 
@@ -653,6 +655,20 @@ fun EventDetailScreen(
     }
 
     ScrimDialogOverlay(
+        visible = showLeaveDialog,
+        onDismiss = { showLeaveDialog = false }
+    ) {
+        LeaveSessionDialog(
+            hazeState = hazeState,
+            glass = overlayGlass,
+            onConfirm = {
+                showLeaveDialog = false
+                viewModel.leaveEvent()
+            }
+        )
+    }
+
+    ScrimDialogOverlay(
         visible = showMoreDialog,
         onDismiss = { showMoreDialog = false }
     ) {
@@ -667,6 +683,10 @@ fun EventDetailScreen(
             onDelete = {
                 showMoreDialog = false
                 showDeleteDialog = true
+            },
+            onLeave = {
+                showMoreDialog = false
+                showLeaveDialog = true
             }
         )
     }
