@@ -1,8 +1,6 @@
 package com.schednd.presentation.home
 
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -144,12 +142,9 @@ private fun HomeCalendarSessionRow(
     GenCard(
         modifier = modifier
             .fillMaxWidth()
-            .pressScale(interaction)
-            .clickable(
-                indication = LocalIndication.current,
-                interactionSource = interaction,
-                onClick = onClick
-            )
+            .pressScale(interaction),
+        onClick = onClick,
+        interactionSource = interaction
     ) {
         Row(
             modifier = Modifier

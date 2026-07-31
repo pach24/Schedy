@@ -414,13 +414,9 @@ private fun TemplateRow(
 ) {
     val interaction = remember { MutableInteractionSource() }
     GenCard(
-        modifier = modifier
-            .pressScale(interaction)
-            .clickable(
-                indication = LocalIndication.current,
-                interactionSource = interaction,
-                onClick = onClick
-            )
+        modifier = modifier.pressScale(interaction),
+        onClick = onClick,
+        interactionSource = interaction
     ) {
         Row(
             modifier = Modifier

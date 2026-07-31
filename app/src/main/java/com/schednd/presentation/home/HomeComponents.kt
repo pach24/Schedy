@@ -249,18 +249,17 @@ internal fun SessionRow(
     session: HomeSessionCard,
     isNext: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null
 ) {
     val interaction = remember { MutableInteractionSource() }
     GenCard(
         modifier = modifier
             .fillMaxWidth()
-            .pressScale(interaction)
-            .clickable(
-                indication = LocalIndication.current,
-                interactionSource = interaction,
-                onClick = onClick
-            )
+            .pressScale(interaction),
+        onClick = onClick,
+        onLongClick = onLongClick,
+        interactionSource = interaction
     ) {
         Row(
             modifier = Modifier

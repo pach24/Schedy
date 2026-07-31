@@ -1,8 +1,6 @@
 package com.schednd.ui.components
 
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,13 +51,9 @@ fun NoteCard(
     val interaction = remember { MutableInteractionSource() }
 
     GenCard(
-        modifier = modifier
-            .pressScale(interaction)
-            .clickable(
-                indication = LocalIndication.current,
-                interactionSource = interaction,
-                onClick = onClick
-            )
+        modifier = modifier.pressScale(interaction),
+        onClick = onClick,
+        interactionSource = interaction
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
