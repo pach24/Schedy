@@ -53,7 +53,6 @@ import com.schednd.ui.theme.LightRaisedSurface
 import com.schednd.ui.theme.SchedyTheme
 import com.schednd.ui.theme.pressScale
 import kotlin.math.abs
-import kotlin.math.roundToInt
 
 enum class SessionTab(@StringRes val labelRes: Int) {
     HOME(R.string.tab_home),
@@ -81,17 +80,21 @@ enum class SessionTab(@StringRes val labelRes: Int) {
  *
  * Todo el movimiento sale de [position], la posición continua de la bolita medida en
  * pestañas: 0 es la primera, 1.5 el punto medio entre la segunda y la tercera. La barra no
- * la anima, la lee — quien la mueve es el pager del contenido, así que el salto va pegado
- * al dedo al deslizar y acompaña al recorrido al tocar, sin dos relojes que sincronizar.
+ * la anima, la lee — quien la mueve es [TabNavigator], que la pega al pager mientras el
+ * dedo desliza y la suelta a hacer su propio viaje cuando se toca una pestaña.
  *
- * Es una lambda y no un `Float` a propósito: así se consulta dentro de las lambdas de
- * layout, `graphicsLayer` y dibujo, nunca durante la composición. La barra no recompone ni
- * un solo frame del recorrido; solo se reasignan transformaciones y se rehace un path ya
- * reservado.
+ * [hop] es lo que lleva de salto ese viaje: 0 posada en una muesca, 1 en lo alto del arco.
+ * Viene de fuera porque solo quien manda el recorrido sabe de dónde a dónde va; deducirlo
+ * aquí de la muesca más cercana daba un salto por pestaña cruzada.
+ *
+ * Son lambdas y no `Float` a propósito: así se consultan dentro de las lambdas de layout,
+ * `graphicsLayer` y dibujo, nunca durante la composición. La barra no recompone ni un solo
+ * frame del recorrido; solo se reasignan transformaciones y se rehace un path ya reservado.
  */
 @Composable
 fun SessionBottomBar(
     position: () -> Float,
+    hop: () -> Float,
     onTabSelected: (SessionTab) -> Unit,
     modifier: Modifier = Modifier,
     items: List<SessionTab> = SessionTab.entries,
@@ -129,14 +132,9 @@ fun SessionBottomBar(
     var barWidthPx by remember { mutableFloatStateOf(0f) }
     var barTopPx by remember { mutableFloatStateOf(Float.NaN) }
 
-    // Altura del salto: lo lejos que está la bolita de la muesca más cercana. Sube al
-    // salir de una y baja al entrar en la siguiente, sin depender de ningún reloj propio,
-    // así que al deslizar el salto va exactamente donde va el dedo.
-    fun hopArc(): Float {
-        val current = position()
-        val toNearestTab = abs(current - current.roundToInt())
-        return smoothStep((toNearestTab * 2f).coerceIn(0f, 1f))
-    }
+    // Altura del salto: sube al salir de una muesca y baja al entrar en la de destino, sin
+    // depender de ningún reloj propio, así que al deslizar va exactamente donde va el dedo.
+    fun hopArc(): Float = smoothStep(hop().coerceIn(0f, 1f))
 
     /**
      * Profundidad de la muesca. El hueco no salta entre posiciones: viaja con la bolita, se
@@ -390,6 +388,6 @@ val SessionBottomBarHeight = BottomBarHeight
 @Composable
 private fun SessionBottomBarPreview() {
     SchedyTheme(darkTheme = false) {
-        SessionBottomBar(position = { 0f }, onTabSelected = {})
+        SessionBottomBar(position = { 0f }, hop = { 0f }, onTabSelected = {})
     }
 }

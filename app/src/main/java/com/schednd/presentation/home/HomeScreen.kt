@@ -40,7 +40,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,7 +57,7 @@ import com.schednd.ui.components.rimHighlightBrush
 import com.schednd.ui.components.liquidGlassBackdrop
 import com.schednd.ui.components.rememberLiquidGlassState
 import com.schednd.presentation.session.SessionBottomBar
-import com.schednd.presentation.session.animateToTabPage
+import com.schednd.presentation.session.rememberTabNavigator
 import com.schednd.presentation.session.SessionBottomBarHeight
 import com.schednd.presentation.session.SessionTab
 import com.schednd.presentation.session.tabs.ProfileTabScreen
@@ -67,7 +66,6 @@ import com.schednd.ui.theme.SquircleShape
 import com.schednd.ui.theme.pressScale
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
@@ -108,13 +106,13 @@ fun HomeContent(
     onJoinEvent: () -> Unit,
     onOpenEvent: (String) -> Unit
 ) {
-    // El pager es la única fuente de la pestaña actual: manda tanto al deslizar como al
-    // tocar la barra, y es su posición continua la que mueve la bolita.
+    // El pager manda sobre la pestaña actual, tanto al deslizar como al tocar la barra.
+    // La bolita la mueve el navigator: pegada al pager con el dedo, por su cuenta al tocar.
     val tabs = SessionTab.entries
     val pagerState = rememberPagerState { tabs.size }
-    val scope = rememberCoroutineScope()
+    val navigator = rememberTabNavigator(pagerState)
     fun goToTab(tab: SessionTab) {
-        scope.launch { pagerState.animateToTabPage(tabs.indexOf(tab)) }
+        navigator.goTo(tabs.indexOf(tab))
     }
 
     // La barra se dibuja fuera del Scaffold: el shader del cristal refracta lo que hay
@@ -185,7 +183,8 @@ fun HomeContent(
         }
 
         SessionBottomBar(
-            position = { pagerState.currentPage + pagerState.currentPageOffsetFraction },
+            position = navigator::position,
+            hop = navigator::hop,
             items = tabs,
             onTabSelected = { tab -> goToTab(tab) },
             modifier = Modifier.align(Alignment.BottomCenter),

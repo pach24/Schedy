@@ -20,7 +20,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,7 +34,6 @@ import com.schednd.presentation.session.tabs.CalendarTabScreen
 import com.schednd.presentation.session.tabs.ProfileTabScreen
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 @Composable
@@ -61,10 +59,10 @@ fun SessionShellScreen(
         .calculateBottomPadding()
     // Dentro de una sesión el listado general no tiene sentido.
     val tabs = remember { SessionTab.entries.filterNot { it == SessionTab.SESSIONS } }
-    // El pager es la única fuente de la pestaña actual: manda tanto al deslizar como al
-    // tocar la barra, y es su posición continua la que mueve la bolita.
+    // El pager manda sobre la pestaña actual, tanto al deslizar como al tocar la barra.
+    // La bolita la mueve el navigator: pegada al pager con el dedo, por su cuenta al tocar.
     val pagerState = rememberPagerState { tabs.size }
-    val scope = rememberCoroutineScope()
+    val navigator = rememberTabNavigator(pagerState)
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -118,7 +116,8 @@ fun SessionShellScreen(
         }
 
         SessionBottomBar(
-            position = { pagerState.currentPage + pagerState.currentPageOffsetFraction },
+            position = navigator::position,
+            hop = navigator::hop,
             items = tabs,
             onTabSelected = { tab ->
                 val target = tabs.indexOf(tab)
@@ -128,7 +127,7 @@ fun SessionShellScreen(
                 if (tab == SessionTab.HOME && pagerState.targetPage == target) {
                     onLeaveSession()
                 } else {
-                    scope.launch { pagerState.animateToTabPage(target) }
+                    navigator.goTo(target)
                 }
             },
             modifier = Modifier.align(Alignment.BottomCenter),
