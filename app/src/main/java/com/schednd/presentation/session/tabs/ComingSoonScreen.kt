@@ -1,6 +1,7 @@
 package com.schednd.presentation.session.tabs
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,6 +23,8 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.schednd.ui.components.heroSurfaceColor
+import com.schednd.ui.components.rimHighlightBrush
 import com.schednd.ui.theme.FadeIn
 import androidx.compose.ui.res.stringResource
 import com.schednd.R
@@ -47,11 +50,15 @@ fun ComingSoonScreen(
                     .padding(horizontal = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Mismo relleno y mismo filo que el hero de próxima sesión: es la otra
+                // pieza grande y redondeada de la app, y con su propio gris se leía como
+                // de otro sitio.
                 Box(
                     modifier = Modifier
                         .size(96.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
+                        .background(heroSurfaceColor())
+                        .border(1.dp, rimHighlightBrush(), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(

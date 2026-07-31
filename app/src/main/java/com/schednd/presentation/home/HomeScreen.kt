@@ -9,7 +9,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,6 +53,7 @@ import com.schednd.ui.components.DialogBlurRadius
 import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.MiniWeekCalendar
 import com.schednd.ui.components.SessionDayDialog
+import com.schednd.ui.components.heroSurfaceColor
 import com.schednd.ui.components.rimHighlightBrush
 import com.schednd.ui.components.liquidGlassBackdrop
 import com.schednd.ui.components.rememberLiquidGlassState
@@ -63,7 +63,6 @@ import com.schednd.presentation.session.SessionBottomBarHeight
 import com.schednd.presentation.session.SessionTab
 import com.schednd.presentation.session.tabs.ProfileTabScreen
 import com.schednd.ui.theme.FadeIn
-import com.schednd.ui.theme.LightHeroSurface
 import com.schednd.ui.theme.SquircleShape
 import com.schednd.ui.theme.pressScale
 import dev.chrisbanes.haze.HazeState
@@ -279,13 +278,7 @@ private fun HomeMainTab(
                             if (openHero != null) Modifier.pressScale(heroInteraction) else Modifier
                         )
                         .clip(heroShape)
-                        .background(
-                            if (isSystemInDarkTheme()) {
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                            } else {
-                                LightHeroSurface
-                            }
-                        )
+                        .background(heroSurfaceColor())
                         // El cristal de verdad no cabe aquí: esta tarjeta va dentro del
                         // contenido que el shader refracta y se refractaría a sí misma.
                         // El filo sí, pintado, igual que en el resto de tarjetas.
