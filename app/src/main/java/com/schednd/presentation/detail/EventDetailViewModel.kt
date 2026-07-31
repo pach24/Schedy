@@ -207,12 +207,12 @@ class EventDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isSavingAvailability = true, error = null) }
             try {
                 val userId = ensureSignedIn()
-                val today = LocalDate.now()
+                // Las fechas pasadas las descarta el caso de uso, igual que al crear o unirse.
                 saveAvailability(
                     code = code,
                     userId = userId,
                     name = state.myName.trim(),
-                    dates = state.myDraftDates.filter { !it.isBefore(today) }.sorted()
+                    dates = state.myDraftDates.sorted()
                 )
                 runCatching {
                     notifyAvailabilityUpdated(
@@ -231,6 +231,10 @@ class EventDetailViewModel @Inject constructor(
     /** Fijar día y hora es potestad del DM; la UI y las reglas de Firestore lo restringen igual. */
     fun confirmDate(date: LocalDate, startTime: LocalTime? = null) {
         if (!_uiState.value.isCreator) return
+        // El caso de uso rechaza las fechas pasadas lanzando, y aquí un error borra la
+        // pantalla entera. Se corta antes: si el diálogo se quedó abierto cruzando la
+        // medianoche, el día de ayer simplemente no responde.
+        if (date.isBefore(LocalDate.now())) return
         viewModelScope.launch {
             try {
                 confirmSessionDate(code, date, startTime)
