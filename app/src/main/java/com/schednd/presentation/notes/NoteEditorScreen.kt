@@ -187,24 +187,15 @@ fun NoteEditorScreen(
                 GenCard(modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)) {
-                    Column {
-                        ToggleRow(
-                            icon = Icons.Filled.PushPin,
-                            label = stringResource(R.string.note_editor_pin),
-                            checked = uiState.pinned,
-                            onCheckedChange = { viewModel.onTogglePinned() }
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                        )
-                        ToggleRow(
-                            icon = Icons.Filled.Share,
-                            label = stringResource(R.string.note_editor_notify),
-                            checked = uiState.notifyGroup,
-                            onCheckedChange = { viewModel.onToggleNotify() }
-                        )
-                    }
+                    // Aquí había un interruptor de "avisar al grupo". Lo único que hacía
+                    // era encolar un aviso para una Cloud Function que no está
+                    // desplegada, así que prometía un push que no salía nunca.
+                    ToggleRow(
+                        icon = Icons.Filled.PushPin,
+                        label = stringResource(R.string.note_editor_pin),
+                        checked = uiState.pinned,
+                        onCheckedChange = { viewModel.onTogglePinned() }
+                    )
                 }
             }
 

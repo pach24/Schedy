@@ -165,7 +165,6 @@
     <string name="notes_summary">%1$s · %2$s</string>
     <string name="note_editor_tag_header">ETIQUETA</string>
     <string name="note_editor_pin">Fijar arriba</string>
-    <string name="note_editor_notify">Notificar al grupo</string>
     <string name="note_editor_title_placeholder">Título de la nota</string>
     <string name="note_editor_body_placeholder">Escribe los detalles…</string>
     <string name="note_editor_counter">%1$d / %2$d</string>

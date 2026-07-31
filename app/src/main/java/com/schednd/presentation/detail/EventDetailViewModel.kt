@@ -6,9 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
 import com.schednd.domain.usecase.auth.EnsureSignedInUseCase
 import com.schednd.domain.usecase.auth.GetCurrentUserIdUseCase
-import com.schednd.domain.usecase.notification.NotifyAvailabilityUpdatedUseCase
-import com.schednd.domain.usecase.notification.NotifyDateClearedUseCase
-import com.schednd.domain.usecase.notification.NotifyDateConfirmedUseCase
 import com.schednd.domain.usecase.player.GetPlayerNameUseCase
 import com.schednd.domain.usecase.player.SavePlayerNameUseCase
 import com.schednd.domain.usecase.session.CancelSessionReminderUseCase
@@ -40,12 +37,10 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import android.content.Context
 import com.schednd.R
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.Locale
 
 
 data class EventDetailUiState(
@@ -88,9 +83,6 @@ class EventDetailViewModel @Inject constructor(
     private val cancelSessionReminder: CancelSessionReminderUseCase,
     private val getPlayerName: GetPlayerNameUseCase,
     private val savePlayerName: SavePlayerNameUseCase,
-    private val notifyAvailabilityUpdated: NotifyAvailabilityUpdatedUseCase,
-    private val notifyDateConfirmed: NotifyDateConfirmedUseCase,
-    private val notifyDateCleared: NotifyDateClearedUseCase,
     private val computeDateSummaries: ComputeDateSummariesUseCase
 ) : ViewModel() {
 
@@ -214,13 +206,6 @@ class EventDetailViewModel @Inject constructor(
                     name = state.myName.trim(),
                     dates = state.myDraftDates.sorted()
                 )
-                runCatching {
-                    notifyAvailabilityUpdated(
-                        code = code,
-                        senderId = userId,
-                        senderName = state.myName.trim()
-                    )
-                }
                 _uiState.update { it.copy(isSavingAvailability = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSavingAvailability = false, error = e.message) }
@@ -238,20 +223,6 @@ class EventDetailViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 confirmSessionDate(code, date, startTime)
-                val userId = getCurrentUserId().orEmpty()
-                val dateFormat = DateTimeFormatter.ofPattern(
-                    appContext.getString(R.string.date_pattern_day_month), Locale.getDefault()
-                )
-                val whenText = startTime?.let {
-                    appContext.getString(
-                        R.string.detail_confirmed_at,
-                        date.format(dateFormat),
-                        it.format(TIME_FORMAT)
-                    )
-                } ?: date.format(dateFormat)
-                runCatching {
-                    notifyDateConfirmed(code, userId, whenText)
-                }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             }
@@ -272,8 +243,6 @@ class EventDetailViewModel @Inject constructor(
             try {
                 clearSessionDate(code)
                 cancelSessionReminder(code)
-                val userId = getCurrentUserId().orEmpty()
-                runCatching { notifyDateCleared(code, userId) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             }
@@ -304,9 +273,4 @@ class EventDetailViewModel @Inject constructor(
         Instant.ofEpochSecond(seconds, nanoseconds.toLong())
             .atZone(ZoneId.systemDefault())
             .toLocalDateTime()
-
-    private companion object {
-        val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-
-    }
 }

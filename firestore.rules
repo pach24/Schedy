@@ -46,12 +46,12 @@ service cloud.firestore {
           && resource.data.authorId == request.auth.uid;
       }
 
+      // Cola de avisos pendientes, cerrada del todo. La vaciaba una Cloud
+      // Function, que exige plan Blaze y no está desplegada: mientras no lo
+      // esté, cada documento encolado se queda ahí para siempre, porque solo
+      // el Admin SDK podía borrarlos. El cliente ya no encola nada.
       match /pendingNotifications/{id} {
-        // La cola es de escritura: el cliente encola, la Cloud Function
-        // (Admin SDK, se salta las reglas) lee, publica y borra.
-        allow create: if signedIn()
-          && request.resource.data.senderId == request.auth.uid;
-        allow read, update, delete: if false;
+        allow read, write: if false;
       }
     }
 
