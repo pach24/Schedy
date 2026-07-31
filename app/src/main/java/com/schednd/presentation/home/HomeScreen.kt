@@ -9,7 +9,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,7 +40,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,25 +47,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.schednd.ui.components.ComingSoonDayDialog
+import com.schednd.ui.components.DayDialogSession
 import com.schednd.ui.components.DialogBlurRadius
 import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.MiniWeekCalendar
+import com.schednd.ui.components.SessionDayDialog
+import com.schednd.ui.components.heroSurfaceColor
 import com.schednd.ui.components.rimHighlightBrush
 import com.schednd.ui.components.liquidGlassBackdrop
 import com.schednd.ui.components.rememberLiquidGlassState
 import com.schednd.presentation.session.SessionBottomBar
-import com.schednd.presentation.session.animateToTabPage
+import com.schednd.presentation.session.rememberTabNavigator
 import com.schednd.presentation.session.SessionBottomBarHeight
 import com.schednd.presentation.session.SessionTab
 import com.schednd.presentation.session.tabs.ProfileTabScreen
 import com.schednd.ui.theme.FadeIn
-import com.schednd.ui.theme.LightHeroSurface
 import com.schednd.ui.theme.SquircleShape
 import com.schednd.ui.theme.pressScale
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
@@ -108,13 +106,13 @@ fun HomeContent(
     onJoinEvent: () -> Unit,
     onOpenEvent: (String) -> Unit
 ) {
-    // El pager es la única fuente de la pestaña actual: manda tanto al deslizar como al
-    // tocar la barra, y es su posición continua la que mueve la bolita.
+    // El pager manda sobre la pestaña actual, tanto al deslizar como al tocar la barra.
+    // La bolita la mueve el navigator: pegada al pager con el dedo, por su cuenta al tocar.
     val tabs = SessionTab.entries
     val pagerState = rememberPagerState { tabs.size }
-    val scope = rememberCoroutineScope()
+    val navigator = rememberTabNavigator(pagerState)
     fun goToTab(tab: SessionTab) {
-        scope.launch { pagerState.animateToTabPage(tabs.indexOf(tab)) }
+        navigator.goTo(tabs.indexOf(tab))
     }
 
     // La barra se dibuja fuera del Scaffold: el shader del cristal refracta lo que hay
@@ -185,20 +183,35 @@ fun HomeContent(
         }
 
         SessionBottomBar(
-            position = { pagerState.currentPage + pagerState.currentPageOffsetFraction },
+            position = navigator::position,
+            hop = navigator::hop,
             items = tabs,
             onTabSelected = { tab -> goToTab(tab) },
             modifier = Modifier.align(Alignment.BottomCenter),
             glass = glass
         )
 
+        // La rejilla solo deja tocar días con sesión, así que la lista nunca debería venir
+        // vacía; si viniera, no hay diálogo que enseñar.
         tappedDate?.let { date ->
-            ComingSoonDayDialog(
-                date = date,
-                hazeState = hazeState,
-                glass = dayDialogGlass,
-                onDismiss = { tappedDate = null }
-            )
+            val sessionsThatDay = remember(date, uiState.allSessions) {
+                uiState.allSessions
+                    .filter { it.confirmedDate == date }
+                    .map { DayDialogSession(it.code, it.name, it.startTime) }
+            }
+            if (sessionsThatDay.isNotEmpty()) {
+                SessionDayDialog(
+                    date = date,
+                    sessions = sessionsThatDay,
+                    hazeState = hazeState,
+                    glass = dayDialogGlass,
+                    onOpenSession = { code ->
+                        tappedDate = null
+                        onOpenEvent(code)
+                    },
+                    onDismiss = { tappedDate = null }
+                )
+            }
         }
     }
 }
@@ -264,13 +277,7 @@ private fun HomeMainTab(
                             if (openHero != null) Modifier.pressScale(heroInteraction) else Modifier
                         )
                         .clip(heroShape)
-                        .background(
-                            if (isSystemInDarkTheme()) {
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                            } else {
-                                LightHeroSurface
-                            }
-                        )
+                        .background(heroSurfaceColor())
                         // El cristal de verdad no cabe aquí: esta tarjeta va dentro del
                         // contenido que el shader refracta y se refractaría a sí misma.
                         // El filo sí, pintado, igual que en el resto de tarjetas.

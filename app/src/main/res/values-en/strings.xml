@@ -71,6 +71,9 @@
     <string name="calendar_legend_all">Everyone</string>
     <string name="calendar_day_soon_body">Soon you will be able to see who can and who cannot make each day.</string>
     <string name="calendar_day_soon_dismiss">Got it</string>
+    <string name="calendar_day_session_today">It\'s today</string>
+    <string name="calendar_day_session_no_time">No time set</string>
+    <string name="calendar_day_close">Close</string>
 
     <!-- Create session -->
     <string name="create_title">Create session</string>
@@ -219,6 +222,10 @@
     <plurals name="days_ago">
         <item quantity="one">%1$d day ago</item>
         <item quantity="other">%1$d days ago</item>
+    </plurals>
+    <plurals name="days_until">
+        <item quantity="one">in %1$d day</item>
+        <item quantity="other">in %1$d days</item>
     </plurals>
     <plurals name="sessions_count">
         <item quantity="one">%1$d session</item>

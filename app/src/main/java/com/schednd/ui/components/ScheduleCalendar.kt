@@ -335,6 +335,10 @@ fun HomeScheduleCalendar(
                                 val isNext = date == nextSessionDate
                                 val isToday = date == today
                                 val hasSession = sessionName != null
+                                // Una sesión ya jugada sigue marcada, como registro, pero
+                                // apagada: con el mismo contorno y el mismo punto que una
+                                // futura se leía como si quedara por jugar.
+                                val isPlayed = hasSession && date.isBefore(today)
 
                                 // Mismo lenguaje que el mini calendario de Inicio: hoy es la
                                 // celda maciza y la sesión es contorno más punto. El verde
@@ -359,7 +363,13 @@ fun HomeScheduleCalendar(
                                         .then(
                                             if (hasSession && !isToday) Modifier.border(
                                                 width = if (isNext) 1.5.dp else 1.dp,
-                                                color = onSurface.copy(alpha = if (isNext) 0.45f else 0.22f),
+                                                color = onSurface.copy(
+                                                    alpha = when {
+                                                        isNext -> 0.45f
+                                                        isPlayed -> 0.10f
+                                                        else -> 0.22f
+                                                    }
+                                                ),
                                                 shape = CalendarCellShape
                                             ) else Modifier
                                         )
@@ -376,7 +386,11 @@ fun HomeScheduleCalendar(
                                         Text(
                                             text = "${date.dayOfMonth}",
                                             style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = if (hasSession || isToday) FontWeight.SemiBold else FontWeight.Normal,
+                                            fontWeight = if ((hasSession && !isPlayed) || isToday) {
+                                                FontWeight.SemiBold
+                                            } else {
+                                                FontWeight.Normal
+                                            },
                                             color = contentColor
                                         )
                                         Spacer(modifier = Modifier.height(3.dp))
@@ -388,7 +402,11 @@ fun HomeScheduleCalendar(
                                                 .size(4.dp)
                                                 .graphicsLayer { alpha = if (isNext) nextDotAlpha else 1f }
                                                 .background(
-                                                    if (hasSession) contentColor else Color.Transparent,
+                                                    when {
+                                                        !hasSession -> Color.Transparent
+                                                        isPlayed -> contentColor.copy(alpha = 0.3f)
+                                                        else -> contentColor
+                                                    },
                                                     CircleShape
                                                 )
                                         )

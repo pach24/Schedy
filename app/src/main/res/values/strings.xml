@@ -74,6 +74,9 @@
     <string name="calendar_legend_all">Todos</string>
     <string name="calendar_day_soon_body">Pronto podrás ver el detalle de disponibilidad para cada día: quién puede y quién no.</string>
     <string name="calendar_day_soon_dismiss">Entendido</string>
+    <string name="calendar_day_session_today">Es hoy</string>
+    <string name="calendar_day_session_no_time">Sin hora</string>
+    <string name="calendar_day_close">Cerrar</string>
 
     <!-- Crear sesión -->
     <string name="create_title">Crear sesión</string>
@@ -224,6 +227,10 @@
     <plurals name="days_ago">
         <item quantity="one">hace %1$d día</item>
         <item quantity="other">hace %1$d días</item>
+    </plurals>
+    <plurals name="days_until">
+        <item quantity="one">en %1$d día</item>
+        <item quantity="other">en %1$d días</item>
     </plurals>
     <plurals name="sessions_count">
         <item quantity="one">%1$d sesión</item>

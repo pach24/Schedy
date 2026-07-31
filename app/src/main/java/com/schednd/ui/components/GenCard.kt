@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -11,6 +12,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.schednd.ui.theme.CardShape
+import com.schednd.ui.theme.LightHeroSurface
 
 /**
  * Brillo del filo: una luz que entra por arriba y se apaga hacia abajo.
@@ -29,6 +31,18 @@ fun rimHighlightBrush(): Brush {
         )
     )
 }
+
+/**
+ * Relleno del widget de próxima sesión. Vive aquí, junto al filo, porque lo comparte todo
+ * lo que tenga que parecerse a él: si se copiara a mano acabarían separándose.
+ */
+@Composable
+fun heroSurfaceColor(): Color =
+    if (isSystemInDarkTheme()) {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+    } else {
+        LightHeroSurface
+    }
 
 @Composable
 fun GenCard(

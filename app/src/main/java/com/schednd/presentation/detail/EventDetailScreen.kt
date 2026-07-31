@@ -91,6 +91,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -411,8 +412,11 @@ fun EventDetailScreen(
                                                 .background(Color(0xFF1A95FF)),
                                             contentAlignment = Alignment.Center
                                         ) {
+                                            // Dibujo propio y no `Icons.Filled.Check`: el de
+                                            // Material es una silueta rellena de trazo fino,
+                                            // y dentro del círculo azul se quedaba escuálido.
                                             Icon(
-                                                Icons.Filled.Check,
+                                                painter = painterResource(R.drawable.ic_check),
                                                 contentDescription = null,
                                                 tint = Color.White,
                                                 modifier = Modifier.size(24.dp)

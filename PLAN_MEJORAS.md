@@ -1,182 +1,182 @@
-# 🎲 Plan de mejoras — Schednd
+# 🎲 Improvement plan — Schednd
 
-> **Objetivo:** convertir Schednd de "demo bonita" en una app que los grupos de rol **quieran abrir y mantener**.
+> **Goal:** turn Schednd from "pretty demo" into an app that tabletop groups **want to open and keep**.
 >
-> **Principio rector:** la competencia real no es D&D Beyond, es **el grupo de WhatsApp + un When2Meet**. Cada mejora debe hacer que coordinar la sesión cueste *menos esfuerzo que mandar un mensaje*. No buscamos fichas de personaje, dados ni mapas — buscamos **cerrar el bucle de coordinación** y **quitar fricción**.
+> **Guiding principle:** the real competition isn't D&D Beyond, it's **the WhatsApp group + a When2Meet**. Every improvement has to make coordinating the session cost *less effort than sending a message*. We're not after character sheets, dice or maps — we're after **closing the coordination loop** and **removing friction**.
 
 ---
 
-## Estado actual (resumen del análisis)
+## Where things stand (analysis summary)
 
-**Lo que ya funciona bien**
-- Arquitectura limpia: MVVM + Hilt + Firestore en tiempo real + Coroutines/Flow.
-- Cálculo de mejores fechas por asistencia (`ComputeDateSummariesUseCase`, `AttendanceTier`).
-- UI muy cuidada en Compose (heatmap de disponibilidad, cuenta atrás, notas con tags/plantillas, deep links).
-- Auth anónima sin fricción de registro.
+**What already works well**
+- Clean architecture: MVVM + Hilt + real-time Firestore + Coroutines/Flow.
+- Best-date computation by attendance (`ComputeDateSummariesUseCase`, `AttendanceTier`).
+- Very polished Compose UI (availability heatmap, countdown, notes with tags/templates, deep links).
+- Anonymous auth, no sign-up friction.
 
-**Agujeros críticos detectados**
-- 🔴 **Las notificaciones push NO se envían.** Hay cableado (`enqueueNotification`, `subscribeToEvent`) pero **no existe Cloud Function** que publique el FCM. Y solo las *notas* encolan algo — ni "cambió disponibilidad" ni "fecha confirmada" notifican.
-- 🔴 **No hay reglas de seguridad de Firestore.** Cualquiera puede leer/escribir/borrar eventos ajenos.
-- 🔴 **Marca inconsistente:** README, `strings.xml` y el código usaban nombres distintos.
-- 🟠 **El nombre del jugador no se reutiliza:** el onboarding lo guarda pero Crear/Unirse lo piden otra vez.
-- 🟠 **Solo se cuadra el día, no la hora** (aunque `DayTimeSlot`/`AvailabilitySlot`/`SlotCounts` ya existen sin usar).
-- 🟡 Pestaña **Perfil vacía**, buscador del Home sin implementar, sin sesiones recurrentes.
-
----
-
-## Resumen de priorización
-
-| # | Mejora | Fase | Impacto | Esfuerzo | Backend |
-|---|--------|------|---------|----------|---------|
-| 1 | Notificaciones push reales | 0 | 🔥🔥🔥 | L | Sí (Cloud Function) |
-| 2 | Reglas de seguridad Firestore | 0 | 🔥🔥🔥 | M | Sí (rules) |
-| 3 | Unificar marca/nombre | 0 | 🔥 | S | No |
-| 4 | Reutilizar nombre del jugador | 1 | 🔥🔥 | S | No |
-| 5 | Hora / franja de la sesión | 1 | 🔥🔥 | M | No* |
-| 6 | Recordatorio local + añadir a calendario | 1 | 🔥🔥 | M | No |
-| 7 | Sesiones recurrentes / fechas sugeridas | 1 | 🔥🔥 | M | No |
-| 8 | Pantalla de Perfil funcional | 2 | 🔥 | M | No |
-| 9 | Quórum configurable por el DM | 2 | 🔥 | S | No* |
-| 10 | "Avisar a los que faltan" | 2 | 🔥 | S | Depende de #1 |
-| 11 | Buscador del Home / fix "próxima sesión" | 2 | 🔥 | S | No |
-| 12 | i18n + tests de dominio | 3 | ➕ | M | No |
-
-\* *Solo cambia el shape del documento en Firestore (compatible hacia atrás).*
-
-Esfuerzo: **S** ≈ medio día · **M** ≈ 1–2 días · **L** ≈ 3–5 días (un dev).
+**Critical gaps found**
+- 🔴 **Push notifications are NOT sent.** The wiring is there (`enqueueNotification`, `subscribeToEvent`) but **there is no Cloud Function** publishing the FCM message. And only *notes* enqueue anything — neither "availability changed" nor "date confirmed" notify.
+- 🔴 **No Firestore security rules.** Anyone can read/write/delete somebody else's events.
+- 🔴 **Inconsistent branding:** README, `strings.xml` and the code used different names.
+- 🟠 **The player's name isn't reused:** onboarding saves it, but Create/Join ask for it again.
+- 🟠 **Only the day is agreed, not the time** (even though `DayTimeSlot`/`AvailabilitySlot`/`SlotCounts` already exist, unused).
+- 🟡 Empty **Profile** tab, Home search not implemented, no recurring sessions.
 
 ---
 
-## FASE 0 — Arreglar lo que parece estar y no funciona
+## Prioritisation summary
 
-> Esto es lo de mayor impacto: hoy la promesa estrella (que la app persiga a la gente por ti) **no se cumple**, y la base no es segura para publicar.
+| # | Improvement | Phase | Impact | Effort | Backend |
+|---|-------------|-------|--------|--------|---------|
+| 1 | Real push notifications | 0 | 🔥🔥🔥 | L | Yes (Cloud Function) |
+| 2 | Firestore security rules | 0 | 🔥🔥🔥 | M | Yes (rules) |
+| 3 | Unify branding/name | 0 | 🔥 | S | No |
+| 4 | Reuse the player's name | 1 | 🔥🔥 | S | No |
+| 5 | Session time / slot | 1 | 🔥🔥 | M | No* |
+| 6 | Local reminder + add to calendar | 1 | 🔥🔥 | M | No |
+| 7 | Recurring sessions / suggested dates | 1 | 🔥🔥 | M | No |
+| 8 | Working Profile screen | 2 | 🔥 | M | No |
+| 9 | Quorum configurable by the DM | 2 | 🔥 | S | No* |
+| 10 | "Nudge the missing players" | 2 | 🔥 | S | Depends on #1 |
+| 11 | Home search / fix "next session" | 2 | 🔥 | S | No |
+| 12 | i18n + domain tests | 3 | ➕ | M | No |
 
-### 0.1 — Notificaciones push de punta a punta 🔴 ◑ (código listo, falta desplegar)
-**Por qué:** sin esto el DM sigue persiguiendo gente por chat → no hay razón para abrir la app.
+\* *Only changes the document shape in Firestore (backwards compatible).*
 
-**Backend (nuevo)**
-- [x] `functions/` en TypeScript (`package.json`, `tsconfig.json`, `src/index.ts`) + `firebase.json`.
-- [x] Trigger `onDocumentCreated` en `events/{code}/pendingNotifications/{id}` → publica al topic `event_{code}` y borra el doc de la cola (también si el envío falla, para que no crezca).
-- [x] Se envían mensajes **solo de datos** (sin bloque `notification`) para que `onMessageReceived` corra siempre y el cliente pueda filtrar por `senderId`.
-- [ ] **Pendiente de ti:** activar **plan Blaze** y `firebase deploy --only functions`.
-
-**Cliente**
-- [x] `NotificationRepository` centraliza el encolado (fuera de `NoteRepository`, cuyo `enqueueNotification` se ha eliminado) con `notifyNewNote` / `notifyAvailabilityUpdated` / `notifyDateConfirmed` / `notifyDateCleared`.
-- [x] Encolado al guardar disponibilidad y al confirmar/limpiar fecha, además de al crear nota.
-- [x] `SchedndMessagingService`: descarta si `data.senderId == uid` propio, respeta `POST_NOTIFICATIONS` y abre `schednd://event/{code}`.
-- [x] Nuevo deep link `schednd://event/{code}` en el nav graph y en el manifest.
-
-**DoD:** ◑ el cliente ya encola y sabe recibir; el push real llega **cuando se despliegue la función**.
-
-### 0.2 — Reglas de seguridad de Firestore 🔴 ✅ (falta desplegar)
-**Por qué:** hoy el modelo es abierto; un actor malicioso puede borrar la mesa de cualquiera.
-
-- [x] `firestore.rules` creadas:
-  - `request.auth != null` obligatorio en todo; `match /{document=**}` final cerrado.
-  - `events/{code}`: lectura para autenticados. **Create** si `creatorId == request.auth.uid`. **Update/Delete** solo el creador, y `creatorId` es inmutable.
-  - `participants/{uid}`: cada usuario solo escribe **su** doc; el creador puede borrar los ajenos al eliminar la mesa.
-  - `notes/{id}`: lectura autenticados; create/update/delete solo `authorId == request.auth.uid`.
-  - `pendingNotifications`: create con `senderId == uid`; lectura/borrado solo desde la función (Admin SDK se salta las reglas).
-- [x] **Decisión de producto:** confirmar fecha = **solo el DM**. Reflejado en reglas, en `EventDetailViewModel` (guarda en `confirmDate`/`setStartTime`/`clearConfirmedDate`) y en `MoreOptionsDialog` (los demás ven "Solo el DM puede fijar la fecha").
-- [x] `firestore.indexes.json` con el índice compuesto `pinned desc, updatedAt desc` que ya necesitaba `observeNotes`.
-- [ ] **Pendiente de ti:** `firebase deploy --only firestore:rules,firestore:indexes`.
-
-**DoD:** ✅ reglas escritas y alineadas con la UI; queda desplegarlas.
-
-### 0.3 — Unificar marca 🔴 ✅
-**Decisión:** nombre oficial = **Schedy — Schedule and Role** (forma corta **Schedy**).
-- [x] Nombre definitivo elegido: **Schedy**.
-- [x] `strings.xml` (`app_name` → Schedy), `README.md` (título + overview), onboarding ("Bienvenido a Schedy") y fallback de notificación.
-- [x] Textos de compartir externalizados a `strings.xml` (`share_event`) y unificados (los de Crear y Detalle divergían).
-
-**DoD:** ✅ el nombre es idéntico en launcher, README y mensajes de compartir.
-**Nota:** se mantienen internos (no son marca visible): package `com.schednd`, scheme `schednd://`, channel ID `schednd_events`, nombres de clase `Schednd*`.
+Effort: **S** ≈ half a day · **M** ≈ 1–2 days · **L** ≈ 3–5 days (one dev).
 
 ---
 
-## FASE 1 — Quitar fricción del bucle principal
+## PHASE 0 — Fix what looks like it's there but isn't
 
-### 1.1 — Reutilizar el nombre del jugador 🟠 ✅
-**Por qué:** el onboarding guarda el nombre y luego te lo vuelve a pedir. `getPlayerName()` solo se usa para `isOnboardingComplete()`.
+> This is the highest-impact work: today the headline promise (that the app chases people for you) **isn't kept**, and the foundation isn't safe to publish on.
 
-- [x] Inyectar `PlayerRepository` en `CreateEventViewModel`, `JoinEventViewModel` y `EventDetailViewModel`.
-- [x] Pre-rellenar `creatorName` / `participantName` / `myName` con `getPlayerName()` (en `init`).
-- [x] Guardar el nombre al crear / unirse / guardar disponibilidad (`savePlayerName`).
+### 0.1 — End-to-end push notifications 🔴 ◑ (code ready, deploy pending)
+**Why:** without this the DM keeps chasing people over chat → no reason to open the app.
 
-**DoD:** ✅ un usuario con onboarding hecho nunca vuelve a teclear su nombre por defecto. (Compila.)
+**Backend (new)**
+- [x] `functions/` in TypeScript (`package.json`, `tsconfig.json`, `src/index.ts`) + `firebase.json`.
+- [x] `onDocumentCreated` trigger on `events/{code}/pendingNotifications/{id}` → publishes to the `event_{code}` topic and deletes the queue doc (also when sending fails, so it doesn't grow).
+- [x] Messages are sent **data-only** (no `notification` block) so `onMessageReceived` always runs and the client can filter by `senderId`.
+- [ ] **On you:** enable the **Blaze plan** and run `firebase deploy --only functions`.
 
-### 1.2 — Hora / franja de la sesión 🟠 ✅ (v1)
-**Por qué:** cuadrar el sábado pero seguir negociando "¿a qué hora?" deja el bucle a medias.
+**Client**
+- [x] `NotificationRepository` centralises enqueuing (out of `NoteRepository`, whose `enqueueNotification` has been removed) with `notifyNewNote` / `notifyAvailabilityUpdated` / `notifyDateConfirmed` / `notifyDateCleared`.
+- [x] Enqueue on saving availability and on confirming/clearing the date, on top of creating a note.
+- [x] `SchedndMessagingService`: drops the message if `data.senderId == uid` is your own, respects `POST_NOTIFICATIONS` and opens `schednd://event/{code}`.
+- [x] New deep link `schednd://event/{code}` in the nav graph and the manifest.
 
-- [x] **v1:** campo `startTime` ("HH:mm", nullable) en `Event`, con `startLocalTime` derivado. `confirmDate(code, date, startTime)` y `setStartTime` en `EventRepository`; `clearConfirmedDate` limpia ambos. Compatible hacia atrás: las sesiones viejas leen `null`.
-- [x] Tras elegir el día, el DM ve un `TimePicker`; descartarlo fija **solo el día** (la sesión sin hora sigue siendo válida).
-- [x] La tarjeta de fecha confirmada muestra "12 de julio · 18:00".
-- [x] El evento de calendario pasa a ser de 3 h reales cuando hay hora, y sigue siendo de día completo cuando no la hay.
-- [ ] **v2 (opcional, ya medio modelado):** disponibilidad por `(fecha, franja)` reaprovechando `DayTimeSlot` / `AvailabilitySlot` / `SlotCounts`. Implica migrar el shape de `availableDates` y adaptar `AvailabilityGrid` + `ComputeDateSummariesUseCase`.
-- [ ] **No hecho a propósito:** el texto de compartir es una *invitación a unirse*, no un resumen de la sesión, así que no lleva la hora. La cuenta atrás sigue en días, donde la hora no cambia nada.
+**DoD:** ◑ the client enqueues and knows how to receive; the real push arrives **once the function is deployed**.
 
-**DoD:** ✅ la sesión confirmada incluye día **y** hora visibles para todos.
+### 0.2 — Firestore security rules 🔴 ✅ (deploy pending)
+**Why:** today the model is wide open; a malicious actor can delete anyone's table.
 
-### 1.3 — Recordatorio local + añadir al calendario 🟠 ✅
-**Por qué:** stickiness real sin depender del push de servidor.
+- [x] `firestore.rules` written:
+  - `request.auth != null` required everywhere; final `match /{document=**}` closed off.
+  - `events/{code}`: read for authenticated users. **Create** if `creatorId == request.auth.uid`. **Update/Delete** for the creator only, and `creatorId` is immutable.
+  - `participants/{uid}`: each user only writes **their own** doc; the creator can delete other people's when deleting the table.
+  - `notes/{id}`: read for authenticated users; create/update/delete only if `authorId == request.auth.uid`.
+  - `pendingNotifications`: create with `senderId == uid`; read/delete only from the function (the Admin SDK bypasses rules).
+- [x] **Product decision:** confirming the date = **DM only**. Reflected in the rules, in `EventDetailViewModel` (guards in `confirmDate`/`setStartTime`/`clearConfirmedDate`) and in `MoreOptionsDialog` (everyone else sees "Only the DM can set the date").
+- [x] `firestore.indexes.json` with the composite index `pinned desc, updatedAt desc` that `observeNotes` already needed.
+- [ ] **On you:** `firebase deploy --only firestore:rules,firestore:indexes`.
 
-- [x] **1.3a** Botón **"Añadir a calendario"** con `Intent(ACTION_INSERT, CalendarContract.Events.CONTENT_URI)`. Sin permisos extra. En la card de fecha confirmada de `EventDetailScreen` (evento de día completo; el usuario ajusta hora en su app de calendario). (Compila.)
-- [x] **1.3b** Dependencia `androidx.work:work-runtime-ktx` (catálogo `work = "2.10.0"`).
-- [x] **1.3b** `SessionReminderWorker` + `SessionReminderScheduler`: `OneTimeWorkRequest` único por código (`REPLACE`), aviso el día antes a la hora de la sesión (o a las 19:00 si no hay hora). Se reprograma/cancela desde el `collect` del `EventDetailViewModel`, así que también sigue los cambios hechos desde otro dispositivo. Al tocar el aviso se abre `schednd://event/{code}`.
+**DoD:** ✅ rules written and aligned with the UI; deploying them is what's left.
 
-**DoD:** ✅ "añadir a calendario" y recordatorio local, ambos hechos.
+### 0.3 — Unify branding 🔴 ✅
+**Decision:** official name = **Schedy — Schedule and Role** (short form **Schedy**).
+- [x] Final name chosen: **Schedy**.
+- [x] `strings.xml` (`app_name` → Schedy), `README.md` (title + overview), onboarding ("Welcome to Schedy") and notification fallback.
+- [x] Share texts externalised to `strings.xml` (`share_event`) and unified (Create's and Detail's had diverged).
 
-### 1.4 — Sesiones recurrentes / fechas sugeridas 🟠
-**Por qué:** los grupos juegan semanal/quincenal; recrear disponibilidad cada vez es el mayor coste recurrente.
-
-- [ ] **v1 pragmático:** al crear, selector "¿se repite? (semanal / quincenal)" que **pre-rellena fechas candidatas** en el grid (p. ej. los próximos 4 sábados). Sigue siendo un único evento con varias fechas candidatas.
-- [ ] **v2:** acción "renovar para la próxima semana" que clona la sesión reutilizando participantes.
-
-**DoD:** crear la mesa semanal no obliga a marcar fechas a mano una por una.
-
----
-
-## FASE 2 — Stickiness y remates
-
-### 2.1 — Pantalla de Perfil funcional
-Hoy es `ComingSoonScreen` (pestaña muerta en la barra inferior).
-- [ ] Editar nombre (`PlayerRepository`).
-- [ ] Lista de tus sesiones + **salir de una sesión** (`RecentEventsRepository.removeEvent` + `unsubscribeFromEvent` + opcional borrar tu doc de participante).
-- [ ] Toggle de tema (claro/oscuro/sistema) persistido.
-
-### 2.2 — Quórum configurable por el DM
-- [ ] Campo `minPlayers` en `Event`. Recalcular etiqueta: "✅ hay quórum" en vez de los umbrales fijos por % (86/71/57 %, hoy arbitrarios en `computeAttendanceTier`).
-
-### 2.3 — "Avisar a los que faltan"
-- [ ] Botón "{N} sin responder → recordar". Si Fase 0.1 está hecha, manda push; si no, comparte mensaje pre-redactado.
-
-### 2.4 — Pulidos
-- [ ] Implementar el buscador del Home (hoy `/* TODO buscar sesiones */`) o quitar el icono.
-- [ ] Fix "próxima sesión": no usar el fallback `cards.firstOrNull()` (`HomeViewModel`) que muestra una sesión cualquiera como "PRÓXIMA" con cuenta atrás a cero cuando no hay fecha confirmada futura.
+**DoD:** ✅ the name is identical in the launcher, the README and the share messages.
+**Note:** internals are kept as they are (they aren't visible branding): package `com.schednd`, scheme `schednd://`, channel ID `schednd_events`, class names `Schednd*`.
 
 ---
 
-## FASE 3 — Calidad transversal (cuando haya tracción)
+## PHASE 1 — Take friction out of the main loop
 
-- [ ] **i18n:** externalizar a `strings.xml` los textos hoy hardcodeados en español; añadir inglés si se busca audiencia amplia. **Ojo:** `strings.xml` solo tiene 2 entradas — prácticamente todo el texto vive dentro de los Composables, así que esto es bastante más grande de lo que parece.
-- [x] **Tests:** 15 unit tests de dominio (`ComputeDateSummariesUseCaseTest`, `AttendanceTierTest`) cubriendo conteo, ausentes, filtrado de fechas pasadas, orden por asistencia y monotonía de los umbrales. Verde con `./gradlew :app:testDebugUnitTest`.
-- [ ] Revisar manejo de zonas horarias (fechas guardadas como UTC start-of-day).
+### 1.1 — Reuse the player's name 🟠 ✅
+**Why:** onboarding saves the name and then asks for it again. `getPlayerName()` is only used for `isOnboardingComplete()`.
+
+- [x] Inject `PlayerRepository` into `CreateEventViewModel`, `JoinEventViewModel` and `EventDetailViewModel`.
+- [x] Pre-fill `creatorName` / `participantName` / `myName` with `getPlayerName()` (in `init`).
+- [x] Save the name on create / join / save availability (`savePlayerName`).
+
+**DoD:** ✅ a user who has finished onboarding never types their default name again. (Compiles.)
+
+### 1.2 — Session time / slot 🟠 ✅ (v1)
+**Why:** pinning down Saturday but still negotiating "what time?" leaves the loop half closed.
+
+- [x] **v1:** `startTime` field ("HH:mm", nullable) on `Event`, with a derived `startLocalTime`. `confirmDate(code, date, startTime)` and `setStartTime` on `EventRepository`; `clearConfirmedDate` clears both. Backwards compatible: old sessions read `null`.
+- [x] After picking the day, the DM gets a `TimePicker`; dismissing it sets **the day only** (a session with no time is still valid).
+- [x] The confirmed-date card shows "12 July · 18:00".
+- [x] The calendar event becomes a real 3 h event when there is a time, and stays all-day when there isn't.
+- [ ] **v2 (optional, already half modelled):** availability per `(date, slot)` reusing `DayTimeSlot` / `AvailabilitySlot` / `SlotCounts`. Means migrating the shape of `availableDates` and adapting `AvailabilityGrid` + `ComputeDateSummariesUseCase`.
+- [ ] **Deliberately not done:** the share text is an *invitation to join*, not a session summary, so it doesn't carry the time. The countdown is still in days, where the time changes nothing.
+
+**DoD:** ✅ the confirmed session includes day **and** time, visible to everyone.
+
+### 1.3 — Local reminder + add to calendar 🟠 ✅
+**Why:** real stickiness without depending on server push.
+
+- [x] **1.3a** **"Add to calendar"** button with `Intent(ACTION_INSERT, CalendarContract.Events.CONTENT_URI)`. No extra permissions. On the confirmed-date card in `EventDetailScreen` (all-day event; the user adjusts the time in their calendar app). (Compiles.)
+- [x] **1.3b** `androidx.work:work-runtime-ktx` dependency (catalog `work = "2.10.0"`).
+- [x] **1.3b** `SessionReminderWorker` + `SessionReminderScheduler`: a single `OneTimeWorkRequest` per code (`REPLACE`), notice the day before at the session's time (or at 19:00 if there is none). It is rescheduled/cancelled from `EventDetailViewModel`'s `collect`, so it also follows changes made from another device. Tapping the notice opens `schednd://event/{code}`.
+
+**DoD:** ✅ "add to calendar" and local reminder, both done.
+
+### 1.4 — Recurring sessions / suggested dates 🟠
+**Why:** groups play weekly/fortnightly; recreating availability every time is the biggest recurring cost.
+
+- [ ] **Pragmatic v1:** on create, a "does it repeat? (weekly / fortnightly)" selector that **pre-fills candidate dates** in the grid (e.g. the next 4 Saturdays). It's still a single event with several candidate dates.
+- [ ] **v2:** a "renew for next week" action that clones the session reusing the participants.
+
+**DoD:** creating the weekly table doesn't force you to mark dates by hand one by one.
 
 ---
 
-## Fuera de alcance (deliberadamente)
+## PHASE 2 — Stickiness and finishing touches
 
-Para no caer en *scope creep* hacia un D&D Beyond:
-- ❌ Fichas de personaje, tirador de dados, reglas/SRD, mapas/VTT.
-- ❌ Chat propio (la app empuja a calendario/notificaciones; el chat ya lo tienen).
-- ❌ Cuentas con email/contraseña (la auth anónima es una ventaja de fricción).
+### 2.1 — Working Profile screen
+Today it's `ComingSoonScreen` (a dead tab in the bottom bar).
+- [ ] Edit name (`PlayerRepository`).
+- [ ] List of your sessions + **leave a session** (`RecentEventsRepository.removeEvent` + `unsubscribeFromEvent` + optionally delete your participant doc).
+- [ ] Theme toggle (light/dark/system), persisted.
+
+### 2.2 — Quorum configurable by the DM
+- [ ] `minPlayers` field on `Event`. Recompute the label: "✅ quorum reached" instead of the fixed % thresholds (86/71/57 %, arbitrary today in `computeAttendanceTier`).
+
+### 2.3 — "Nudge the missing players"
+- [ ] "{N} haven't answered → remind" button. If Phase 0.1 is done, it sends a push; if not, it shares a pre-written message.
+
+### 2.4 — Polish
+- [ ] Implement the Home search (today `/* TODO buscar sesiones */`) or drop the icon.
+- [ ] Fix "next session": stop using the `cards.firstOrNull()` fallback (`HomeViewModel`), which shows an arbitrary session as "NEXT" with a countdown at zero when there is no future confirmed date.
 
 ---
 
-## Recomendación de arranque
+## PHASE 3 — Cross-cutting quality (once there's traction)
 
-Empezar por **Fase 0 completa** (desbloquea el valor real + hace la base publicable) y, en paralelo, las victorias baratas de Fase 1 que **no tocan backend**: **1.1 (nombre)**, **1.3 (recordatorio + calendario)**.
+- [ ] **i18n:** externalise to `strings.xml` the text currently hardcoded in Spanish; add English if we want a wider audience. **Careful:** `strings.xml` only has 2 entries — practically all the text lives inside the Composables, so this is quite a bit bigger than it looks.
+- [x] **Tests:** 15 domain unit tests (`ComputeDateSummariesUseCaseTest`, `AttendanceTierTest`) covering counting, absentees, filtering past dates, ordering by attendance and monotonicity of the thresholds. Green with `./gradlew :app:testDebugUnitTest`.
+- [ ] Review time zone handling (dates stored as UTC start-of-day).
 
-Dos puntos de entrada posibles:
-- **A) Impacto máximo:** 0.1 Notificaciones de punta a punta (Cloud Function + encolado en disponibilidad/confirmación).
-- **B) Tangible hoy, sin desplegar nada:** 1.1 + 1.3 + 0.3 (todo en cliente).
+---
+
+## Out of scope (deliberately)
+
+To avoid scope creep towards a D&D Beyond:
+- ❌ Character sheets, dice roller, rules/SRD, maps/VTT.
+- ❌ Our own chat (the app pushes to calendar/notifications; they already have chat).
+- ❌ Email/password accounts (anonymous auth is a friction advantage).
+
+---
+
+## Suggested starting point
+
+Start with **all of Phase 0** (unlocks the real value + makes the foundation publishable) and, in parallel, the cheap wins from Phase 1 that **don't touch the backend**: **1.1 (name)**, **1.3 (reminder + calendar)**.
+
+Two possible entry points:
+- **A) Maximum impact:** 0.1 End-to-end notifications (Cloud Function + enqueuing on availability/confirmation).
+- **B) Tangible today, nothing to deploy:** 1.1 + 1.3 + 0.3 (all client-side).

@@ -143,6 +143,6 @@ Everything runs on one Firebase project:
 Working end to end: create, join, availability, dates, times, notes, notifications and
 reminders. The profile tab is still a placeholder, and file storage is wired but unused —
 both are waiting on the profile screen. [`PLAN_MEJORAS.md`](PLAN_MEJORAS.md) tracks where the
-app is heading (in Spanish).
+app is heading.
 
 Code comments and commit messages are in Spanish; documentation is in English.
