@@ -39,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -146,6 +147,23 @@ fun HomeContent(
     // y la sesión se quedaría sin borrar.
     var leavingSession by remember { mutableStateOf<HomeSessionCard?>(null) }
 
+    // Cuánto está ampliado el calendario. Vive aquí porque con el mes abierto el deslizar
+    // horizontal deja de ser cosa del pager: pasa a cambiar de mes.
+    val calendarExpansion = rememberCalendarExpansion()
+
+    // Se lee en composición, así que se saca de `progress` un booleano que solo cambia al
+    // cruzar el umbral: si no, el pager se recompondría en cada frame de la ampliación.
+    val calendarOpen by remember {
+        derivedStateOf { calendarExpansion.isOpen }
+    }
+
+    // Cambiar de pestaña recoge el mes, venga de la barra o de donde venga: la pestaña de
+    // al lado no tiene por qué heredar un calendario abierto. `targetPage` y no
+    // `currentPage` porque el destino se sabe al soltar, y esperar a que asiente llega tarde.
+    LaunchedEffect(pagerState.targetPage) {
+        if (tabs[pagerState.targetPage] != SessionTab.CALENDAR) calendarExpansion.collapse()
+    }
+
     LaunchedEffect(leavingSession) {
         val leaving = leavingSession ?: return@LaunchedEffect
         delay(RowRemovalDurationMs.toLong())
@@ -181,13 +199,18 @@ fun HomeContent(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                key = { tabs[it].name }
+                key = { tabs[it].name },
+                // Con el mes abierto, deslizar de lado es pasar de mes. Para cambiar de
+                // pestaña hay que recogerlo antes; la barra sigue ahí para quien prefiera
+                // el atajo, y tocarla lo recoge sola.
+                userScrollEnabled = !calendarOpen
             ) { page ->
                 when (tabs[page]) {
                     SessionTab.CALENDAR -> HomeCalendarTab(
                         uiState = uiState,
                         innerPadding = innerPadding,
-                        onDayTap = { date -> tappedDate = date }
+                        onDayTap = { date -> tappedDate = date },
+                        expansion = calendarExpansion
                     )
                     SessionTab.PROFILE -> ProfileTabScreen(
                         bottomPadding = innerPadding,

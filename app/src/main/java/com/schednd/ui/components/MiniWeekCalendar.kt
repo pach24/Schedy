@@ -35,6 +35,7 @@ import com.schednd.ui.theme.SchedyTheme
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 import androidx.compose.ui.res.stringResource
@@ -157,15 +158,11 @@ private fun todayLabel(today: LocalDate, pattern: String): String =
         .format(today)
         .uppercase(Locale.getDefault())
 
-private fun weekDayInitial(date: LocalDate): String = when (date.dayOfWeek) {
-    DayOfWeek.MONDAY -> "L"
-    DayOfWeek.TUESDAY -> "M"
-    DayOfWeek.WEDNESDAY -> "X"
-    DayOfWeek.THURSDAY -> "J"
-    DayOfWeek.FRIDAY -> "V"
-    DayOfWeek.SATURDAY -> "S"
-    DayOfWeek.SUNDAY -> "D"
-}
+/** La inicial del día en el idioma del móvil; la lista entera vive en [weekDayInitials]. */
+private fun weekDayInitial(date: LocalDate): String =
+    Locale.getDefault().let { locale ->
+        date.dayOfWeek.getDisplayName(TextStyle.NARROW, locale).uppercase(locale)
+    }
 
 @Preview(showBackground = true)
 @Composable

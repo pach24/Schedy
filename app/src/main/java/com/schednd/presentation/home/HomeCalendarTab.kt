@@ -3,6 +3,7 @@ package com.schednd.presentation.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -21,7 +22,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -29,6 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,7 +50,8 @@ import com.schednd.R
 internal fun HomeCalendarTab(
     uiState: HomeUiState,
     innerPadding: PaddingValues,
-    onDayTap: (LocalDate) -> Unit
+    onDayTap: (LocalDate) -> Unit,
+    expansion: CalendarExpansionState
 ) {
     val sessionDates = remember(uiState.allSessions) {
         uiState.allSessions
@@ -52,17 +59,37 @@ internal fun HomeCalendarTab(
             .associate { it.confirmedDate!! to it.name.ifBlank { it.code } }
     }
     val nextDate = uiState.nextSession?.confirmedDate
+    val progress = remember(expansion) { { expansion.progress } }
+    // Con el mes abierto el deslizar horizontal cambia de mes. Se saca de `progress` un
+    // booleano para no recomponer el calendario en cada frame de la ampliación.
+    val swipeMonths by remember(expansion) {
+        derivedStateOf { expansion.isOpen }
+    }
+
+    // Lo que hay de pantalla, para saber dónde termina. El mes ampliado tiene que morir
+    // justo donde empieza la barra, y eso no se puede estimar: depende del alto real y de
+    // lo que ocupe el título, que lleva encima la barra de estado.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    val pageHeight = maxHeight
+    var titleHeightPx by remember { mutableIntStateOf(0) }
+    val expandedSpace = pageHeight -
+        innerPadding.calculateBottomPadding() -
+        with(LocalDensity.current) { titleHeightPx.toDp() }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .nestedScroll(expansion.nestedScrollConnection)
             .verticalScroll(rememberScrollState())
+            // El hueco de la barra se mantiene al final del recorrido: es lo que deja
+            // volver a subir la lista por encima de ella cuando se quiere leer entera.
             .padding(bottom = innerPadding.calculateBottomPadding() + 16.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .onSizeChanged { titleHeightPx = it.height }
                 .statusBarsPadding()
                 .padding(start = 24.dp, end = 16.dp, top = 12.dp, bottom = 8.dp)
         ) {
@@ -83,7 +110,10 @@ internal fun HomeCalendarTab(
                 onDayTap = onDayTap,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 16.dp),
+                expansion = progress,
+                expandedSpace = expandedSpace,
+                swipeMonths = swipeMonths
             )
         }
 
@@ -96,8 +126,11 @@ internal fun HomeCalendarTab(
                 .sortedBy { it.confirmedDate }
         }
 
+        // Lo de abajo no se va a ninguna parte: el mes, al crecer, lo empuja hacia abajo
+        // hasta meterlo por detrás de la barra, que es de cristal y lo deja ver. Sigue ahí
+        // para quien lo suba con el dedo.
         if (upcomingSessions.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             HomeCalendarSessionList(
                 sessions = upcomingSessions,
                 nextSession = uiState.nextSession,
@@ -107,6 +140,7 @@ internal fun HomeCalendarTab(
             Spacer(modifier = Modifier.height(32.dp))
             EmptyCalendarHint(modifier = Modifier.padding(horizontal = 20.dp))
         }
+    }
     }
 }
 
