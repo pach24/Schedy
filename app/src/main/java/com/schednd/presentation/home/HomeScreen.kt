@@ -49,10 +49,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.schednd.ui.components.ComingSoonDayDialog
+import com.schednd.ui.components.DayDialogSession
 import com.schednd.ui.components.DialogBlurRadius
 import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.MiniWeekCalendar
+import com.schednd.ui.components.SessionDayDialog
 import com.schednd.ui.components.rimHighlightBrush
 import com.schednd.ui.components.liquidGlassBackdrop
 import com.schednd.ui.components.rememberLiquidGlassState
@@ -192,13 +193,27 @@ fun HomeContent(
             glass = glass
         )
 
+        // La rejilla solo deja tocar días con sesión, así que la lista nunca debería venir
+        // vacía; si viniera, no hay diálogo que enseñar.
         tappedDate?.let { date ->
-            ComingSoonDayDialog(
-                date = date,
-                hazeState = hazeState,
-                glass = dayDialogGlass,
-                onDismiss = { tappedDate = null }
-            )
+            val sessionsThatDay = remember(date, uiState.allSessions) {
+                uiState.allSessions
+                    .filter { it.confirmedDate == date }
+                    .map { DayDialogSession(it.code, it.name, it.startTime) }
+            }
+            if (sessionsThatDay.isNotEmpty()) {
+                SessionDayDialog(
+                    date = date,
+                    sessions = sessionsThatDay,
+                    hazeState = hazeState,
+                    glass = dayDialogGlass,
+                    onOpenSession = { code ->
+                        tappedDate = null
+                        onOpenEvent(code)
+                    },
+                    onDismiss = { tappedDate = null }
+                )
+            }
         }
     }
 }
