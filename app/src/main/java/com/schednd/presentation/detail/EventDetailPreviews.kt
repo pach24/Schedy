@@ -15,8 +15,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.res.painterResource
+import com.schednd.R
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -446,7 +447,7 @@ private fun Session23MockContent(darkTheme: Boolean) {
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            Icons.Filled.Check,
+                            painter = painterResource(R.drawable.ic_check),
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(24.dp)
