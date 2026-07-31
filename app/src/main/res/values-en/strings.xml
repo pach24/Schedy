@@ -134,6 +134,9 @@
     <string name="dialog_delete_body">Delete this session for good? This cannot be undone.</string>
     <string name="dialog_delete_confirm">Delete session</string>
     <string name="dialog_options_fix_date">Set date and time</string>
+    <string name="dialog_date_confirmed_title">The date is set!</string>
+    <string name="dialog_date_confirmed_body">Tell the group: they will see it in the chat sooner than in the app.</string>
+    <string name="dialog_date_confirmed_dismiss">Not now</string>
     <string name="dialog_options_dm_only">Only the DM can set the date</string>
     <string name="dialog_options_delete">Delete session</string>
     <string name="dialog_pick_date_title">Pick the date</string>
@@ -212,6 +215,7 @@
     <string name="error_image_open">Could not open the selected image</string>
 
     <!-- Share -->
+    <string name="share_date_confirmed">%1$s has a date!\n\n📅 %2$s</string>
     <string name="share_event">Join my D&amp;D session on Schedy!\n\nTap here and just enter your name:\nhttps://getschedy.web.app/join?code=%1$s\n\nOr use the code: %1$s</string>
 
     <plurals name="days_selected">

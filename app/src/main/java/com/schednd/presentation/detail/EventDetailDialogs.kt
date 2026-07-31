@@ -43,13 +43,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.schednd.domain.model.DateSummary
 import java.time.LocalDate
 import java.time.LocalTime
+import com.schednd.ui.components.DayDialogIcon
 import com.schednd.ui.components.DigitalTimePicker
 import com.schednd.ui.components.LiquidGlassState
 import com.schednd.ui.components.frostedSurface
+import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.pressScale
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -160,6 +164,137 @@ internal fun StartTimePickerDialog(
                         modifier = Modifier.padding(vertical = 2.dp)
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Remate de fijar fecha: el DM acaba de cerrarla y aquí se le ofrece contárselo al grupo.
+ *
+ * Existe porque la app no manda push —eso pedía una Cloud Function y plan de pago—, así
+ * que el aviso lo lleva el propio DM al chat donde el grupo ya vive. Es manual, pero llega
+ * antes que abrir la app por su cuenta.
+ */
+@Composable
+internal fun DateConfirmedDialog(
+    whenText: String,
+    hazeState: HazeState,
+    glass: LiquidGlassState?,
+    onShare: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val isDark = isSystemInDarkTheme()
+    val dialogShape = RoundedCornerShape(28.dp)
+    val tintColor = if (isDark) Color(0xFF1C1C1E).copy(alpha = 0.82f) else Color.White.copy(alpha = 0.82f)
+    val glassTint = if (isDark)
+        Color(0xFF1C1C1E).copy(alpha = 0.62f)
+    else
+        Color.White.copy(alpha = 0.68f)
+    val borderBrush = if (isDark)
+        Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.25f), Color.Transparent))
+    else
+        Brush.verticalGradient(listOf(Color.White, Color.Transparent))
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth(0.85f)
+            .wrapContentHeight()
+            .clip(dialogShape)
+            .frostedSurface(
+                glass = glass,
+                hazeState = hazeState,
+                cornerRadius = 28.dp,
+                hazeBackground = if (isDark) Color(0xFF1C1C1E) else Color.White,
+                hazeTint = tintColor,
+                glassTint = glassTint,
+            )
+            .border(1.dp, borderBrush, dialogShape)
+    ) {
+        Column(
+            modifier = Modifier.padding(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            DayDialogIcon()
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = stringResource(R.string.dialog_date_confirmed_title),
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Box(
+                modifier = Modifier
+                    .clip(FullRoundShape)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(horizontal = 16.dp, vertical = 7.dp)
+            ) {
+                Text(
+                    text = whenText,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.5.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = stringResource(R.string.dialog_date_confirmed_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(
+                onClick = onShare,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF0082F3),
+                    contentColor = Color.White
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp
+                )
+            ) {
+                Text(
+                    text = stringResource(R.string.detail_share_with_group),
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(vertical = 2.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp
+                )
+            ) {
+                Text(
+                    text = stringResource(R.string.dialog_date_confirmed_dismiss),
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(vertical = 2.dp)
+                )
             }
         }
     }
