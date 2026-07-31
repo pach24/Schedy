@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
@@ -377,13 +378,95 @@ internal fun DeleteSessionDialog(
 }
 
 
+/**
+ * Salirse de la sesión. Es reversible —basta volver a entrar con el código—, pero la
+ * disponibilidad marcada se pierde, así que se avisa antes.
+ */
+@Composable
+internal fun LeaveSessionDialog(
+    hazeState: HazeState,
+    glass: LiquidGlassState?,
+    onConfirm: () -> Unit
+) {
+    val isDark = isSystemInDarkTheme()
+    val dialogShape = RoundedCornerShape(28.dp)
+
+    val tintColor = if (isDark)
+        Color(0xFF1C1C1E).copy(alpha = 0.82f)
+    else
+        Color.White.copy(alpha = 0.82f)
+    // Más velo que en la top bar: aquí hay texto que leer sobre el cristal.
+    val glassTint = if (isDark)
+        Color(0xFF1C1C1E).copy(alpha = 0.62f)
+    else
+        Color.White.copy(alpha = 0.68f)
+
+    val borderBrush = if (isDark) {
+        Brush.verticalGradient(
+            listOf(Color.White.copy(alpha = 0.25f), Color.Transparent)
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(Color.White, Color.Transparent)
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth(0.85f)
+            .wrapContentHeight()
+            .clip(dialogShape)
+            .frostedSurface(
+                glass = glass,
+                hazeState = hazeState,
+                cornerRadius = 28.dp,
+                hazeBackground = if (isDark) Color(0xFF1C1C1E) else Color.White,
+                hazeTint = tintColor,
+                glassTint = glassTint,
+            )
+            .border(1.dp, borderBrush, dialogShape)
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text(
+                text = stringResource(R.string.dialog_leave_title),
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = stringResource(R.string.dialog_leave_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+                    contentColor = Color(0xFFFD3744)
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp
+                )
+            ) {
+                Text(stringResource(R.string.dialog_leave_confirm), fontWeight = FontWeight.SemiBold)
+            }
+        }
+    }
+}
+
+
 @Composable
 internal fun MoreOptionsDialog(
     hazeState: HazeState,
     glass: LiquidGlassState?,
     isCreator: Boolean,
     onFixDate: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onLeave: () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
     val dialogShape = RoundedCornerShape(28.dp)
@@ -434,6 +517,36 @@ internal fun MoreOptionsDialog(
                         text = stringResource(R.string.dialog_options_dm_only),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                )
+                // Al DM no se le ofrece: irse dejaría una mesa que nadie puede fechar
+                // ni borrar. Su forma de salir es borrarla.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            indication = LocalIndication.current,
+                            interactionSource = remember { MutableInteractionSource() },
+                            onClick = onLeave
+                        )
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Logout,
+                        contentDescription = null,
+                        tint = Color(0xFFFD3744),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Text(
+                        text = stringResource(R.string.dialog_options_leave),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color(0xFFFD3744)
                     )
                 }
             }

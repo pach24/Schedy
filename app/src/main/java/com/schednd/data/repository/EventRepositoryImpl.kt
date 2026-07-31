@@ -108,6 +108,14 @@ class EventRepositoryImpl @Inject constructor(
         return codes.mapNotNull { getEvent(it) }
     }
 
+    override suspend fun removeParticipant(code: String, userId: String) {
+        eventsCollection.document(code)
+            .collection("participants")
+            .document(userId)
+            .delete()
+            .await()
+    }
+
     override suspend fun deleteEvent(code: String) {
         val eventRef = eventsCollection.document(code)
         // Delete all participants first

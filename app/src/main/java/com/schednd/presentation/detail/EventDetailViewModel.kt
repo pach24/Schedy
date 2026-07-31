@@ -12,7 +12,7 @@ import com.schednd.domain.usecase.session.CancelSessionReminderUseCase
 import com.schednd.domain.usecase.session.ClearSessionDateUseCase
 import com.schednd.domain.usecase.session.ConfirmSessionDateUseCase
 import com.schednd.domain.usecase.session.DeleteSessionUseCase
-import com.schednd.domain.usecase.session.ForgetSessionUseCase
+import com.schednd.domain.usecase.session.LeaveSessionUseCase
 import com.schednd.domain.usecase.session.ObserveParticipantsUseCase
 import com.schednd.domain.usecase.session.ObserveSessionUseCase
 import com.schednd.domain.usecase.session.RememberSessionUseCase
@@ -25,6 +25,8 @@ import com.schednd.domain.usecase.session.ComputeDateSummariesUseCase
 import com.schednd.domain.model.Event
 import com.schednd.domain.model.Participant
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
@@ -55,6 +57,8 @@ data class EventDetailUiState(
     val createdAt: LocalDateTime? = null,
     val isCreator: Boolean = false,
     val isDeleted: Boolean = false,
+    /** Me he salido de la sesión: la pantalla ya no pinta nada y toca volver al listado. */
+    val hasLeft: Boolean = false,
     val isLoading: Boolean = true,
     val myName: String = "",
     val myDraftDates: Set<LocalDate> = emptySet(),
@@ -77,8 +81,8 @@ class EventDetailViewModel @Inject constructor(
     private val setSessionStartTime: SetSessionStartTimeUseCase,
     private val clearSessionDate: ClearSessionDateUseCase,
     private val deleteSession: DeleteSessionUseCase,
+    private val leaveSession: LeaveSessionUseCase,
     private val rememberSession: RememberSessionUseCase,
-    private val forgetSession: ForgetSessionUseCase,
     private val scheduleSessionReminder: ScheduleSessionReminderUseCase,
     private val cancelSessionReminder: CancelSessionReminderUseCase,
     private val getPlayerName: GetPlayerNameUseCase,
@@ -92,12 +96,19 @@ class EventDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(EventDetailUiState())
     val uiState: StateFlow<EventDetailUiState> = _uiState
 
+    /**
+     * La escucha de Firestore, guardada para poder cortarla al salirse: cada snapshot
+     * vuelve a apuntar la sesión en el listado del móvil, y el borrado del participante
+     * dispara uno justo después de haberla olvidado.
+     */
+    private var sessionJob: Job? = null
+
     init {
         // Prefill con el nombre guardado; si ya soy participante, el collect lo sobrescribe con mi nombre real
         getPlayerName()?.let { saved ->
             _uiState.update { it.copy(myName = saved) }
         }
-        viewModelScope.launch {
+        sessionJob = viewModelScope.launch {
             try {
                 ensureSignedIn()
                 observeSession(code)
@@ -170,6 +181,11 @@ class EventDetailViewModel @Inject constructor(
                             }
                         }
                     }
+            } catch (e: CancellationException) {
+                // Cancelar la escucha es cómo se sale de la sesión, no un fallo: tratarla
+                // como tal pintaba «StandaloneCoroutine was cancelled» en el hueco del
+                // error hasta que la navegación se llevaba la pantalla.
+                throw e
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
@@ -252,13 +268,42 @@ class EventDetailViewModel @Inject constructor(
     fun deleteEvent() {
         viewModelScope.launch {
             try {
+                // Cortar la escucha antes: si no, el snapshot de la sesión ya borrada
+                // llega como «sesión no encontrada» y parpadea el error de camino a home.
+                stopObserving()
                 deleteSession(code)
-                forgetSession(code)
                 _uiState.update { it.copy(isDeleted = true) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             }
         }
+    }
+
+    /**
+     * Salirse de la sesión. El DM no puede: su salida dejaría una mesa que nadie podría
+     * fechar ni borrar, porque ambas cosas van atadas a `creatorId` en las reglas. Para
+     * él la salida es borrarla.
+     */
+    fun leaveEvent() {
+        val state = _uiState.value
+        if (state.isCreator || state.hasLeft) return
+        val userId = myUserId ?: return
+        viewModelScope.launch {
+            try {
+                // Primero se corta la escucha: si no, el snapshot del propio borrado
+                // volvería a guardar el código como sesión reciente.
+                stopObserving()
+                leaveSession(code, userId)
+                _uiState.update { it.copy(hasLeft = true) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
+        }
+    }
+
+    private fun stopObserving() {
+        sessionJob?.cancel()
+        sessionJob = null
     }
 
     private fun Timestamp.toLocalDate(): LocalDate {
