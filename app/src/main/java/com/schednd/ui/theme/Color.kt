@@ -6,8 +6,22 @@ import androidx.compose.ui.graphics.Color
 // Primary actions are white/black depending on theme
 
 // Light mode
-val LightBackground = Color(0xFFF2F2F7)
-val LightSurface = Color(0xFFFFFFFF)
+//
+// El modo claro es el reflejo del oscuro, y eso empieza por dejarle sitio al filo. En
+// oscuro nada es negro puro: el fondo es casi negro, la tarjeta un gris que se levanta de
+// él y el filo blanco encima. Aquí igual, con los mismos escalones —tarjeta +17 puntos
+// sobre el fondo, hero +13, barra +10— y el blanco reservado para el canto.
+//
+// Por eso el fondo baja a un gris de verdad y ninguna superficie es blanca. Antes el fondo
+// era casi blanco: no quedaba recorrido por arriba, así que unas piezas se levantaban
+// aclarándose y otras oscureciéndose, y el filo blanco sobre tarjeta blanca no se veía.
+val LightBackground = Color(0xFFE2E2EB)
+
+/** Superficie de nivel tarjeta. Comparte tono con [LightCardSurface]: lo que se apoya en
+ *  una tarjeta —las cajas de la cuenta atrás— tiene que quedarse a su altura, no saltar a
+ *  blanco por encima de ella. En oscuro pasa lo mismo, y por eso la cuenta atrás se lee
+ *  como números sobre el hero y no como tres cajas. */
+val LightSurface = Color(0xFFF3F3F9)
 val LightSurfaceVariant = Color(0xFFEEEEEE)
 val LightOnSurface = Color(0xFF111111)
 val LightOnSurfaceVariant = Color(0xFF6E6E73)
@@ -15,14 +29,18 @@ val LightOutline = Color(0xFFD8D8D8)
 val LightPrimary = Color(0xFF111111)
 val LightOnPrimary = Color(0xFFFFFFFF)
 
-/** Gris de las superficies que se apoyan directamente sobre [LightBackground]: el blanco
- *  de [LightSurface] y el [LightSurfaceVariant] del tema quedan a un par de puntos del
- *  fondo y no se recortan. Lo comparten la barra inferior y la cabecera de la cuadrícula
- *  de disponibilidad, que deben leerse con el mismo peso. */
-val LightRaisedSurface = Color(0xFFE0E0E9)
+/** Relleno de las tarjetas. Es el escalón más alto, pero no llega a blanco: el blanco es
+ *  del filo. Equivale al gris de la tarjeta en oscuro. */
+val LightCardSurface = Color(0xFFF3F3F9)
 
-/** Tarjeta de próxima sesión: mismo problema que [LightRaisedSurface]. */
-val LightHeroSurface = Color(0xFFE4E4EA)
+/** Superficies que se apoyan directamente sobre [LightBackground]: barra inferior y
+ *  cabecera de la cuadrícula de disponibilidad, que deben leerse con el mismo peso.
+ *  Es el escalón más bajo, como la barra en oscuro. */
+val LightRaisedSurface = Color(0xFFECECF4)
+
+/** Tarjeta de próxima sesión. Se queda por debajo de la tarjeta, igual que en oscuro el
+ *  hero se queda por debajo de ella. */
+val LightHeroSurface = Color(0xFFEFEFF6)
 
 /** Hueco vacío de las cuadrículas de disponibilidad. Tiene que leerse como celda sin
  *  marcar, no como fondo, así que va bastante más oscuro que [LightRaisedSurface]. */

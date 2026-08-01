@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.schednd.ui.components.GenCard
+import com.schednd.ui.components.raisedSurfaceColor
 import com.schednd.ui.theme.FullRoundShape
 import com.schednd.ui.theme.SquircleShape
 import com.schednd.ui.theme.pressScale
@@ -357,7 +358,7 @@ internal fun EmptySessionsHint(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .size(72.dp)
                 .clip(SquircleShape(20.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                .background(raisedSurfaceColor()),
             contentAlignment = Alignment.Center
         ) {
             Icon(

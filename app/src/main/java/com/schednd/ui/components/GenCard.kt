@@ -18,7 +18,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.schednd.ui.theme.CardShape
+import com.schednd.ui.theme.LightCardSurface
 import com.schednd.ui.theme.LightHeroSurface
+import com.schednd.ui.theme.LightRaisedSurface
 
 /**
  * Brillo del filo: una luz que entra por arriba y se apaga hacia abajo.
@@ -26,6 +28,10 @@ import com.schednd.ui.theme.LightHeroSurface
  * Hace de rim light donde no puede haber cristal. Las piezas del shader tienen que
  * dibujarse fuera del contenido que refractan, así que todo lo que vive dentro de la
  * pantalla —tarjetas, listados— se queda sin él y lo suple con este filo pintado.
+ *
+ * Es blanco en los dos modos, y por eso ninguna superficie puede ser blanca: un filo
+ * blanco sobre una tarjeta blanca no existe. La tarjeta es siempre un tono intermedio y el
+ * blanco se reserva para el canto, igual que en oscuro la tarjeta es gris y el filo blanco.
  */
 @Composable
 fun rimHighlightBrush(): Brush {
@@ -51,6 +57,23 @@ fun heroSurfaceColor(): Color =
     }
 
 /**
+ * Superficie que se apoya en el fondo sin llegar a ser tarjeta: el escalón más bajo, el
+ * mismo que la barra inferior.
+ *
+ * En oscuro sale de velar `surfaceVariant`, pero esa cuenta no se puede repetir en claro:
+ * `surfaceVariant` sirve a la vez de caja levantada sobre el fondo y de hueco hundido
+ * dentro de una tarjeta, y en claro esos dos piden direcciones contrarias. Velado sobre el
+ * fondo claro se queda a un punto de él y la caja desaparece.
+ */
+@Composable
+fun raisedSurfaceColor(): Color =
+    if (isSystemInDarkTheme()) {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    } else {
+        LightRaisedSurface
+    }
+
+/**
  * @param onClick si se pasa, la tarjeta responde al toque. Conviene dárselo a ella en vez
  *   de encadenar un `clickable` en el `modifier`: el toque tiene que ir por dentro del
  *   recorte, o el ripple se pinta sobre el rectángulo completo y asoma por las esquinas.
@@ -67,7 +90,8 @@ fun GenCard(
     content: @Composable () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
-    val fillColor = if (isDark) Color(0xFF27272A).copy(alpha = 0.72f) else Color(0xFFFFFFFF)
+    // En claro no es blanca: el blanco es del filo. Ver [rimHighlightBrush].
+    val fillColor = if (isDark) Color(0xFF27272A).copy(alpha = 0.72f) else LightCardSurface
     // Sin vibración, la pulsación larga no se distingue de una pulsación que no ha hecho
     // nada: el aviso llega cuando ya se ha cumplido el tiempo, no al levantar el dedo.
     val haptics = LocalHapticFeedback.current
