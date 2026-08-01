@@ -22,8 +22,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -31,7 +32,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -55,6 +55,8 @@ import com.schednd.ui.components.DialogBlurRadius
 import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.MiniWeekCalendar
 import com.schednd.ui.components.SessionDayDialog
+import com.schednd.ui.components.SkeletonSweep
+import com.schednd.ui.components.SkeletonSweepOutroMs
 import com.schednd.ui.components.heroSurfaceColor
 import com.schednd.ui.components.rimHighlightBrush
 import com.schednd.ui.components.liquidGlassBackdrop
@@ -67,8 +69,12 @@ import com.schednd.presentation.session.tabs.ProfileTabScreen
 import com.schednd.ui.theme.FadeIn
 import com.schednd.ui.theme.RowRemovalDurationMs
 import com.schednd.ui.theme.RowRemovalExit
+import com.schednd.ui.theme.SkeletonDissolve
+import com.schednd.ui.theme.SkeletonMorph
+import com.schednd.ui.theme.SkeletonReveal
 import com.schednd.ui.theme.SquircleShape
 import com.schednd.ui.theme.pressScale
+import com.schednd.ui.theme.staggeredReveal
 import kotlinx.coroutines.delay
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
@@ -137,6 +143,19 @@ fun HomeContent(
         .asPaddingValues()
         .calculateBottomPadding()
 
+    // El reflejo de los huecos sobrevive un momento a la llegada de los datos: mientras se
+    // deshacen todavía se les ve, y apagarlo en el mismo fotograma en que dejan de hacer
+    // falta se nota como un tirón justo donde se está intentando que no lo haya.
+    var sweeping by remember { mutableStateOf(true) }
+    LaunchedEffect(uiState.isLoading) {
+        if (uiState.isLoading) {
+            sweeping = true
+        } else {
+            delay(SkeletonSweepOutroMs)
+            sweeping = false
+        }
+    }
+
     // Sesión que se mantuvo pulsada: mientras haya una, su hoja de acciones está abierta.
     var sessionUnderAction by remember { mutableStateOf<HomeSessionCard?>(null) }
     // Sesión cayéndose del listado. La fila se va antes de tocar nada: borrar o salirse
@@ -179,6 +198,9 @@ fun HomeContent(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // La pasada se reparte desde aquí, por encima del pager: las pestañas se descartan
+        // al salir de ellas y volverían con el reflejo empezado de cero cada vez.
+        SkeletonSweep(active = sweeping) {
         Scaffold(
             modifier = Modifier
                 .hazeSource(state = hazeState)
@@ -237,6 +259,7 @@ fun HomeContent(
                 }
             }
         }
+        }
 
         SessionBottomBar(
             position = navigator::position,
@@ -294,11 +317,6 @@ private fun HomeMainTab(
     onOpenCalendar: () -> Unit,
     onOpenEvent: (String) -> Unit
 ) {
-    if (!uiState.isAuthReady && uiState.error == null) {
-        LoadingTab(innerPadding = innerPadding)
-        return
-    }
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -315,7 +333,8 @@ private fun HomeMainTab(
                     stringResource(R.string.home_greeting)
                 } else {
                     stringResource(R.string.home_greeting_named, name)
-                }
+                },
+                greetingLoading = uiState.isLoading
             )
         }
 
@@ -334,7 +353,8 @@ private fun HomeMainTab(
                 val session = uiState.nextSession
                 val heroInteraction = remember { MutableInteractionSource() }
                 val heroShape = SquircleShape(24.dp)
-                // Sin próxima sesión la tarjeta es solo informativa: no hay adónde llevar.
+                // Sin próxima sesión —o sin saber todavía si la hay— la tarjeta es solo
+                // informativa: no hay adónde llevar.
                 val openHero = session?.let { { onOpenEvent(it.code) } }
                 Column(
                     modifier = Modifier
@@ -358,15 +378,52 @@ private fun HomeMainTab(
                                 )
                             } else Modifier
                         )
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                        .padding(20.dp)
                 ) {
-                    if (session != null) {
-                        HeroDate(session = session)
-                        HeroSessionLabel(session = session)
-                        HeroCountdown(session = session)
-                    } else {
-                        NoUpcomingSessionHero()
+                    // La tarjeta —relleno, filo, redondeo— se queda fuera del cambio: es el
+                    // marco, y lo que se concreta dentro son los datos. Solo el alto la
+                    // acompaña, estirándose del hueco a lo que haya resultado ser.
+                    SkeletonMorph(targetState = uiState.isLoading) { loading ->
+                        if (loading) {
+                            HeroSkeleton()
+                        } else {
+                            // La fecha, la mesa y la cuenta atrás no llegan de una pieza:
+                            // caen una detrás de otra, de arriba abajo, y esa décima de
+                            // diferencia es lo que hace que la tarjeta se lea como algo que
+                            // se compone y no como una imagen que aparece.
+                            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                                if (session != null) {
+                                    HeroDate(
+                                        session = session,
+                                        modifier = Modifier.animateEnterExit(
+                                            enter = staggeredReveal(0),
+                                            exit = ExitTransition.None
+                                        )
+                                    )
+                                    HeroSessionLabel(
+                                        session = session,
+                                        modifier = Modifier.animateEnterExit(
+                                            enter = staggeredReveal(1),
+                                            exit = ExitTransition.None
+                                        )
+                                    )
+                                    HeroCountdown(
+                                        session = session,
+                                        modifier = Modifier.animateEnterExit(
+                                            enter = staggeredReveal(2),
+                                            exit = ExitTransition.None
+                                        )
+                                    )
+                                } else {
+                                    NoUpcomingSessionHero(
+                                        modifier = Modifier.animateEnterExit(
+                                            enter = staggeredReveal(0),
+                                            exit = ExitTransition.None
+                                        )
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -385,17 +442,27 @@ private fun HomeMainTab(
             }
         }
 
-        if (uiState.allSessions.isEmpty()) {
-            item {
-                EmptySessionsHint(modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp))
-            }
-        } else {
-            item {
-                SeeAllSessionsRow(
-                    total = uiState.allSessions.size,
-                    onClick = onSeeAllSessions,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
-                )
+        item {
+            // Tres estados y no dos: "no tienes sesiones" es una afirmación, y hasta que no
+            // vuelve el listado no hay con qué sostenerla. El hueco no afirma nada.
+            SkeletonMorph(
+                targetState = uiState.slotFor(uiState.allSessions),
+                modifier = Modifier.padding(horizontal = 20.dp)
+            ) { slot ->
+                when (slot) {
+                    SessionsSlot.LOADING -> SessionRowSkeleton(
+                        leadingSize = 0.dp,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                    SessionsSlot.EMPTY -> EmptySessionsHint(
+                        modifier = Modifier.padding(vertical = 24.dp)
+                    )
+                    SessionsSlot.FILLED -> SeeAllSessionsRow(
+                        total = uiState.allSessions.size,
+                        onClick = onSeeAllSessions,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                }
             }
         }
 
@@ -421,11 +488,6 @@ private fun HomeSessionsTab(
     leavingCode: String?,
     onLongPressSession: (HomeSessionCard) -> Unit
 ) {
-    if (!uiState.isAuthReady && uiState.error == null) {
-        LoadingTab(innerPadding = innerPadding)
-        return
-    }
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -433,25 +495,50 @@ private fun HomeSessionsTab(
             bottom = innerPadding.calculateBottomPadding() + 24.dp
         )
     ) {
-        item { Header(title = stringResource(R.string.tab_sessions)) }
+        item(key = "header") { Header(title = stringResource(R.string.tab_sessions)) }
 
-        if (uiState.allSessions.isEmpty()) {
-            item {
-                EmptySessionsHint(modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp))
+        // Aquí el cambio no puede ser un `SkeletonMorph`: las filas tienen que ser hijas
+        // directas de la lista para que cada una se anime por su cuenta al quitarla, así que
+        // el hueco se queda al lado y se deshace encogiendo. Lo que llega entra por debajo y
+        // sube a ocupar su sitio en el mismo movimiento.
+        item(key = "skeleton") {
+            AnimatedVisibility(
+                visible = uiState.isLoading,
+                enter = EnterTransition.None,
+                exit = SkeletonDissolve,
+                modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
+            ) {
+                SessionsTabSkeleton()
+            }
+        }
+
+        if (uiState.isLoading) {
+            // El hueco de arriba ocupa el sitio del listado hasta que haya listado.
+        } else if (uiState.allSessions.isEmpty()) {
+            item(key = "empty") {
+                EmptySessionsHint(
+                    modifier = Modifier
+                        .animateItem(fadeInSpec = SkeletonReveal)
+                        .padding(horizontal = 20.dp, vertical = 24.dp)
+                )
             }
         } else {
-            item {
+            item(key = "upcoming-header") {
                 SectionHeader(
                     title = stringResource(R.string.home_upcoming_header),
                     trailing = "${uiState.upcomingSessions.size}",
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                    modifier = Modifier
+                        .animateItem(fadeInSpec = SkeletonReveal)
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
                 )
             }
             if (uiState.upcomingSessions.isEmpty()) {
-                item {
+                item(key = "upcoming-empty") {
                     SectionEmptyHint(
                         text = stringResource(R.string.home_upcoming_empty),
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
+                        modifier = Modifier
+                            .animateItem(fadeInSpec = SkeletonReveal)
+                            .padding(horizontal = 24.dp, vertical = 4.dp)
                     )
                 }
             }
@@ -464,18 +551,22 @@ private fun HomeSessionsTab(
                 onLongPress = onLongPressSession
             )
 
-            item {
+            item(key = "past-header") {
                 SectionHeader(
                     title = stringResource(R.string.home_past_header),
                     trailing = "${uiState.pastSessions.size}",
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                    modifier = Modifier
+                        .animateItem(fadeInSpec = SkeletonReveal)
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
                 )
             }
             if (uiState.pastSessions.isEmpty()) {
-                item {
+                item(key = "past-empty") {
                     SectionEmptyHint(
                         text = stringResource(R.string.home_past_empty),
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
+                        modifier = Modifier
+                            .animateItem(fadeInSpec = SkeletonReveal)
+                            .padding(horizontal = 24.dp, vertical = 4.dp)
                     )
                 }
             }
@@ -490,12 +581,17 @@ private fun HomeSessionsTab(
             )
         }
 
-        item { Spacer(modifier = Modifier.height(28.dp)) }
-        item {
+        // Con clave, como todo lo de aquí arriba: sin ella los botones serían otro elemento
+        // cada vez que cambia el número de filas que tienen encima, y en vez de bajar a su
+        // sitio nuevo darían el salto.
+        item(key = "tail") { Spacer(modifier = Modifier.height(28.dp)) }
+        item(key = "actions") {
             ActionButtons(
                 onCreateEvent = onCreateEvent,
                 onJoinEvent = onJoinEvent,
-                modifier = Modifier.padding(horizontal = 20.dp)
+                modifier = Modifier
+                    .animateItem(fadeInSpec = null, fadeOutSpec = null)
+                    .padding(horizontal = 20.dp)
             )
         }
     }
@@ -518,8 +614,11 @@ private fun LazyListScope.removableSessionRows(
         AnimatedVisibility(
             visible = session.code != leavingCode,
             exit = RowRemovalExit,
-            // Las de debajo suben a ocupar el hueco en vez de dar el salto.
-            modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
+            // Las de debajo suben a ocupar el hueco en vez de dar el salto. La entrada es
+            // para cuando la fila llega por primera vez, al deshacerse el hueco de carga;
+            // la salida se queda sin animar porque de eso ya se encarga `RowRemovalExit`,
+            // y encadenar las dos convierte la caída en un parpadeo.
+            modifier = Modifier.animateItem(fadeInSpec = SkeletonReveal, fadeOutSpec = null)
         ) {
             SessionRow(
                 session = session,
@@ -529,21 +628,6 @@ private fun LazyListScope.removableSessionRows(
                 onLongClick = { onLongPress(session) }
             )
         }
-    }
-}
-
-@Composable
-private fun LoadingTab(innerPadding: PaddingValues) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            color = MaterialTheme.colorScheme.primary,
-            strokeWidth = 2.dp
-        )
     }
 }
 

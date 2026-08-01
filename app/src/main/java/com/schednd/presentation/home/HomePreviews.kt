@@ -11,12 +11,38 @@ import java.time.LocalDate
 
 // ── Previews ─────────────────────────────────────────────────────────────────
 
+@Preview(name = "Home – Cargando (Light)", showBackground = true, device = "spec:width=411dp,height=891dp")
+@Composable
+private fun HomePreviewLoading() {
+    SchedyTheme(darkTheme = false) {
+        HomeContent(
+            uiState = HomeUiState(isAuthReady = true),
+            onCreateEvent = {},
+            onJoinEvent = {},
+            onOpenEvent = {}
+        )
+    }
+}
+
+@Preview(name = "Home – Cargando (Dark)", showBackground = true, device = "spec:width=411dp,height=891dp", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun HomePreviewLoadingDark() {
+    SchedyTheme(darkTheme = true) {
+        HomeContent(
+            uiState = HomeUiState(isAuthReady = true),
+            onCreateEvent = {},
+            onJoinEvent = {},
+            onOpenEvent = {}
+        )
+    }
+}
+
 @Preview(name = "Home – Vacío (Light)", showBackground = true, device = "spec:width=411dp,height=891dp")
 @Composable
 private fun HomePreviewEmpty() {
     SchedyTheme(darkTheme = false) {
         HomeContent(
-            uiState = HomeUiState(isAuthReady = true),
+            uiState = HomeUiState(isAuthReady = true, sessionsLoaded = true),
             onCreateEvent = {},
             onJoinEvent = {},
             onOpenEvent = {}
@@ -58,6 +84,7 @@ private fun HomePreviewLight() {
         HomeContent(
             uiState = HomeUiState(
                 isAuthReady = true,
+                sessionsLoaded = true,
                 allSessions = sample,
                 upcomingSessions = sample,
                 nextSession = sample.first()
@@ -87,6 +114,7 @@ private fun HomePreviewDark() {
         HomeContent(
             uiState = HomeUiState(
                 isAuthReady = true,
+                sessionsLoaded = true,
                 allSessions = sample,
                 upcomingSessions = sample,
                 nextSession = sample.first()

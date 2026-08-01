@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.HomeScheduleCalendar
 import com.schednd.ui.theme.FadeIn
+import com.schednd.ui.theme.SkeletonMorph
 import com.schednd.ui.theme.pressScale
 import java.time.LocalDate
 import androidx.compose.ui.res.stringResource
@@ -129,16 +130,22 @@ internal fun HomeCalendarTab(
         // Lo de abajo no se va a ninguna parte: el mes, al crecer, lo empuja hacia abajo
         // hasta meterlo por detrás de la barra, que es de cristal y lo deja ver. Sigue ahí
         // para quien lo suba con el dedo.
-        if (upcomingSessions.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(6.dp))
-            HomeCalendarSessionList(
-                sessions = upcomingSessions,
-                nextSession = uiState.nextSession,
-                onSessionClick = onDayTap
-            )
-        } else if (uiState.isAuthReady) {
-            Spacer(modifier = Modifier.height(32.dp))
-            EmptyCalendarHint(modifier = Modifier.padding(horizontal = 20.dp))
+        Spacer(modifier = Modifier.height(6.dp))
+        SkeletonMorph(targetState = uiState.slotFor(upcomingSessions)) { slot ->
+            when (slot) {
+                SessionsSlot.LOADING -> CalendarListSkeleton()
+                SessionsSlot.EMPTY -> Column {
+                    Spacer(modifier = Modifier.height(26.dp))
+                    EmptyCalendarHint(modifier = Modifier.padding(horizontal = 20.dp))
+                }
+                SessionsSlot.FILLED -> Column {
+                    HomeCalendarSessionList(
+                        sessions = upcomingSessions,
+                        nextSession = uiState.nextSession,
+                        onSessionClick = onDayTap
+                    )
+                }
+            }
         }
     }
     }

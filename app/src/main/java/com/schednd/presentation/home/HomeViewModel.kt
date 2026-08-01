@@ -59,6 +59,11 @@ data class HomeSessionCard(
 
 data class HomeUiState(
     val isAuthReady: Boolean = false,
+    /**
+     * El listado ya ha llegado al menos una vez. Solo pasa de false a true: las recargas
+     * posteriores traen los datos por debajo, sin volver a vaciar la pantalla.
+     */
+    val sessionsLoaded: Boolean = false,
     /** Nombre elegido en el onboarding; null en sesiones creadas antes de pedirlo. */
     val playerName: String? = null,
     val nextSession: HomeSessionCard? = null,
@@ -66,7 +71,29 @@ data class HomeUiState(
     val upcomingSessions: List<HomeSessionCard> = emptyList(),
     val pastSessions: List<HomeSessionCard> = emptyList(),
     val error: String? = null
-)
+) {
+    /**
+     * Mientras esto sea cierto la pantalla enseña huecos en vez de contenido.
+     *
+     * Una lista vacía no significa lo mismo antes y después de cargar, y hasta ahora la
+     * pantalla no las distinguía: entrar en la app enseñaba "no tienes sesiones" durante el
+     * viaje a Firestore y lo desmentía al volver. Sin dato no hay nada que afirmar.
+     */
+    val isLoading: Boolean get() = !sessionsLoaded && error == null
+}
+
+/**
+ * Los tres estados por los que pasa un listado, que no son dos: entre "no hay nada" y "hay
+ * esto" está el "todavía no se sabe", y confundirlo con el primero es lo que hacía que la
+ * app dijera que no tienes sesiones para desdecirse un segundo después.
+ */
+internal enum class SessionsSlot { LOADING, EMPTY, FILLED }
+
+internal fun HomeUiState.slotFor(items: Collection<*>): SessionsSlot = when {
+    isLoading -> SessionsSlot.LOADING
+    items.isEmpty() -> SessionsSlot.EMPTY
+    else -> SessionsSlot.FILLED
+}
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -133,6 +160,7 @@ class HomeViewModel @Inject constructor(
         val codes = getSavedSessionCodes()
         if (codes.isEmpty()) {
             _uiState.value = _uiState.value.copy(
+                sessionsLoaded = true,
                 allSessions = emptyList(),
                 upcomingSessions = emptyList(),
                 pastSessions = emptyList(),
@@ -194,6 +222,7 @@ class HomeViewModel @Inject constructor(
         val pastOrdered = past.sortedByDescending { it.startDateTime }
 
         _uiState.value = _uiState.value.copy(
+            sessionsLoaded = true,
             allSessions = upcomingOrdered + pastOrdered,
             upcomingSessions = upcomingOrdered,
             pastSessions = pastOrdered,

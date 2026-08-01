@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.raisedSurfaceColor
 import com.schednd.ui.theme.FullRoundShape
+import com.schednd.ui.theme.SkeletonMorph
 import com.schednd.ui.theme.SquircleShape
 import com.schednd.ui.theme.pressScale
 import kotlinx.coroutines.delay
@@ -52,20 +53,34 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.ui.res.stringResource
 
+/**
+ * @param greetingLoading el saludo todavía no se sabe. El título nunca espera: es lo que
+ *   mantiene la cabecera quieta mientras lo de debajo se concreta.
+ */
 @Composable
-internal fun Header(title: String, greeting: String? = null) {
+internal fun Header(
+    title: String,
+    greeting: String? = null,
+    greetingLoading: Boolean = false
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
             .padding(start = 24.dp, end = 16.dp, top = 12.dp, bottom = 8.dp)
     ) {
-        if (greeting != null) {
-            Text(
-                text = greeting,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        if (greetingLoading || greeting != null) {
+            SkeletonMorph(targetState = greetingLoading) { loading ->
+                if (loading) {
+                    GreetingSkeleton()
+                } else {
+                    Text(
+                        text = greeting.orEmpty(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
         Text(
             text = title,

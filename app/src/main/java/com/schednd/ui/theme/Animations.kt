@@ -1,10 +1,14 @@
 package com.schednd.ui.theme
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -15,6 +19,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -29,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.launch
 
 // ── Transiciones de navegación ───────────────────────────────────────
@@ -193,6 +199,108 @@ fun StaggeredColumn(
     Column(modifier = modifier) {
         content()
     }
+}
+
+// ── De hueco a dato ──────────────────────────────────────────────────
+
+/**
+ * El hueco se convierte en el dato: lo que había se deshace hacia fuera mientras lo que
+ * llega entra creciendo, y la caja los acompaña estirándose de un alto al otro.
+ *
+ * Ese estirón es lo que lo hace parecer una pieza que cambia de forma y no dos pantallas
+ * intercambiadas, así que el hueco conviene dibujarlo con la silueta de lo que va a caer
+ * ahí: cuanto menos tenga que recorrer la caja, más se lee como una sola cosa.
+ *
+ * La salida es más corta que la entrada y esta arranca con retardo: se solapan lo justo
+ * para que no haya un fotograma con las dos cosas encima, que es lo que ensucia el cambio.
+ */
+@Composable
+fun <T> SkeletonMorph(
+    targetState: T,
+    modifier: Modifier = Modifier,
+    content: @Composable AnimatedContentScope.(T) -> Unit
+) {
+    AnimatedContent(
+        targetState = targetState,
+        modifier = modifier,
+        transitionSpec = {
+            val enter = fadeIn(tween(260, delayMillis = 120)) +
+                    scaleIn(
+                        initialScale = 0.94f,
+                        animationSpec = spring(
+                            dampingRatio = 0.62f,
+                            stiffness = Spring.StiffnessLow
+                        )
+                    )
+            val exit = fadeOut(tween(160)) +
+                    scaleOut(targetScale = 1.04f, animationSpec = tween(220))
+            ContentTransform(
+                targetContentEnter = enter,
+                initialContentExit = exit,
+                // `clip = false` para que el rebote del muelle pueda asomar del alto final
+                // en vez de quedarse cortado justo cuando se le va la mano, que es la gracia.
+                sizeTransform = SizeTransform(clip = false) { _, _ -> MorphSizeSpec }
+            )
+        },
+        // Anclado arriba: la caja crece hacia abajo, hacia el hueco libre, en vez de
+        // repartir el estirón y llevarse por delante lo que tiene encima.
+        contentAlignment = Alignment.TopStart,
+        label = "SkeletonMorph",
+        content = content
+    )
+}
+
+private val MorphSizeSpec: FiniteAnimationSpec<IntSize> = spring(
+    dampingRatio = 0.78f,
+    stiffness = Spring.StiffnessMediumLow,
+    // Por debajo de un píxel no hay nada que enseñar; sin este umbral el muelle se queda
+    // rebotando en decimales de píxel mucho después de que el cambio se haya visto.
+    visibilityThreshold = IntSize(1, 1)
+)
+
+/**
+ * Lo mismo que hace [SkeletonMorph] con lo que sale, para huecos que no pueden vivir dentro
+ * de él: las filas de una lista perezosa tienen que ser hijas directas de la lista para
+ * animarse una a una, así que el hueco se queda al lado y se deshace por su cuenta.
+ *
+ * Encoge además de irse, y por eso arrastra consigo lo que tenga debajo: lo que llega sube
+ * a ocupar su sitio en el mismo movimiento en vez de esperar a que termine de marcharse.
+ */
+val SkeletonDissolve: ExitTransition =
+    fadeOut(tween(180)) +
+        scaleOut(targetScale = 1.04f, animationSpec = tween(240)) +
+        shrinkVertically(
+            animationSpec = tween(300, delayMillis = 40),
+            shrinkTowards = Alignment.Top
+        )
+
+/**
+ * Con lo que entra a ocupar ese sitio. Va con retardo para no cruzarse con la salida: en el
+ * fotograma en que se solapan las dos cosas es donde el cambio se ve sucio.
+ */
+val SkeletonReveal: FiniteAnimationSpec<Float> = tween(320, delayMillis = 90)
+
+/**
+ * Sale rápido y se pasa un pelo de largo antes de asentarse. Es la curva del muelle, pero
+ * en `tween`, que es lo único que admite retardo: sin él no hay escalonado que valga.
+ */
+private val RevealEasing = CubicBezierEasing(0.16f, 1.15f, 0.32f, 1f)
+
+/**
+ * Entrada escalonada de los hijos de un [SkeletonMorph]. Se usa con `animateEnterExit`
+ * dentro de su contenido: cada fila llega un poco después que la anterior, de arriba abajo,
+ * en vez de aparecer el bloque entero de una pieza.
+ */
+fun staggeredReveal(index: Int, stepMs: Int = 55): EnterTransition {
+    val delay = 120 + index * stepMs
+    return fadeIn(tween(240, delayMillis = delay)) +
+            slideInVertically(
+                animationSpec = tween(
+                    durationMillis = 380,
+                    delayMillis = delay,
+                    easing = RevealEasing
+                )
+            ) { (it * 0.4f).toInt() }
 }
 
 /**

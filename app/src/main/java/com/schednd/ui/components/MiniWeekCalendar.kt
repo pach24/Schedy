@@ -1,5 +1,7 @@
 package com.schednd.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -20,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -137,14 +140,19 @@ fun MiniWeekCalendar(
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))
+                        // Los puntos no aparecen de golpe: llegan con el listado, que tarda
+                        // lo suyo, y encenderse de un fotograma a otro delata la espera.
+                        val dotColor by animateColorAsState(
+                            targetValue = if (hasSession) MaterialTheme.colorScheme.primary
+                            else Color.Transparent,
+                            animationSpec = tween(durationMillis = 320, delayMillis = 90),
+                            label = "miniCalendarDot"
+                        )
                         Box(
                             modifier = Modifier
                                 .size(5.dp)
                                 .clip(CircleShape)
-                                .background(
-                                    if (hasSession) MaterialTheme.colorScheme.primary
-                                    else Color.Transparent
-                                )
+                                .background(dotColor)
                         )
                     }
                 }
