@@ -16,7 +16,9 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import com.schednd.ui.components.ComingSoonDayDialog
 import com.schednd.ui.components.DialogBlurRadius
 import com.schednd.ui.components.liquidGlassBackdrop
+import com.schednd.ui.components.rememberCalendarExpansion
 import com.schednd.ui.components.rememberLiquidGlassState
 import com.schednd.presentation.detail.EventDetailScreen
 import com.schednd.presentation.detail.EventDetailViewModel
@@ -64,6 +67,23 @@ fun SessionShellScreen(
     val pagerState = rememberPagerState { tabs.size }
     val navigator = rememberTabNavigator(pagerState)
 
+    // Cuánto está ampliado el calendario. Vive aquí y no en la pestaña porque con el mes
+    // abierto el deslizar horizontal deja de ser cosa del pager: pasa a cambiar de mes.
+    val calendarExpansion = rememberCalendarExpansion()
+
+    // Se lee en composición, así que se saca de `progress` un booleano que solo cambia al
+    // cruzar el umbral: si no, el pager se recompondría en cada frame de la ampliación.
+    val calendarOpen by remember {
+        derivedStateOf { calendarExpansion.isOpen }
+    }
+
+    // Cambiar de pestaña recoge el mes, venga de la barra o de donde venga: la pestaña de
+    // al lado no tiene por qué heredar un calendario abierto. `targetPage` y no
+    // `currentPage` porque el destino se sabe al soltar, y esperar a que asiente llega tarde.
+    LaunchedEffect(pagerState.targetPage) {
+        if (tabs[pagerState.targetPage] != SessionTab.CALENDAR) calendarExpansion.collapse()
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier
@@ -87,7 +107,11 @@ fun SessionShellScreen(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                key = { tabs[it].name }
+                key = { tabs[it].name },
+                // Con el mes abierto, deslizar de lado es pasar de mes. Para cambiar de
+                // pestaña hay que recogerlo antes; la barra sigue ahí para quien prefiera
+                // el atajo, y tocarla lo recoge sola.
+                userScrollEnabled = !calendarOpen
             ) { page ->
                 Box(modifier = Modifier.fillMaxSize()) {
                     when (tabs[page]) {
@@ -98,7 +122,8 @@ fun SessionShellScreen(
                             totalParticipants = eventState.participants.size,
                             confirmedDate = eventState.confirmedDate,
                             onDayTap = { date -> tappedDate = date },
-                            onBack = onLeaveSession
+                            onBack = onLeaveSession,
+                            expansion = calendarExpansion
                         )
                         SessionTab.PROFILE -> ProfileTabScreen(
                             bottomPadding = innerPadding,

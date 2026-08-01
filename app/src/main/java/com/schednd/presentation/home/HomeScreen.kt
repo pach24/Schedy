@@ -55,6 +55,7 @@ import com.schednd.ui.components.DialogBlurRadius
 import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.MiniWeekCalendar
 import com.schednd.ui.components.SessionDayDialog
+import com.schednd.ui.components.rememberCalendarExpansion
 import com.schednd.ui.components.heroSurfaceColor
 import com.schednd.ui.components.rimHighlightBrush
 import com.schednd.ui.components.liquidGlassBackdrop
