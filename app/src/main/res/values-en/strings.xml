@@ -112,6 +112,9 @@
     <string name="detail_share_with_group">Share with the group</string>
     <string name="detail_past_session">PAST SESSION</string>
     <string name="detail_next_session">NEXT SESSION</string>
+    <string name="detail_live_session">LIVE NOW</string>
+    <string name="detail_live_started_at">STARTED AT %1$s</string>
+    <string name="detail_no_time_yet">NO TIME SET</string>
     <string name="detail_countdown_today">TODAY</string>
     <string name="detail_countdown_days">days</string>
     <string name="countdown_unit_days">DAYS</string>
@@ -231,6 +234,15 @@
     <plurals name="days_ago">
         <item quantity="one">%1$d day ago</item>
         <item quantity="other">%1$d days ago</item>
+    </plurals>
+    <string name="session_ended_just_now">just ended</string>
+    <plurals name="session_ended_minutes_ago">
+        <item quantity="one">ended %1$d min ago</item>
+        <item quantity="other">ended %1$d min ago</item>
+    </plurals>
+    <plurals name="session_ended_hours_ago">
+        <item quantity="one">ended %1$d h ago</item>
+        <item quantity="other">ended %1$d h ago</item>
     </plurals>
     <plurals name="days_until">
         <item quantity="one">in %1$d day</item>

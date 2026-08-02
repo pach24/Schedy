@@ -252,14 +252,20 @@ fun EventDetailScreen(
                             }
                         } else {
                             val confirmedDateLocal = uiState.confirmedDate
-                            val sessionIsPast = confirmedDateLocal != null && confirmedDateLocal.isBefore(LocalDate.now())
+                            // La fase la lleva el propio hero, que despierta al cumplirse la
+                            // hora: así la parrilla se retira sola cuando la sesión termina.
+                            val stage = confirmedDateLocal?.let {
+                                rememberSessionStage(it, uiState.startTime)
+                            }
+                            val sessionIsPast = stage == SessionStage.PAST
 
-                            if (confirmedDateLocal != null) {
+                            if (confirmedDateLocal != null && stage != null) {
                                 FadeIn(delayMs = 100) {
                                     SessionCountdown(
                                         confirmedDate = confirmedDateLocal,
                                         startTime = uiState.startTime,
                                         createdAt = uiState.createdAt,
+                                        stage = stage,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(top = 8.dp, bottom = 20.dp)

@@ -127,7 +127,7 @@ private fun SessionCountdownPreviewLight() {
     }
 }
 
-@Preview(name = "Countdown – hoy (Dark)", showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Countdown – hoy sin hora (Dark)", showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun SessionCountdownTodayPreviewDark() {
     SchedyTheme(darkTheme = true) {
@@ -139,6 +139,46 @@ private fun SessionCountdownTodayPreviewDark() {
         ) {
             SessionCountdown(
                 confirmedDate = LocalDate.now(),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Preview(name = "Countdown – en curso (Light)", showBackground = true)
+@Composable
+private fun SessionCountdownLivePreviewLight() {
+    SchedyTheme(darkTheme = false) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 16.dp, vertical = 24.dp)
+        ) {
+            SessionCountdown(
+                confirmedDate = LocalDate.now(),
+                startTime = java.time.LocalTime.now().minusHours(1).withMinute(0),
+                stage = SessionStage.LIVE,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Preview(name = "Countdown – terminada hoy (Dark)", showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun SessionCountdownEndedTodayPreviewDark() {
+    SchedyTheme(darkTheme = true) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 16.dp, vertical = 24.dp)
+        ) {
+            SessionCountdown(
+                confirmedDate = LocalDate.now(),
+                startTime = java.time.LocalTime.of(9, 0),
+                stage = SessionStage.PAST,
                 modifier = Modifier.fillMaxWidth()
             )
         }
