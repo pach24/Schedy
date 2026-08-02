@@ -3,7 +3,11 @@ package com.schednd.presentation.detail
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -22,7 +26,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
@@ -38,7 +44,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,6 +72,9 @@ import com.schednd.R
 
 /** Duración por defecto del evento de calendario cuando la sesión tiene hora. */
 internal const val SESSION_DEFAULT_DURATION_MS = 3L * 60 * 60 * 1000
+
+/** Lo que dura una sesión "en curso": la misma ventana que se lleva al calendario. */
+private val LIVE_WINDOW: Duration = Duration.ofMillis(SESSION_DEFAULT_DURATION_MS)
 
 /** La app maneja horas en 24 h en todas partes; la cuenta atrás no es la excepción. */
 private val HERO_TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
@@ -107,62 +115,185 @@ internal fun GenActionButton(
     }
 }
 
+/**
+ * En qué momento de su vida está la sesión confirmada. Sin una hora fijada no hay forma de
+ * saber si ya ha empezado, así que esas sesiones se saltan [LIVE] y son [UPCOMING] el día
+ * entero.
+ */
+internal enum class SessionStage { UPCOMING, LIVE, PAST }
+
+/** Cuándo arranca la sesión; sin hora fijada, el comienzo de su día. */
+private fun sessionStart(date: LocalDate, time: LocalTime?): LocalDateTime =
+    LocalDateTime.of(date, time ?: LocalTime.MIDNIGHT)
+
+/** Cuándo deja de estar en curso: la ventana de duración o, sin hora, el final del día. */
+private fun sessionEnd(date: LocalDate, time: LocalTime?): LocalDateTime =
+    if (time == null) date.plusDays(1).atStartOfDay() else sessionStart(date, time) + LIVE_WINDOW
+
+internal fun stageAt(now: LocalDateTime, date: LocalDate, time: LocalTime?): SessionStage = when {
+    !now.isBefore(sessionEnd(date, time)) -> SessionStage.PAST
+    time == null || now.isBefore(sessionStart(date, time)) -> SessionStage.UPCOMING
+    else -> SessionStage.LIVE
+}
+
+/**
+ * Sigue la sesión mientras la pantalla está abierta: en vez de mirar el reloj una vez al
+ * componer, duerme hasta el siguiente salto de fase y despierta justo ahí. Así el hero pasa
+ * solo de próxima a en curso y de en curso a pasada, sin quedarse clavado.
+ */
+@Composable
+internal fun rememberSessionStage(confirmedDate: LocalDate, startTime: LocalTime?): SessionStage {
+    val stage = remember(confirmedDate, startTime) {
+        mutableStateOf(stageAt(LocalDateTime.now(), confirmedDate, startTime))
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(confirmedDate, startTime, lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                val now = LocalDateTime.now()
+                val current = stageAt(now, confirmedDate, startTime)
+                stage.value = current
+                // Pasada es el final del camino: no hay más saltos que esperar.
+                if (current == SessionStage.PAST) break
+                val next = if (current == SessionStage.UPCOMING && startTime != null) {
+                    sessionStart(confirmedDate, startTime)
+                } else {
+                    sessionEnd(confirmedDate, startTime)
+                }
+                // El margen evita despertar un pelo antes del salto y tener que reintentarlo.
+                delay(Duration.between(now, next).toMillis().coerceAtLeast(0L) + 250L)
+            }
+        }
+    }
+    return stage.value
+}
+
 @Composable
 internal fun SessionCountdown(
     confirmedDate: LocalDate,
     modifier: Modifier = Modifier,
     startTime: LocalTime? = null,
-    createdAt: LocalDateTime? = null
+    createdAt: LocalDateTime? = null,
+    stage: SessionStage = rememberSessionStage(confirmedDate, startTime)
 ) {
-    val today = LocalDate.now()
-    val daysLeft = ChronoUnit.DAYS.between(today, confirmedDate)
-    val isPast = daysLeft < 0
-    val daysAgo = -daysLeft
-
     Column(modifier = modifier) {
-        Text(
-            text = stringResource(if (isPast) R.string.detail_past_session else R.string.detail_next_session),
-            style = MaterialTheme.typography.labelSmall.copy(
-                letterSpacing = 2.sp,
-                fontWeight = FontWeight.Bold
-            ),
-            color = if (isPast) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
-        )
+        when (stage) {
+            SessionStage.LIVE -> LiveSessionLabel()
+            else -> Text(
+                text = stringResource(
+                    if (stage == SessionStage.PAST) R.string.detail_past_session
+                    else R.string.detail_next_session
+                ),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    letterSpacing = 2.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                color = if (stage == SessionStage.PAST) MaterialTheme.colorScheme.onSurfaceVariant
+                else MaterialTheme.colorScheme.primary
+            )
+        }
         Spacer(modifier = Modifier.height(2.dp))
-        if (isPast) {
-            val pastLabel = confirmedDate.format(
-                DateTimeFormatter.ofPattern(stringResource(R.string.date_pattern_weekday_day_month), Locale.getDefault())
-            ).replaceFirstChar { it.uppercaseChar() }
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    text = pastLabel,
-                    style = MaterialTheme.typography.displaySmall.copy(
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = (-1).sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = pluralStringResource(R.plurals.days_ago, daysAgo.toInt(), daysAgo.toInt()),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                )
-            }
+        if (stage == SessionStage.PAST) {
+            PastSessionSummary(confirmedDate = confirmedDate, startTime = startTime)
         } else {
             UpcomingSessionHero(
                 confirmedDate = confirmedDate,
                 startTime = startTime,
-                createdAt = createdAt
+                createdAt = createdAt,
+                live = stage == SessionStage.LIVE
             )
+        }
+    }
+}
+
+/** Cabecera de la sesión en marcha: el punto late para que se note que corre el tiempo. */
+@Composable
+private fun LiveSessionLabel() {
+    val transition = rememberInfiniteTransition(label = "live")
+    val dotAlpha by transition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot"
+    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = dotAlpha))
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = stringResource(R.string.detail_live_session),
+            style = MaterialTheme.typography.labelSmall.copy(
+                letterSpacing = 2.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+/** La sesión ya pasó: la fecha en grande y cuánto hace que terminó. */
+@Composable
+private fun PastSessionSummary(confirmedDate: LocalDate, startTime: LocalTime?) {
+    val pastLabel = confirmedDate.format(
+        DateTimeFormatter.ofPattern(stringResource(R.string.date_pattern_weekday_day_month), Locale.getDefault())
+    ).replaceFirstChar { it.uppercaseChar() }
+    Row(verticalAlignment = Alignment.Bottom) {
+        Text(
+            text = pastLabel,
+            style = MaterialTheme.typography.displaySmall.copy(
+                fontWeight = FontWeight.Black,
+                letterSpacing = (-1).sp
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = elapsedSinceSessionText(confirmedDate, startTime),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 6.dp)
+        )
+    }
+}
+
+/**
+ * "terminó hace 2 h" mientras la cosa está reciente y "hace 3 días" a partir de ahí. El
+ * corte va por tiempo transcurrido y no por día natural: una sesión que acaba a la 01:00 no
+ * puede decir "hace 1 día" a la 01:30. Un tic de minuto lo mantiene fresco con la pantalla
+ * abierta.
+ */
+@Composable
+private fun elapsedSinceSessionText(date: LocalDate, startTime: LocalTime?): String {
+    val now by rememberMinuteTick()
+    val minutes = ChronoUnit.MINUTES.between(sessionEnd(date, startTime), now)
+    return when {
+        minutes < 1L -> stringResource(R.string.session_ended_just_now)
+        minutes < 60L -> pluralStringResource(
+            R.plurals.session_ended_minutes_ago, minutes.toInt(), minutes.toInt()
+        )
+        minutes < 24L * 60L -> {
+            val hours = (minutes / 60L).toInt()
+            pluralStringResource(R.plurals.session_ended_hours_ago, hours, hours)
+        }
+        // Ya en días, lo natural es contarlos por el calendario, como los cuenta quien mira.
+        else -> {
+            val days = ChronoUnit.DAYS.between(date, now.toLocalDate()).toInt().coerceAtLeast(1)
+            pluralStringResource(R.plurals.days_ago, days, days)
         }
     }
 }
 
 /**
  * Hero de la próxima sesión: días grandes, la hora al fondo como marca de agua, la barra
- * de lo que llevamos esperando y el desglose que corre segundo a segundo.
+ * de lo que llevamos esperando y el desglose que corre segundo a segundo. Con [live] el
+ * mismo hero sirve la sesión en marcha: el desglose pasa a contar lo que lleva.
  *
  * El tic solo lo leen las piezas que cambian: la cuenta vive en un [State] que se pasa sin
  * abrir, así que el número gordo, la fecha y la hora fantasma se componen una vez y no
@@ -172,15 +303,20 @@ internal fun SessionCountdown(
 private fun UpcomingSessionHero(
     confirmedDate: LocalDate,
     startTime: LocalTime?,
-    createdAt: LocalDateTime?
+    createdAt: LocalDateTime?,
+    live: Boolean
 ) {
-    val target = remember(confirmedDate, startTime) {
-        LocalDateTime.of(confirmedDate, startTime ?: LocalTime.MIDNIGHT)
-    }
+    val target = remember(confirmedDate, startTime) { sessionStart(confirmedDate, startTime) }
     val remaining = rememberCountdown(target)
     // Cada unidad se deriva por separado: los segundos invalidan su hueco cada segundo,
     // pero minutos, horas y días solo cuando de verdad cambian.
-    val days = remember(remaining) { derivedStateOf { remaining.value.toDays().toInt() } }
+    // Sin hora fijada se apunta a la medianoche de ese día, que ya es parte de la sesión:
+    // los días se redondean hacia arriba para que el número gordo diga los que faltan.
+    val days = remember(remaining, startTime) {
+        derivedStateOf {
+            if (startTime == null) ceilDays(remaining.value) else remaining.value.toDays().toInt()
+        }
+    }
     val hours = remember(remaining) { derivedStateOf { (remaining.value.toHours() % 24).toInt() } }
     val minutes = remember(remaining) { derivedStateOf { (remaining.value.toMinutes() % 60).toInt() } }
     val seconds = remember(remaining) { derivedStateOf { (remaining.value.seconds % 60).toInt() } }
@@ -208,33 +344,37 @@ private fun UpcomingSessionHero(
             ),
             color = MaterialTheme.colorScheme.onSurface
         )
-        Spacer(modifier = Modifier.width(8.dp))
-        Column(modifier = Modifier.padding(bottom = 8.dp)) {
-            if (!isToday) {
+        // En curso el día sobra: "HOY" ya lo dice, y su hueco lo necesita la hora para que
+        // la fila quepa entera en pantallas estrechas.
+        if (!live) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                if (!isToday) {
+                    Text(
+                        text = stringResource(R.string.detail_countdown_days),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Text(
-                    text = stringResource(R.string.detail_countdown_days),
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                    text = dayLabel,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Text(
-                text = dayLabel,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
         // La hora en grande solo cabe mientras el número sea de dos cifras; el día de la
-        // sesión el hueco se lo queda "HOY" y la hora sigue viva abajo, en el desglose.
-        if (startTime != null && !isToday) {
+        // sesión el hueco se lo queda "HOY", y en curso entra encogida para que quepan las dos.
+        if (startTime != null && (!isToday || live)) {
             Spacer(modifier = Modifier.weight(1f))
             Text(
                 text = HERO_TIME_FORMAT.format(startTime),
                 style = MaterialTheme.typography.displayLarge.copy(
                     fontWeight = FontWeight.Black,
-                    fontSize = 72.sp,
+                    fontSize = if (isToday) 48.sp else 72.sp,
                     letterSpacing = (-3).sp
                 ),
                 maxLines = 1,
@@ -254,21 +394,45 @@ private fun UpcomingSessionHero(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = fullDateLine(confirmedDate, startTime, target, locale),
+            text = if (live) startedAtLine(target, locale)
+            else fullDateLine(confirmedDate, startTime, target, locale),
             style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .weight(1f, fill = false)
                 .padding(end = 8.dp, bottom = 2.dp)
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            CountdownUnit(value = days, labelRes = R.string.countdown_unit_days)
-            CountdownUnit(value = hours, labelRes = R.string.countdown_unit_hours)
-            CountdownUnit(value = minutes, labelRes = R.string.countdown_unit_minutes)
-            CountdownUnit(value = seconds, labelRes = R.string.countdown_unit_seconds)
+        when {
+            // En curso el desglose cambia de sentido: ya no falta, lleva.
+            live -> LiveElapsedBreakdown(start = target)
+            // Sin hora no hay instante al que contar; los ceros solo serían ruido.
+            startTime == null -> Unit
+            else -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                CountdownUnit(value = days, labelRes = R.string.countdown_unit_days)
+                CountdownUnit(value = hours, labelRes = R.string.countdown_unit_hours)
+                CountdownUnit(value = minutes, labelRes = R.string.countdown_unit_minutes)
+                CountdownUnit(value = seconds, labelRes = R.string.countdown_unit_seconds)
+            }
         }
     }
 }
+
+/** Lo que lleva corriendo la sesión, en horas y minutos. */
+@Composable
+private fun LiveElapsedBreakdown(start: LocalDateTime) {
+    val elapsed = rememberElapsed(start)
+    val hours = remember(elapsed) { derivedStateOf { elapsed.value.toHours().toInt() } }
+    val minutes = remember(elapsed) { derivedStateOf { (elapsed.value.toMinutes() % 60).toInt() } }
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        CountdownUnit(value = hours, labelRes = R.string.countdown_unit_hours)
+        CountdownUnit(value = minutes, labelRes = R.string.countdown_unit_minutes)
+    }
+}
+
+/** "EMPEZÓ A LAS 18:00 CEST": mientras corre, la hora de inicio es la referencia útil. */
+@Composable
+private fun startedAtLine(target: LocalDateTime, locale: Locale): String =
+    stringResource(R.string.detail_live_started_at, zonedTimeText(target, locale))
 
 /** "SÁB 01 DE AGOSTO · 18:00 CEST": la línea completa, para no dejarla a la interpretación. */
 @Composable
@@ -282,15 +446,22 @@ private fun fullDateLine(
     val dateText = remember(date, datePattern, locale) {
         date.format(DateTimeFormatter.ofPattern(datePattern, locale)).uppercase(locale)
     }
-    if (startTime == null) return dateText
-    // La zona sale del instante concreto de la sesión, no de hoy: en verano es CEST y en
-    // invierno CET, y quien lee el hero en marzo no tiene por qué hacer la conversión.
-    val timeText = remember(target, locale) {
+    // Sin hora se dice, en vez de callarlo: es lo que le falta a la sesión para estar cerrada.
+    val timeText = if (startTime == null) stringResource(R.string.detail_no_time_yet)
+    else zonedTimeText(target, locale)
+    return stringResource(R.string.detail_date_with_time, dateText, timeText)
+}
+
+/**
+ * "18:00 CEST". La zona sale del instante concreto de la sesión, no de hoy: en verano es
+ * CEST y en invierno CET, y quien lee el hero en marzo no tiene por qué hacer la conversión.
+ */
+@Composable
+private fun zonedTimeText(target: LocalDateTime, locale: Locale): String =
+    remember(target, locale) {
         val zoned = target.atZone(ZoneId.systemDefault())
         "${HERO_TIME_FORMAT.format(zoned)} ${ZONE_FORMAT.withLocale(locale).format(zoned)}"
     }
-    return stringResource(R.string.detail_date_with_time, dateText, timeText)
-}
 
 /** Un bloque del desglose: cifra arriba, unidad abajo. */
 @Composable
@@ -396,14 +567,55 @@ private fun rememberCountdown(target: LocalDateTime): State<Duration> {
     return remaining
 }
 
+/**
+ * Tiempo transcurrido desde que empezó la sesión. Solo se pintan horas y minutos, así que
+ * despierta en cada cambio de minuto en vez de cada segundo.
+ */
+@Composable
+private fun rememberElapsed(start: LocalDateTime): State<Duration> {
+    val elapsed = remember(start) {
+        mutableStateOf(Duration.between(start, LocalDateTime.now()).coerceAtLeast(Duration.ZERO))
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(start, lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                elapsed.value = Duration.between(start, LocalDateTime.now())
+                    .coerceAtLeast(Duration.ZERO)
+                delay(60_000L - System.currentTimeMillis() % 60_000L)
+            }
+        }
+    }
+    return elapsed
+}
+
+/** Reloj de grano grueso para los textos en minutos y días, que no necesitan más. */
+@Composable
+private fun rememberMinuteTick(): State<LocalDateTime> {
+    val now = remember { mutableStateOf(LocalDateTime.now()) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                now.value = LocalDateTime.now()
+                delay(60_000L - System.currentTimeMillis() % 60_000L)
+            }
+        }
+    }
+    return now
+}
+
+/** Días hacia arriba: 4 h que quedan del día siguen siendo "1 día". */
+internal fun ceilDays(remaining: Duration): Int {
+    val seconds = remaining.seconds.coerceAtLeast(0L)
+    return ((seconds + 86_399L) / 86_400L).toInt()
+}
+
 /** Cifras a dos dígitos sin pasar por el formateador: son las mismas 100 cadenas siempre. */
 private val TWO_DIGITS: Array<String> = Array(100) { if (it < 10) "0$it" else it.toString() }
 
 private fun twoDigits(value: Int): String =
     if (value in 0..99) TWO_DIGITS[value] else value.toString()
-
-private fun twoDigits(value: Long): String =
-    if (value in 0..99) TWO_DIGITS[value.toInt()] else value.toString()
 
 /**
  * Envoltorio común de los diálogos de la pantalla: scrim que cierra al tocar fuera y

@@ -116,6 +116,9 @@
     <string name="detail_share_with_group">Compartir con el grupo</string>
     <string name="detail_past_session">SESIÓN PASADA</string>
     <string name="detail_next_session">PRÓXIMA SESIÓN</string>
+    <string name="detail_live_session">EN CURSO</string>
+    <string name="detail_live_started_at">EMPEZÓ A LAS %1$s</string>
+    <string name="detail_no_time_yet">SIN HORA</string>
     <string name="detail_countdown_today">HOY</string>
     <string name="detail_countdown_days">días</string>
     <string name="countdown_unit_days">DÍAS</string>
@@ -236,6 +239,15 @@
     <plurals name="days_ago">
         <item quantity="one">hace %1$d día</item>
         <item quantity="other">hace %1$d días</item>
+    </plurals>
+    <string name="session_ended_just_now">acaba de terminar</string>
+    <plurals name="session_ended_minutes_ago">
+        <item quantity="one">terminó hace %1$d min</item>
+        <item quantity="other">terminó hace %1$d min</item>
+    </plurals>
+    <plurals name="session_ended_hours_ago">
+        <item quantity="one">terminó hace %1$d h</item>
+        <item quantity="other">terminó hace %1$d h</item>
     </plurals>
     <plurals name="days_until">
         <item quantity="one">en %1$d día</item>
