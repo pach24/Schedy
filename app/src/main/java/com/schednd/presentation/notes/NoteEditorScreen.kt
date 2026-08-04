@@ -202,7 +202,7 @@ fun NoteEditorScreen(
             uiState.error?.let { err ->
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = err,
+                    text = stringResource(err.messageRes),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(horizontal = 20.dp)

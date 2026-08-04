@@ -11,7 +11,14 @@
     <string name="chooser_share_code">Share code</string>
     <string name="session_fallback_name">Session</string>
     <string name="anonymous_player">Anonymous</string>
-    <string name="error_prefix">Error: %1$s</string>
+
+    <!-- Failures, in plain words: the raw Firebase message is never shown -->
+    <string name="error_offline">No connection. Check your network and try again.</string>
+    <string name="error_not_allowed">You don\'t have permission to do this.</string>
+    <string name="error_note_not_found">Note not found</string>
+    <string name="error_unknown">Something went wrong. Try again.</string>
+    <string name="error_retry">Retry</string>
+    <string name="error_dismiss">Got it</string>
 
     <!-- Navigation -->
     <string name="date_pattern_weekday">EEEE</string>

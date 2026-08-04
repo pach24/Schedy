@@ -29,6 +29,12 @@ class FakeEventRepository(
     var removedParticipants: MutableList<Pair<String, String>> = mutableListOf()
         private set
 
+    /** Se ejecuta justo antes de servir el listado: sirve para mirar cómo se pidió. */
+    var beforeGetEvents: () -> Unit = {}
+
+    /** Si se deja puesto, la próxima lectura del listado falla con esto y se olvida. */
+    var failNextGetEvents: Exception? = null
+
     override suspend fun createEvent(name: String, creatorId: String): String {
         val code = "CODE${createdEvents.size + 1}"
         createdEvents += name to creatorId
@@ -55,8 +61,14 @@ class FakeEventRepository(
         participants.value = participants.value + (code to current + Participant(userId, name))
     }
 
-    override suspend fun getEvents(codes: Collection<String>): List<Event> =
-        codes.mapNotNull { events.value[it] }
+    override suspend fun getEvents(codes: Collection<String>): List<Event> {
+        beforeGetEvents()
+        failNextGetEvents?.let {
+            failNextGetEvents = null
+            throw it
+        }
+        return codes.mapNotNull { events.value[it] }
+    }
 
     override suspend fun removeParticipant(code: String, userId: String) {
         removedParticipants += code to userId

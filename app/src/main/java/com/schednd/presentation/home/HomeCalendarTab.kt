@@ -137,7 +137,8 @@ internal fun HomeCalendarTab(
                 nextSession = uiState.nextSession,
                 onSessionClick = onDayTap
             )
-        } else if (uiState.isAuthReady) {
+        } else if (!uiState.isLoading && uiState.error == null) {
+            // Ni cargando ni fallando: entonces sí, es que no hay ninguna fecha puesta.
             Spacer(modifier = Modifier.height(32.dp))
             EmptyCalendarHint(modifier = Modifier.padding(horizontal = 20.dp))
         }

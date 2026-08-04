@@ -13,7 +13,14 @@
     <string name="chooser_share_code">Compartir código</string>
     <string name="session_fallback_name">Sesión</string>
     <string name="anonymous_player">Anónimo</string>
-    <string name="error_prefix">Error: %1$s</string>
+
+    <!-- Fallos, en cristiano: nunca se enseña el mensaje crudo de Firebase -->
+    <string name="error_offline">Sin conexión. Comprueba tu red e inténtalo de nuevo.</string>
+    <string name="error_not_allowed">No tienes permiso para hacer esto.</string>
+    <string name="error_note_not_found">Nota no encontrada</string>
+    <string name="error_unknown">Algo ha salido mal. Inténtalo de nuevo.</string>
+    <string name="error_retry">Reintentar</string>
+    <string name="error_dismiss">Vale</string>
 
     <!-- Patrones de fecha -->
     <string name="date_pattern_weekday">EEEE</string>

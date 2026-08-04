@@ -8,6 +8,8 @@ import com.schednd.domain.model.NoteTag
 import com.schednd.domain.usecase.note.DeleteNoteUseCase
 import com.schednd.domain.usecase.note.ObserveNotesUseCase
 import com.schednd.domain.usecase.note.ToggleNotePinUseCase
+import com.schednd.presentation.common.UiError
+import com.schednd.presentation.common.toUiError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +24,7 @@ data class NotesUiState(
     val selectedTag: NoteTag? = null,
     val isLoading: Boolean = true,
     val participantsCount: Int = 0,
-    val error: String? = null
+    val error: UiError? = null
 )
 
 @HiltViewModel
@@ -42,7 +44,7 @@ class NotesViewModel @Inject constructor(
         viewModelScope.launch {
             observeNotes(code)
                 .catch { e ->
-                    _uiState.update { it.copy(isLoading = false, error = e.message) }
+                    _uiState.update { it.copy(isLoading = false, error = e.toUiError()) }
                 }
                 .collect { notes ->
                     _uiState.update { it.copy(notes = notes, isLoading = false) }
@@ -67,7 +69,7 @@ class NotesViewModel @Inject constructor(
             try {
                 toggleNotePin(code, noteId, !currentlyPinned)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                _uiState.update { it.copy(error = e.toUiError()) }
             }
         }
     }
@@ -77,7 +79,7 @@ class NotesViewModel @Inject constructor(
             try {
                 deleteNoteUseCase(code, noteId)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                _uiState.update { it.copy(error = e.toUiError()) }
             }
         }
     }

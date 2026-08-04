@@ -12,13 +12,18 @@ import com.schednd.domain.usecase.session.GetSavedSessionCodesUseCase
 import com.schednd.domain.usecase.session.GetSessionsUseCase
 import com.schednd.domain.usecase.session.LeaveSessionUseCase
 import com.schednd.domain.usecase.session.ObserveParticipantsUseCase
+import com.schednd.presentation.common.UiError
+import com.schednd.presentation.common.toUiError
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -58,14 +63,19 @@ data class HomeSessionCard(
 }
 
 data class HomeUiState(
-    val isAuthReady: Boolean = false,
+    /**
+     * Todavía no ha llegado a completarse ninguna carga: no hay nada que enseñar, ni
+     * siquiera para decir que no hay nada. Los refrescos posteriores no lo vuelven a
+     * levantar; se hacen por detrás, sin quitar de en medio lo que ya se estaba viendo.
+     */
+    val isLoading: Boolean = true,
     /** Nombre elegido en el onboarding; null en sesiones creadas antes de pedirlo. */
     val playerName: String? = null,
     val nextSession: HomeSessionCard? = null,
     val allSessions: List<HomeSessionCard> = emptyList(),
     val upcomingSessions: List<HomeSessionCard> = emptyList(),
     val pastSessions: List<HomeSessionCard> = emptyList(),
-    val error: String? = null
+    val error: UiError? = null
 )
 
 @HiltViewModel
@@ -84,27 +94,49 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState
 
+    /** La carga en curso, para no lanzar dos a la vez. */
+    private var loadJob: Job? = null
+
+    /**
+     * Ya se ha completado una carga alguna vez. A partir de ahí no se vuelve a poner la
+     * rueda: volver a home con el listado ya traído lo relee por detrás, y quien no tenga
+     * ninguna mesa ve su hueco de siempre en vez de un parpadeo.
+     */
+    private var everLoaded = false
+
     init {
-        viewModelScope.launch {
-            try {
-                ensureSignedIn()
-                _uiState.value = _uiState.value.copy(
-                    isAuthReady = true,
-                    playerName = getPlayerName()
-                )
-                loadRecentEvents()
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = e.message)
-            }
-        }
+        load()
     }
 
+    /** Al volver a home, y al tocar «Reintentar» cuando la anterior se quedó a medias. */
     fun refresh() {
-        viewModelScope.launch {
-            // El nombre se relee al volver a home: si algún día se puede cambiar, el
-            // saludo no se queda con el viejo hasta reiniciar la app.
-            _uiState.value = _uiState.value.copy(playerName = getPlayerName())
-            loadRecentEvents()
+        load()
+    }
+
+    /**
+     * Toda lectura pasa por aquí, y siempre detrás de la sesión anónima: sin uid las reglas
+     * de Firestore rechazan hasta la lectura. La pantalla pide refrescar nada más
+     * componerse, con el registro todavía en camino, y aquello se iba a Firestore sin
+     * esperarlo: de ahí el «PERMISSION_DENIED» crudo en mitad de la pantalla.
+     */
+    private fun load() {
+        // Arranque y primer refresco salen casi a la vez y traerían lo mismo.
+        if (loadJob?.isActive == true) return
+        loadJob = viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = !everLoaded, error = null) }
+            try {
+                ensureSignedIn()
+                // El nombre se relee en cada carga: si algún día se puede cambiar, el
+                // saludo no se queda con el viejo hasta reiniciar la app.
+                _uiState.update { it.copy(playerName = getPlayerName()) }
+                loadRecentEvents()
+                everLoaded = true
+                _uiState.update { it.copy(isLoading = false) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.toUiError()) }
+            }
         }
     }
 
@@ -116,15 +148,20 @@ class HomeViewModel @Inject constructor(
     fun removeSession(session: HomeSessionCard) {
         viewModelScope.launch {
             try {
+                // Igual que al leer: primero la sesión anónima, que es lo que hace que las
+                // reglas dejen escribir. Si ya hay una, no cuesta nada.
+                val userId = ensureSignedIn()
                 if (session.isCreator) {
                     deleteSession(session.code)
                 } else {
-                    val userId = getCurrentUserId() ?: ensureSignedIn()
                     leaveSession(session.code, userId)
                 }
                 loadRecentEvents()
+                _uiState.update { it.copy(error = null) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = e.message)
+                _uiState.update { it.copy(error = e.toUiError()) }
             }
         }
     }
@@ -132,12 +169,14 @@ class HomeViewModel @Inject constructor(
     private suspend fun loadRecentEvents() {
         val codes = getSavedSessionCodes()
         if (codes.isEmpty()) {
-            _uiState.value = _uiState.value.copy(
-                allSessions = emptyList(),
-                upcomingSessions = emptyList(),
-                pastSessions = emptyList(),
-                nextSession = null
-            )
+            _uiState.update {
+                it.copy(
+                    allSessions = emptyList(),
+                    upcomingSessions = emptyList(),
+                    pastSessions = emptyList(),
+                    nextSession = null
+                )
+            }
             return
         }
         val events = getSessions(codes)
@@ -193,12 +232,14 @@ class HomeViewModel @Inject constructor(
         )
         val pastOrdered = past.sortedByDescending { it.startDateTime }
 
-        _uiState.value = _uiState.value.copy(
-            allSessions = upcomingOrdered + pastOrdered,
-            upcomingSessions = upcomingOrdered,
-            pastSessions = pastOrdered,
-            nextSession = nextSession
-        )
+        _uiState.update {
+            it.copy(
+                allSessions = upcomingOrdered + pastOrdered,
+                upcomingSessions = upcomingOrdered,
+                pastSessions = pastOrdered,
+                nextSession = nextSession
+            )
+        }
     }
 
     private fun Timestamp.toLocalDate(): LocalDate =
