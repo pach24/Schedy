@@ -100,8 +100,11 @@ fun JoinEventContent(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.error) {
-        uiState.error?.let {
+    // El texto se resuelve en composición: stringResource no se puede llamar desde dentro
+    // del efecto, y el estado guarda el tipo de fallo, no la frase.
+    val errorMessage = uiState.error?.let { stringResource(it.messageRes) }
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
             snackbarHostState.showSnackbar(it)
             onClearError()
         }

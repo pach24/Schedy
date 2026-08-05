@@ -20,13 +20,16 @@ import com.schednd.fakes.FakeNoteRepository
 import com.schednd.fakes.FakePlayerRepository
 import com.schednd.fakes.FakeRecentEventsRepository
 import com.schednd.fakes.FakeSessionReminderScheduler
+import com.schednd.presentation.common.UiError
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.io.IOException
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Date
@@ -56,10 +59,10 @@ class HomeViewModelTest {
         nombre: String? = "Francisco",
         recientes: FakeRecentEventsRepository = FakeRecentEventsRepository(codes),
         avisos: FakeMessagingRepository = FakeMessagingRepository(),
-        recordatorios: FakeSessionReminderScheduler = FakeSessionReminderScheduler()
+        recordatorios: FakeSessionReminderScheduler = FakeSessionReminderScheduler(),
+        auth: FakeAuthRepository = FakeAuthRepository()
     ): HomeViewModel {
         val noteRepo = FakeNoteRepository()
-        val auth = FakeAuthRepository()
         return HomeViewModel(
             ensureSignedIn = EnsureSignedInUseCase(auth),
             getCurrentUserId = GetCurrentUserIdUseCase(auth),
@@ -83,12 +86,65 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `saluda con el nombre guardado y marca la sesion lista`() = runTest {
+    fun `saluda con el nombre guardado y deja de cargar`() = runTest {
         val vm = viewModel(FakeEventRepository(), codes = emptyList())
         advanceUntilIdle()
 
         assertEquals("Francisco", vm.uiState.value.playerName)
-        assertTrue(vm.uiState.value.isAuthReady)
+        assertFalse(vm.uiState.value.isLoading)
+        assertNull(vm.uiState.value.error)
+    }
+
+    @Test
+    fun `nada se lee antes de tener sesion anonima`() = runTest {
+        // Sin uid las reglas de Firestore rechazan hasta la lectura: si el listado se
+        // pidiera antes de registrarse, la respuesta sería un PERMISSION_DENIED.
+        val auth = FakeAuthRepository()
+        val repo = FakeEventRepository(listOf(sesion("ABC234", dias = 3)))
+        var lecturasSinSesion = 0
+        repo.beforeGetEvents = { if (auth.ensureSignedInCalls == 0) lecturasSinSesion++ }
+        val vm = viewModel(repo, codes = listOf("ABC234"), auth = auth)
+        advanceUntilIdle()
+
+        // Y el refresco que la pantalla pide nada más componerse tampoco se adelanta.
+        vm.refresh()
+        advanceUntilIdle()
+
+        assertEquals(0, lecturasSinSesion)
+        assertEquals(listOf("ABC234"), vm.uiState.value.allSessions.map { it.code })
+    }
+
+    @Test
+    fun `si la carga falla lo cuenta sin reventar y reintentar lo arregla`() = runTest {
+        val repo = FakeEventRepository(listOf(sesion("ABC234", dias = 3)))
+        // Un IOException y no una FirebaseFirestoreException: la suya no se puede ni
+        // construir fuera del móvil, porque su enum de códigos arranca con un SparseArray.
+        repo.failNextGetEvents = IOException("sin red")
+        val vm = viewModel(repo, codes = listOf("ABC234"))
+        advanceUntilIdle()
+
+        assertEquals(UiError.OFFLINE, vm.uiState.value.error)
+        assertFalse(vm.uiState.value.isLoading)
+        assertTrue(vm.uiState.value.allSessions.isEmpty())
+
+        vm.refresh()
+        advanceUntilIdle()
+
+        assertNull(vm.uiState.value.error)
+        assertEquals(listOf("ABC234"), vm.uiState.value.allSessions.map { it.code })
+    }
+
+    @Test
+    fun `la rueda solo sale en la primera carga`() = runTest {
+        // Sin mesas guardadas el listado siempre viene vacío: si la rueda se guiara por eso,
+        // cada vuelta a home taparía el hueco de «aún no tienes mesas» con un parpadeo.
+        val vm = viewModel(FakeEventRepository(), codes = emptyList())
+        advanceUntilIdle()
+        assertFalse(vm.uiState.value.isLoading)
+
+        vm.refresh()
+
+        assertFalse(vm.uiState.value.isLoading)
     }
 
     @Test

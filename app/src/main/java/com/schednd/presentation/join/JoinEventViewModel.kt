@@ -10,6 +10,8 @@ import com.schednd.domain.usecase.session.GetSessionUseCase
 import com.schednd.domain.usecase.session.ObserveParticipantsUseCase
 import com.schednd.domain.usecase.session.SaveAvailabilityUseCase
 import com.schednd.domain.usecase.session.SubscribeToSessionUseCase
+import com.schednd.presentation.common.UiError
+import com.schednd.presentation.common.toUiError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,9 +22,6 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import com.google.firebase.Timestamp
 import javax.inject.Inject
-import android.content.Context
-import com.schednd.R
-import dagger.hilt.android.qualifiers.ApplicationContext
 
 data class JoinEventUiState(
     val code: String = "",
@@ -32,12 +31,11 @@ data class JoinEventUiState(
     val dateAttendeeCount: Map<LocalDate, Int> = emptyMap(),
     val isLoading: Boolean = false,
     val isSubmitted: Boolean = false,
-    val error: String? = null
+    val error: UiError? = null
 )
 
 @HiltViewModel
 class JoinEventViewModel @Inject constructor(
-    @ApplicationContext private val appContext: Context,
     private val ensureSignedIn: EnsureSignedInUseCase,
     private val getSession: GetSessionUseCase,
     private val observeParticipantsUseCase: ObserveParticipantsUseCase,
@@ -75,13 +73,13 @@ class JoinEventViewModel @Inject constructor(
             try {
                 val event = getSession(code)
                 if (event == null) {
-                    _uiState.update { it.copy(isLoading = false, error = appContext.getString(R.string.detail_session_not_found)) }
+                    _uiState.update { it.copy(isLoading = false, error = UiError.SESSION_NOT_FOUND) }
                 } else {
                     _uiState.update { it.copy(isLoading = false, event = event) }
                     observeParticipants(code)
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, error = e.toUiError()) }
             }
         }
     }
@@ -114,7 +112,7 @@ class JoinEventViewModel @Inject constructor(
                 subscribeToSession(state.code)
                 _uiState.update { it.copy(isLoading = false, isSubmitted = true) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, error = e.toUiError()) }
             }
         }
     }

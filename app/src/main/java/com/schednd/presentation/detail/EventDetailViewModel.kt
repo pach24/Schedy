@@ -24,6 +24,8 @@ import com.schednd.domain.model.DateSummary
 import com.schednd.domain.usecase.session.ComputeDateSummariesUseCase
 import com.schednd.domain.model.Event
 import com.schednd.domain.model.Participant
+import com.schednd.presentation.common.UiError
+import com.schednd.presentation.common.toUiError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -40,9 +42,6 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import javax.inject.Inject
-import android.content.Context
-import com.schednd.R
-import dagger.hilt.android.qualifiers.ApplicationContext
 
 
 data class EventDetailUiState(
@@ -65,12 +64,16 @@ data class EventDetailUiState(
     val mySavedDates: Set<LocalDate> = emptySet(),
     val isSavingAvailability: Boolean = false,
     val myUserId: String? = null,
-    val error: String? = null
+    /**
+     * Lo último que falló. Solo se lleva la pantalla por delante cuando no hay sesión que
+     * enseñar: si el fallo fue de una acción suelta, el contenido sigue ahí y el aviso se
+     * pone encima.
+     */
+    val error: UiError? = null
 )
 
 @HiltViewModel
 class EventDetailViewModel @Inject constructor(
-    @ApplicationContext private val appContext: Context,
     savedStateHandle: SavedStateHandle,
     private val ensureSignedIn: EnsureSignedInUseCase,
     private val getCurrentUserId: GetCurrentUserIdUseCase,
@@ -116,7 +119,7 @@ class EventDetailViewModel @Inject constructor(
                         Pair(event, participants)
                     }
                     .catch { e ->
-                        _uiState.update { it.copy(isLoading = false, error = e.message) }
+                        _uiState.update { it.copy(isLoading = false, error = e.toUiError()) }
                     }
                     .collect { (event, participants) ->
                         if (event != null) {
@@ -177,7 +180,7 @@ class EventDetailViewModel @Inject constructor(
                             }
                         } else {
                             _uiState.update {
-                                it.copy(isLoading = false, error = appContext.getString(R.string.detail_session_not_found))
+                                it.copy(isLoading = false, error = UiError.SESSION_NOT_FOUND)
                             }
                         }
                     }
@@ -187,7 +190,7 @@ class EventDetailViewModel @Inject constructor(
                 // error hasta que la navegación se llevaba la pantalla.
                 throw e
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, error = e.toUiError()) }
             }
         }
     }
@@ -224,7 +227,7 @@ class EventDetailViewModel @Inject constructor(
                 )
                 _uiState.update { it.copy(isSavingAvailability = false) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isSavingAvailability = false, error = e.message) }
+                _uiState.update { it.copy(isSavingAvailability = false, error = e.toUiError()) }
             }
         }
     }
@@ -240,7 +243,7 @@ class EventDetailViewModel @Inject constructor(
             try {
                 confirmSessionDate(code, date, startTime)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                _uiState.update { it.copy(error = e.toUiError()) }
             }
         }
     }
@@ -249,7 +252,7 @@ class EventDetailViewModel @Inject constructor(
         if (!_uiState.value.isCreator) return
         viewModelScope.launch {
             try { setSessionStartTime(code, startTime) }
-            catch (e: Exception) { _uiState.update { it.copy(error = e.message) } }
+            catch (e: Exception) { _uiState.update { it.copy(error = e.toUiError()) } }
         }
     }
 
@@ -260,7 +263,7 @@ class EventDetailViewModel @Inject constructor(
                 clearSessionDate(code)
                 cancelSessionReminder(code)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                _uiState.update { it.copy(error = e.toUiError()) }
             }
         }
     }
@@ -274,7 +277,7 @@ class EventDetailViewModel @Inject constructor(
                 deleteSession(code)
                 _uiState.update { it.copy(isDeleted = true) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                _uiState.update { it.copy(error = e.toUiError()) }
             }
         }
     }
@@ -296,9 +299,14 @@ class EventDetailViewModel @Inject constructor(
                 leaveSession(code, userId)
                 _uiState.update { it.copy(hasLeft = true) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                _uiState.update { it.copy(error = e.toUiError()) }
             }
         }
+    }
+
+    /** El aviso de un fallo suelto no se queda fijo: se va al rato o al tocarlo. */
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
     }
 
     private fun stopObserving() {

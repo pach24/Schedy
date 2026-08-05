@@ -51,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.schednd.ui.components.DayDialogSession
+import com.schednd.ui.components.ErrorNotice
 import com.schednd.ui.components.DialogBlurRadius
 import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.MiniWeekCalendar
@@ -103,7 +104,8 @@ fun HomeScreen(
         onCreateEvent = onCreateEvent,
         onJoinEvent = onJoinEvent,
         onOpenEvent = onOpenEvent,
-        onRemoveSession = viewModel::removeSession
+        onRemoveSession = viewModel::removeSession,
+        onRetry = viewModel::refresh
     )
 }
 
@@ -113,7 +115,8 @@ fun HomeContent(
     onCreateEvent: () -> Unit,
     onJoinEvent: () -> Unit,
     onOpenEvent: (String) -> Unit,
-    onRemoveSession: (HomeSessionCard) -> Unit = {}
+    onRemoveSession: (HomeSessionCard) -> Unit = {},
+    onRetry: () -> Unit = {}
 ) {
     // El pager manda sobre la pestaña actual, tanto al deslizar como al tocar la barra.
     // La bolita la mueve el navigator: pegada al pager con el dedo, por su cuenta al tocar.
@@ -224,7 +227,8 @@ fun HomeContent(
                         onJoinEvent = onJoinEvent,
                         onOpenEvent = onOpenEvent,
                         leavingCode = leavingSession?.code,
-                        onLongPressSession = { sessionUnderAction = it }
+                        onLongPressSession = { sessionUnderAction = it },
+                        onRetry = onRetry
                     )
                     SessionTab.HOME -> HomeMainTab(
                         uiState = uiState,
@@ -233,7 +237,8 @@ fun HomeContent(
                         onJoinEvent = onJoinEvent,
                         onSeeAllSessions = { goToTab(SessionTab.SESSIONS) },
                         onOpenCalendar = { goToTab(SessionTab.CALENDAR) },
-                        onOpenEvent = onOpenEvent
+                        onOpenEvent = onOpenEvent,
+                        onRetry = onRetry
                     )
                 }
             }
@@ -293,12 +298,18 @@ private fun HomeMainTab(
     onJoinEvent: () -> Unit,
     onSeeAllSessions: () -> Unit,
     onOpenCalendar: () -> Unit,
-    onOpenEvent: (String) -> Unit
+    onOpenEvent: (String) -> Unit,
+    onRetry: () -> Unit
 ) {
-    if (!uiState.isAuthReady && uiState.error == null) {
+    if (uiState.isLoading) {
         LoadingTab(innerPadding = innerPadding)
         return
     }
+
+    // La carga falló sin traer nada. Sin listado no se puede afirmar que no haya sesiones,
+    // así que el hueco lo ocupa el aviso: la cuenta atrás y el «aún no tienes mesas»
+    // estarían inventándose un estado que nadie ha comprobado.
+    val nothingLoaded = uiState.error != null && uiState.allSessions.isEmpty()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -320,16 +331,18 @@ private fun HomeMainTab(
             )
         }
 
-        if (uiState.error != null) {
+        uiState.error?.let { error ->
             item {
-                Text(
-                    text = stringResource(R.string.error_prefix, uiState.error ?: ""),
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                ErrorNotice(
+                    error = error,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                    actionLabel = stringResource(R.string.error_retry),
+                    onAction = onRetry
                 )
             }
         }
 
+        if (!nothingLoaded) {
         item {
             FadeIn(delayMs = 50) {
                 val session = uiState.nextSession
@@ -399,6 +412,7 @@ private fun HomeMainTab(
                 )
             }
         }
+        }
 
         item { Spacer(modifier = Modifier.height(12.dp)) }
         item {
@@ -420,12 +434,17 @@ private fun HomeSessionsTab(
     onJoinEvent: () -> Unit,
     onOpenEvent: (String) -> Unit,
     leavingCode: String?,
-    onLongPressSession: (HomeSessionCard) -> Unit
+    onLongPressSession: (HomeSessionCard) -> Unit,
+    onRetry: () -> Unit
 ) {
-    if (!uiState.isAuthReady && uiState.error == null) {
+    if (uiState.isLoading) {
         LoadingTab(innerPadding = innerPadding)
         return
     }
+
+    // Igual que en Inicio: si no se ha podido traer nada, el listado no dice «no tienes
+    // sesiones», porque no lo sabe.
+    val nothingLoaded = uiState.error != null && uiState.allSessions.isEmpty()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -436,11 +455,22 @@ private fun HomeSessionsTab(
     ) {
         item { Header(title = stringResource(R.string.tab_sessions)) }
 
-        if (uiState.allSessions.isEmpty()) {
+        uiState.error?.let { error ->
+            item {
+                ErrorNotice(
+                    error = error,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                    actionLabel = stringResource(R.string.error_retry),
+                    onAction = onRetry
+                )
+            }
+        }
+
+        if (uiState.allSessions.isEmpty() && !nothingLoaded) {
             item {
                 EmptySessionsHint(modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp))
             }
-        } else {
+        } else if (uiState.allSessions.isNotEmpty()) {
             item {
                 SectionHeader(
                     title = stringResource(R.string.home_upcoming_header),

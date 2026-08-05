@@ -74,6 +74,7 @@ import com.schednd.R
 import com.schednd.domain.model.AttendanceTier
 import java.time.LocalDate
 import java.time.LocalTime
+import com.schednd.ui.components.ErrorNotice
 import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.GenTopBar
 import com.schednd.ui.components.AvailabilityGrid
@@ -93,6 +94,7 @@ import androidx.compose.ui.layout.positionInParent
 import kotlinx.coroutines.delay
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -189,7 +191,10 @@ fun EventDetailScreen(
             AnimatedContent(
                 targetState = when {
                     uiState.isLoading -> "loading"
-                    uiState.error != null -> "error"
+                    // Solo un fallo que deja la pantalla sin sesión se la lleva entera.
+                    // Que falle guardar una fecha no es motivo para borrar lo que ya hay
+                    // delante: ese aviso va encima del contenido, sin tapar nada.
+                    uiState.error != null && uiState.event == null -> "error"
                     else -> "content"
                 },
                 transitionSpec = { PhaseEnterTransition togetherWith PhaseExitTransition },
@@ -217,8 +222,10 @@ fun EventDetailScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = uiState.error!!,
-                            color = MaterialTheme.colorScheme.error
+                            text = stringResource(uiState.error!!.messageRes),
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 32.dp)
                         )
                     }
                 }
@@ -236,6 +243,22 @@ fun EventDetailScreen(
                                 .statusBarsPadding()
                                 .height(72.dp) // 64.dp de tu topBar + 8.dp de tu Spacer original
                         )
+
+                        // Falló una acción suelta —fijar la fecha, guardar la
+                        // disponibilidad— y la sesión sigue delante: el aviso se pone
+                        // arriba y se quita solo, sin llevarse la pantalla.
+                        uiState.error?.let { error ->
+                            LaunchedEffect(error) {
+                                delay(5000)
+                                viewModel.clearError()
+                            }
+                            ErrorNotice(
+                                error = error,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                                actionLabel = stringResource(R.string.error_dismiss),
+                                onAction = viewModel::clearError
+                            )
+                        }
 
                         if (uiState.participants.isEmpty()) {
                             FadeIn(delayMs = 200) {

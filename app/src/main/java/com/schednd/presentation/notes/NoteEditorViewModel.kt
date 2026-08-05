@@ -13,6 +13,8 @@ import com.schednd.domain.usecase.session.GetSessionUseCase
 import com.schednd.domain.usecase.session.ObserveParticipantsUseCase
 import com.schednd.domain.model.Note
 import com.schednd.domain.model.NoteTag
+import com.schednd.presentation.common.UiError
+import com.schednd.presentation.common.toUiError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,7 +39,7 @@ data class NoteEditorUiState(
     val isDeleting: Boolean = false,
     val isDone: Boolean = false,
     val isDeleted: Boolean = false,
-    val error: String? = null
+    val error: UiError? = null
 ) {
     val canSave: Boolean get() = title.trim().isNotEmpty() && !isSaving
     val isEditMode: Boolean get() = noteId != null
@@ -96,7 +98,7 @@ class NoteEditorViewModel @Inject constructor(
                             )
                         }
                     } else {
-                        _uiState.update { it.copy(isLoading = false, error = "Nota no encontrada") }
+                        _uiState.update { it.copy(isLoading = false, error = UiError.NOTE_NOT_FOUND) }
                     }
                 } else {
                     _uiState.update {
@@ -111,7 +113,7 @@ class NoteEditorViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, error = e.toUiError()) }
             }
         }
     }
@@ -148,7 +150,7 @@ class NoteEditorViewModel @Inject constructor(
                 }
                 _uiState.update { it.copy(isSaving = false, isDone = true) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isSaving = false, error = e.message) }
+                _uiState.update { it.copy(isSaving = false, error = e.toUiError()) }
             }
         }
     }
@@ -161,7 +163,7 @@ class NoteEditorViewModel @Inject constructor(
                 deleteNoteUseCase(code, id)
                 _uiState.update { it.copy(isDeleting = false, isDeleted = true) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isDeleting = false, error = e.message) }
+                _uiState.update { it.copy(isDeleting = false, error = e.toUiError()) }
             }
         }
     }

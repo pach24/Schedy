@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import com.schednd.domain.model.Note
 import com.schednd.domain.model.NoteTag
 import com.schednd.domain.model.NoteTemplate
+import com.schednd.ui.components.ErrorNotice
 import com.schednd.ui.components.GenCard
 import com.schednd.ui.components.FilterChip
 import com.schednd.ui.components.NoteCard
@@ -82,7 +83,9 @@ fun NotesListScreen(
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background)) {
 
-        if (uiState.notes.isEmpty() && !uiState.isLoading) {
+        // Sin notas y sin fallo es que no hay ninguna escrita. Con un fallo por medio no se
+        // sabe, así que el listado se queda con su cabecera y el aviso encima.
+        if (uiState.notes.isEmpty() && !uiState.isLoading && uiState.error == null) {
             EmptyNotes(
                 sessionName = sessionName,
                 bottomPadding = bottomPadding,
@@ -105,6 +108,16 @@ fun NotesListScreen(
                         onBack = onBack,
                         onNew = { onNew(null) }
                     )
+                }
+                uiState.error?.let { error ->
+                    item {
+                        // Sin botón: la escucha de Firestore se reengancha sola, no hay
+                        // nada que reintentar a mano.
+                        ErrorNotice(
+                            error = error,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
                 }
                 item {
                     SearchField(

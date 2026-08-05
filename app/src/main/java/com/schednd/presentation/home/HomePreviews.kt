@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
+import com.schednd.presentation.common.UiError
 import com.schednd.ui.theme.SchedyTheme
 import java.time.LocalDate
 
@@ -16,7 +17,20 @@ import java.time.LocalDate
 private fun HomePreviewEmpty() {
     SchedyTheme(darkTheme = false) {
         HomeContent(
-            uiState = HomeUiState(isAuthReady = true),
+            uiState = HomeUiState(isLoading = false),
+            onCreateEvent = {},
+            onJoinEvent = {},
+            onOpenEvent = {}
+        )
+    }
+}
+
+@Preview(name = "Home – Sin poder cargar (Light)", showBackground = true, device = "spec:width=411dp,height=891dp")
+@Composable
+private fun HomePreviewError() {
+    SchedyTheme(darkTheme = false) {
+        HomeContent(
+            uiState = HomeUiState(isLoading = false, error = UiError.OFFLINE),
             onCreateEvent = {},
             onJoinEvent = {},
             onOpenEvent = {}
@@ -57,7 +71,7 @@ private fun HomePreviewLight() {
         )
         HomeContent(
             uiState = HomeUiState(
-                isAuthReady = true,
+                isLoading = false,
                 allSessions = sample,
                 upcomingSessions = sample,
                 nextSession = sample.first()
@@ -86,7 +100,7 @@ private fun HomePreviewDark() {
         )
         HomeContent(
             uiState = HomeUiState(
-                isAuthReady = true,
+                isLoading = false,
                 allSessions = sample,
                 upcomingSessions = sample,
                 nextSession = sample.first()

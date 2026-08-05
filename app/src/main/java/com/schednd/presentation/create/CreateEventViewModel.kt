@@ -10,6 +10,8 @@ import com.schednd.domain.usecase.session.CreateSessionUseCase
 import com.schednd.domain.usecase.session.ObserveParticipantsUseCase
 import com.schednd.domain.usecase.session.SaveAvailabilityUseCase
 import com.schednd.domain.usecase.session.SubscribeToSessionUseCase
+import com.schednd.presentation.common.UiError
+import com.schednd.presentation.common.toUiError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +30,7 @@ data class CreateEventUiState(
     val isLoading: Boolean = false,
     val createdCode: String? = null,
     val isDone: Boolean = false,
-    val error: String? = null
+    val error: UiError? = null
 )
 
 @HiltViewModel
@@ -87,7 +89,7 @@ class CreateEventViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = false, createdCode = code) }
                 observeParticipants(code)
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, error = e.toUiError()) }
             }
         }
     }
@@ -110,7 +112,7 @@ class CreateEventViewModel @Inject constructor(
                 }
                 _uiState.update { it.copy(isLoading = false, isDone = true) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, error = e.toUiError()) }
             }
         }
     }
